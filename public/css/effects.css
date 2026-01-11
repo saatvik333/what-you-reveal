@@ -369,6 +369,12 @@ body {
   justify-content: flex-end;
 }
 
+@media (max-width: 600px) {
+  #boot-overlay {
+    padding: 20px;
+  }
+}
+
 .boot-line {
   margin-bottom: 4px;
   white-space: pre-wrap;
