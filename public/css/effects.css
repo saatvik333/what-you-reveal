@@ -28,9 +28,9 @@
   background-color: var(--screen-bg);
   /* Bezel & Glass Edge Highlights */
   /* Complex shadow for depth + gloss reflection on edges */
-  box-shadow: inset 0 0 8rem rgba(0, 0, 0, 0.75),
-    /* Vignette */ inset 0 0 3rem rgba(0, 0, 0, 0.9),
-    /* Deep corners */ inset 5px 5px 20px rgba(255, 255, 255, 0.05),
+  box-shadow: inset 0 0 10rem rgba(0, 0, 0, 0.9),
+    /* Vignette */ inset 0 0 4rem rgba(0, 0, 0, 0.95),
+    /* Deep corners */ inset 10px 10px 30px rgba(255, 255, 255, 0.03),
     /* Top-left gloss */ inset -5px -5px 20px rgba(255, 255, 255, 0.05); /* Bottom-right gloss */
 
   /* PHYSICAL CURVATURE: 3D Transform */
@@ -138,8 +138,12 @@
   width: 100%;
   height: 100%;
 
-  /* Thicker lines */
-  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+  /* Thicker lines for realistic low-res CRT feel */
+  background: linear-gradient(
+      to bottom,
+      rgba(18, 16, 16, 0) 50%,
+      rgba(0, 0, 0, 0.4) 50%
+    ),
     linear-gradient(
       90deg,
       rgba(255, 0, 0, 0.06),
@@ -147,7 +151,7 @@
       rgba(0, 0, 255, 0.06)
     );
 
-  /* 4px size = 2px line, 2px gap */
+  /* 4px size = 2px line, 2px gap (Visible scanlines) */
   background-size: 100% 4px, 6px 100%;
 
   z-index: 10; /* Above content */
@@ -209,27 +213,15 @@
   pointer-events: none;
   background: linear-gradient(
     to bottom,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0) 50%,
-    rgba(0, 0, 0, 0.2) 50%,
-    rgba(255, 255, 255, 0) 50.1%,
-    /* Razor thin dark line */ rgba(255, 255, 255, 0.05) 90%,
-    /* Trailing light */ rgba(255, 255, 255, 0) 100%
-  );
-  background-size: 100% 30px; /* Small repeating bar? No, we want one big rolling bar */
-
-  /* Actually for a roll bar we want a single gradient that moves */
-  background: linear-gradient(
-    to bottom,
     rgba(255, 255, 255, 0),
     rgba(255, 255, 255, 0) 50%,
-    rgba(0, 0, 0, 0.4) 50%,
-    rgba(0, 0, 0, 0.1) 51%,
+    rgba(0, 0, 0, 0.2) 50%,
+    rgba(0, 0, 0, 0.1) 60%,
     rgba(255, 255, 255, 0) 100%
   );
-  background-size: 100% 100%; /* Cover whole screen */
-  animation: roll 10s linear infinite;
-  opacity: 0.5;
+  background-size: 100% 100%;
+  animation: roll 6s linear infinite; /* Faster roll */
+  opacity: 0.3; /* Subtle */
 }
 
 @keyframes roll {
@@ -244,19 +236,19 @@
 /* RGB Shift Animation on the wrapper */
 @keyframes rgbShift {
   0% {
-    text-shadow: 2px 0 1px #f00, -2px 0 1px #00f;
+    text-shadow: 1px 0 1px rgba(255,0,0,0.5), -1px 0 1px rgba(0,0,255,0.5), 0 0 3px var(--text-shadow-color);
   }
   25% {
-    text-shadow: -2px 0 1px #f00, 2px 0 1px #00f;
+    text-shadow: -1px 0 1px rgba(255,0,0,0.5), 1px 0 1px rgba(0,0,255,0.5), 0 0 3px var(--text-shadow-color);
   }
   50% {
-    text-shadow: 2px 0 1px #f00, -2px 0 1px #00f;
+    text-shadow: 1px 0 1px rgba(255,0,0,0.5), -1px 0 1px rgba(0,0,255,0.5), 0 0 3px var(--text-shadow-color);
   }
   75% {
-    text-shadow: -2px 0 1px #f00, 2px 0 1px #00f;
+    text-shadow: -1px 0 1px rgba(255,0,0,0.5), 1px 0 1px rgba(0,0,255,0.5), 0 0 3px var(--text-shadow-color);
   }
   100% {
-    text-shadow: 2px 0 1px #f00, -2px 0 1px #00f;
+    text-shadow: 1px 0 1px rgba(255,0,0,0.5), -1px 0 1px rgba(0,0,255,0.5), 0 0 3px var(--text-shadow-color);
   }
 }
 
@@ -270,7 +262,8 @@ body {
   font-size: var(--font-base-size);
   line-height: 1.4;
   margin: 0;
-  /* Scrollbar styling handled in main styles usually, but let's override */
+  /* Animation for Chromatic Aberration */
+  animation: rgbShift 4s infinite linear alternate;
 }
 
 /* Custom Scrollbar */
@@ -291,36 +284,27 @@ body {
 
 /* 6. Flicker Animation */
 @keyframes flicker {
-  0% {
-    opacity: 0.98;
-  }
-  5% {
-    opacity: 0.95;
-  }
-  10% {
-    opacity: 0.98;
-  }
-  15% {
-    opacity: 1;
-  }
-  20% {
-    opacity: 0.98;
-  }
-  50% {
-    opacity: 0.95;
-  }
-  55% {
-    opacity: 0.99;
-  }
-  60% {
-    opacity: 0.96;
-  }
-  75% {
-    opacity: 0.99;
-  }
-  100% {
-    opacity: 0.98;
-  }
+  0% { opacity: 0.97; }
+  5% { opacity: 0.95; }
+  10% { opacity: 0.99; }
+  15% { opacity: 0.95; }
+  20% { opacity: 0.99; }
+  25% { opacity: 0.96; }
+  30% { opacity: 0.99; }
+  35% { opacity: 0.96; }
+  40% { opacity: 0.98; }
+  45% { opacity: 0.95; }
+  50% { opacity: 0.99; }
+  55% { opacity: 0.94; }
+  60% { opacity: 0.98; }
+  65% { opacity: 0.96; }
+  70% { opacity: 1; }
+  75% { opacity: 0.96; }
+  80% { opacity: 0.98; }
+  85% { opacity: 0.95; }
+  90% { opacity: 0.98; }
+  95% { opacity: 0.97; }
+  100% { opacity: 0.98; }
 }
 
 /* 7. Glitch Effect */
