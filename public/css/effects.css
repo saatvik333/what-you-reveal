@@ -405,3 +405,22 @@ body {
     opacity: 1;
   }
 }
+
+/* Accessibility: Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .crt-screen,
+  .crt-screen::after,
+  .scanline-roll,
+  .glitch::before,
+  .glitch::after {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  /* Ensure screen is visible and bright enough without turnOn animation */
+  .crt-screen {
+    opacity: 1;
+    filter: none;
+    transform: scale(1) !important;
+  }
+}

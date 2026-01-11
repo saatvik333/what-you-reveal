@@ -7,6 +7,9 @@ export async function runBootSequence() {
     const overlay = document.getElementById('boot-overlay');
     if (!overlay) return;
 
+    // Check for reduced motion preference
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
     try {
         // Clear initial content
         overlay.innerHTML = '';
@@ -73,10 +76,13 @@ export async function runBootSequence() {
             if (log.includes("...")) delay += 200;
             if (log.includes("Decrypting")) delay += 600;
             
+            // Skip delay if reduced motion is on
+            if (reduceMotion) delay = 10;
+
             await sleep(delay);
         }
 
-        await sleep(400);
+        if (!reduceMotion) await sleep(400);
         
         // Quick flash or hard cut? Hacker style usually hard cut or clear.
         // Let's do a "Clear Screen" simulation
@@ -85,7 +91,7 @@ export async function runBootSequence() {
         clearCmd.textContent = "$ clear";
         overlay.insertBefore(clearCmd, cursor);
         
-        await sleep(300);
+        if (!reduceMotion) await sleep(300);
 
     } catch (e) {
         console.error("Boot sequence failed:", e);
