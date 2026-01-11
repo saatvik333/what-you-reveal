@@ -37,6 +37,7 @@ router.get('/info', (req, res) => {
 });
 
 // API endpoint to proxy GeoIP requests (Fixes Mixed Content & CORS)
+// Note: ip-api.com free tier only supports HTTP. We proxy it here to avoid Mixed Content blocks in the browser.
 router.get('/geoip', async (req, res) => {
     const fields = req.query.fields || '';
     const ip = req.query.ip || req.clientIp || ''; 

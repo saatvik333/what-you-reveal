@@ -23,18 +23,18 @@ A **hacker‑styled** single‑page web app that visualises the data your browse
 ## Prerequisites
 
 - Node.js (v12+)
-- npm
+- pnpm
 
 ## Installation
 
 ```bash
-npm install
+pnpm install
 ```
 
 ## Usage
 
 ```bash
-npm start
+pnpm start
 ```
 
 Open your browser and navigate to `http://localhost:3000`.
@@ -63,20 +63,20 @@ This is a simple web application that displays all the information it can gather
 ## Prerequisites
 
 - Node.js (v12 or higher)
-- npm
+- pnpm
 
 ## Installation
 
 1.  Install dependencies:
     ```bash
-    npm install
+    pnpm install
     ```
 
 ## Usage
 
 1.  Start the server:
     ```bash
-    npm start
+    pnpm start
     ```
 2.  Open your browser and navigate to:
     ```

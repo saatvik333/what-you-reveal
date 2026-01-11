@@ -96,6 +96,7 @@
   min-width: 20%; /* Ensure value has some breathing room */
   word-wrap: break-word; /* Wrap long values nicely */
   overflow-wrap: break-word;
+  white-space: pre-wrap;
 }
 
 /* Warning styling within table */
