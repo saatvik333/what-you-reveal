@@ -21,8 +21,13 @@ import { collectMediaDevices } from './modules/media_devices.js';
 import { runBootSequence } from './modules/boot.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // Check for reduced motion preference
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
     // Wait for CRT "turn on" animation (approx 3s)
-    await new Promise(r => setTimeout(r, 3500));
+    if (!reduceMotion) {
+        await new Promise(r => setTimeout(r, 3500));
+    }
     
     // Run Boot Sequence
     await runBootSequence();

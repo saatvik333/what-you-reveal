@@ -7,6 +7,21 @@
  * @param {Object} data - Key-value pairs to display
  * @returns {string} HTML string with formatted table
  */
+/**
+ * Escapes HTML special characters to prevent XSS
+ * @param {string} str
+ * @returns {string}
+ */
+function escapeHtml(str) {
+    if (typeof str !== 'string') return str;
+    return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 export function createTable(data) {
     let output = '';
     // Filter keys first
@@ -23,7 +38,7 @@ export function createTable(data) {
     
     if (entries.length === 0) return '<span class="loading">No accessible data.</span>';
 
-    const maxKeyLen = Math.max(...entries.map(([k]) => k.length));
+    output += '<div class="terminal-table">';
     
     for (const [key, value] of entries) {
         // Handle nested objects or arrays by converting to string
@@ -40,17 +55,65 @@ export function createTable(data) {
             displayValue = JSON.stringify(value, null, 2); 
         }
 
-        // ASCII Formatting: KEY ............ VALUE
-        const padding = '.'.repeat(maxKeyLen - key.length + 4);
-        const line = `${key} ${padding} ${displayValue}\n`;
-        
-        if (warning) {
-            output += `<span class="warning">${line}</span>`;
-        } else {
-            output += line;
+        // Semantic HTML Structure: Row -> Key + Dots + Value
+        // Escape values for display and attributes
+        const safeValue = String(displayValue).replace(/"/g, '&quot;'); // For data-copy attribute
+        const escapedKey = escapeHtml(key);
+        const escapedValue = escapeHtml(String(displayValue));
+
+        output += `<div class="terminal-row${warning ? ' warning' : ''} copyable" role="button" tabindex="0" aria-label="Copy ${escapedKey}: ${safeValue}" data-copy="${safeValue}">`;
+        output += `<span class="key">${escapedKey}</span>`;
+        output += `<span class="dots"></span>`;
+        output += `<span class="value">${escapedValue}</span>`;
+        output += `</div>`;
+    }
+    output += '</div>';
+    return output;
+}
+
+// Global Event Delegation for Copy Functionality
+if (typeof document !== 'undefined') {
+    document.addEventListener('click', handleCopyClick);
+    document.addEventListener('keydown', (e) => {
+        if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('.copyable')) {
+            e.preventDefault();
+            handleCopyClick(e);
+        }
+    });
+}
+
+/**
+ * Handles copy actions from delegation
+ * @param {Event} e
+ */
+async function handleCopyClick(e) {
+    const row = e.target.closest('.copyable');
+    if (!row) return;
+
+    const text = row.getAttribute('data-copy');
+    if (text) {
+        try {
+            await navigator.clipboard.writeText(text);
+            flashFeedback(row);
+        } catch (err) {
+            console.error('Failed to copy:', err);
+            // Fallback for non-secure contexts if needed, but modern clipboard API usually requires secure context.
+            // In a real terminal app, we might show a "ACCESS DENIED" error.
         }
     }
-    return '<pre>' + output + '</pre>';
+}
+
+/**
+ * Visual feedback for copy action
+ * @param {HTMLElement} row
+ */
+function flashFeedback(row) {
+    row.classList.add('copied');
+
+    // Remove class after animation completes (matches CSS animation duration)
+    setTimeout(() => {
+        row.classList.remove('copied');
+    }, 500);
 }
 
 /**
@@ -98,14 +161,10 @@ const revealObserver = new IntersectionObserver((entries) => {
  * @param {number} speed 
  */
 function typeWriterEffect(element, html, speed) {
-    // If it's a pre block (ASCII table), we can split by lines
-    if (html.startsWith('<pre>') || html.includes('<pre>')) {
+    // If it's a table or pre block, just reveal it
+    if (html.startsWith('<div class="terminal-table">') || html.startsWith('<pre>') || html.includes('<pre>')) {
         element.innerHTML = html;
         element.classList.add('flicker-in');
-        
-        // Optional: Sequential line reveal could go here but is complex with HTML tags.
-        // Simple flicker-in is strictly "retro" enough for data dumps.
-        // But let's try to add a "scanning" class
         element.style.opacity = '1';
         return;
     }

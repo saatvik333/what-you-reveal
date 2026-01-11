@@ -2,6 +2,10 @@
  * Base Styles - Body, Container, Scrollbar
  */
 
+* {
+  box-sizing: border-box;
+}
+
 body {
   background-color: var(--bg-color);
   color: var(--text-color);
@@ -9,7 +13,6 @@ body {
   margin: 0;
   padding: 20px;
   height: 100vh;
-  box-sizing: border-box;
   overflow-x: hidden;
   text-shadow: 0 0 2px var(--dim-color);
 }
@@ -29,6 +32,12 @@ body {
   flex-direction: column;
   height: 100%;
   padding: 40px; /* Push content away from curved corners */
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding: 10px;
+  }
 }
 
 /* Data Display */
