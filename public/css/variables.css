@@ -10,7 +10,8 @@
   --text-color: var(--phosphor-primary);
   --text-shadow-color: rgba(51, 255, 51, 0.6);
   --text-glow: 0 0 2px var(--text-shadow-color),
-    0 0 5px var(--text-shadow-color);
+    0 0 5px var(--text-shadow-color),
+    0 0 10px var(--text-shadow-color);
 
   /* Accents */
   --dim-color: rgba(51, 255, 51, 0.5);
