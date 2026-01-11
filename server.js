@@ -17,6 +17,12 @@ app.use(express.static('public'));
 // Mount API routes
 app.use('/api', apiRoutes);
 
-app.listen(port, () => {
-    console.log(`What You Reveal - Running on http://localhost:${port}`);
-});
+// Export the app for Vercel (serverless)
+module.exports = app;
+
+// Only start the server if this file is run directly
+if (require.main === module) {
+    app.listen(port, () => {
+        console.log(`What You Reveal - Running on http://localhost:${port}`);
+    });
+}
