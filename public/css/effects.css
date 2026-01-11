@@ -15,6 +15,7 @@
   align-items: center;
   justify-content: center;
   z-index: 0;
+  perspective: 1000px; /* Stronger perspective */
 }
 
 /* 2. The Screen Surface (Curved Glass Simulation) */
@@ -34,10 +35,10 @@
     /* Top-left gloss */ inset -5px -5px 20px rgba(255, 255, 255, 0.05); /* Bottom-right gloss */
 
   /* PHYSICAL CURVATURE: 3D Transform */
-  /* We use a large perspective to minimize strong trapezoidal distortion */
-  transform: perspective(3000px) scale(1.02); /* Overscale to hide any background gaps */
+  /* Use rotateX to curve the top/bottom away slightly, creating a "bow" effect with perspective */
+  transform: scale(0.98) translateZ(30px);
   transform-style: preserve-3d;
-  border-radius: 12px; /* Slight physical roundness */
+  border-radius: 20px; /* Increased radius for rounder CRT look */
 
   /* OPTICAL DISTORTION: SVG Filter */
   /* Applies wobbly glass effect to everything inside */

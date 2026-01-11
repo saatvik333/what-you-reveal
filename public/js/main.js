@@ -19,6 +19,7 @@ import { detectBot } from './modules/integrity.js';
 import { collectClientHints } from './modules/client_hints.js';
 import { collectMediaDevices } from './modules/media_devices.js';
 import { runBootSequence } from './modules/boot.js';
+import { initGhosting } from './modules/ghosting.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Check for reduced motion preference
@@ -31,6 +32,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Run Boot Sequence
     await runBootSequence();
+
+    // Initialize Phosphor Ghosting/Trails (after boot is visible)
+    if (!reduceMotion) {
+        initGhosting();
+    }
 
     // --- 1. Browser/Navigator Data ---
     try {
