@@ -1,0 +1,16 @@
+{
+  "name": "What You Reveal",
+  "short_name": "Reveal",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0c0c0c",
+  "theme_color": "#0c0c0c",
+  "description": "Advanced browser fingerprinting & privacy analysis tool.",
+  "icons": [
+    {
+      "src": "/images/logo.png",
+      "sizes": "1024x1024",
+      "type": "image/png"
+    }
+  ]
+}
