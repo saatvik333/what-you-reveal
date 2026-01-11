@@ -8,9 +8,9 @@
   "description": "Advanced browser fingerprinting & privacy analysis tool.",
   "icons": [
     {
-      "src": "/images/logo.png",
+      "src": "/images/logo.jpg",
       "sizes": "1024x1024",
-      "type": "image/png"
+      "type": "image/jpeg"
     }
   ]
 }
