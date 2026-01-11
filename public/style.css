@@ -1,0 +1,13 @@
+/**
+ * What You Reveal - Main Stylesheet
+ * 
+ * This is the barrel file that imports all CSS modules.
+ * Import this single file in your HTML.
+ */
+
+@import url("css/variables.css");
+@import url("css/base.css");
+@import url("css/effects.css");
+@import url("css/components/header.css");
+@import url("css/components/card.css");
+@import url("css/components/footer.css");

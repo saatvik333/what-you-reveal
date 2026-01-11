@@ -1,0 +1,37 @@
+/**
+ * Header Component Styles
+ */
+
+header {
+  text-align: center;
+  border-bottom: 2px solid var(--text-color);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+}
+
+h1 {
+  font-size: 2em;
+  text-transform: uppercase;
+  letter-spacing: 5px;
+  margin: 0;
+  text-shadow: 0 0 10px var(--text-color);
+}
+
+.subtitle {
+  font-size: 0.9em;
+  color: var(--dim-color);
+}
+
+.ascii-header {
+  font-size: 0.5em;
+  line-height: 1.1;
+  letter-spacing: 0;
+  white-space: pre;
+  overflow-x: hidden;
+}
+
+@media (max-width: 768px) {
+  .ascii-header {
+    display: none;
+  }
+}

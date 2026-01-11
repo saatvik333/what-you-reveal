@@ -1,0 +1,64 @@
+/**
+ * Base Styles - Body, Container, Scrollbar
+ */
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-family: var(--font-stack);
+  margin: 0;
+  padding: 20px;
+  height: 100vh;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  text-shadow: 0 0 2px var(--dim-color);
+}
+
+@media (max-width: 600px) {
+  body {
+    padding: 10px;
+    font-size: 0.9em;
+  }
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Data Display */
+pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.9em;
+  line-height: 1.4;
+  color: var(--text-color);
+  overflow-x: hidden;
+}
+
+.warning {
+  color: var(--alert);
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #000;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--dim-color);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-color);
+}

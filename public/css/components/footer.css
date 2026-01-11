@@ -1,0 +1,32 @@
+/**
+ * Footer Component Styles
+ */
+
+footer {
+  margin-top: 20px;
+  border-top: 1px dotted var(--dim-color);
+  padding-top: 10px;
+  font-size: 0.8em;
+  color: var(--dim-color);
+}
+
+.prompt {
+  color: var(--text-color);
+  font-weight: bold;
+  margin-right: 10px;
+}
+
+.cursor {
+  display: inline-block;
+  width: 10px;
+  height: 1.2em;
+  background-color: var(--text-color);
+  animation: blink 1s step-end infinite;
+  vertical-align: middle;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}

@@ -1,0 +1,54 @@
+/**
+ * Card Component Styles
+ */
+
+/* Grid Layout for "Windows" */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 15px;
+  align-items: start;
+}
+
+@media (max-width: 400px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  background: #000;
+  border: 1px solid var(--dim-color);
+  padding: 10px;
+  position: relative;
+  box-shadow: 0 0 5px var(--border-color);
+  overflow: hidden;
+  height: 100%;
+}
+
+/* Window Title Bar */
+.card h2 {
+  margin: -10px -10px 10px -10px;
+  background: var(--dim-color);
+  color: #000;
+  font-size: 1em;
+  padding: 2px 10px;
+  text-transform: uppercase;
+  font-weight: bold;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+  margin-top: 20px;
+  background: #000;
+  border: 1px solid var(--dim-color);
+  padding: 10px;
+  position: relative;
+  box-shadow: 0 0 5px var(--border-color);
+}
+
+/* Ensure code block inside full-width doesn't break layout */
+.code-block {
+  max-height: 400px;
+  overflow-y: auto;
+}

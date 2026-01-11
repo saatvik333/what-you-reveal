@@ -1,0 +1,15 @@
+/**
+ * CSS Variables - What You Reveal Theme
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap");
+
+:root {
+  --bg-color: #0c0c0c;
+  --text-color: #00ff41;
+  --dim-color: #008f11;
+  --border-color: #003b00;
+  --highlight: #00ff41;
+  --alert: #ff3333;
+  --font-stack: "Fira Code", "Courier New", monospace;
+}
