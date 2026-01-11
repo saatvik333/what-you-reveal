@@ -11,11 +11,11 @@ import { collectScreenData } from './modules/screen.js';
 import { collectHardwareData } from './modules/hardware.js';
 import { collectWebGLData } from './modules/webgl.js';
 import { fetchServerInfo, parseDeviceInfo, collectNetworkData, formatHeaders } from './modules/network.js';
-import { collectFingerprintData } from './modules/fingerprint.js';
+import { collectFingerprintData } from './modules/identity.js';
 import { collectFontData } from './modules/fonts.js';
 import { collectMediaData } from './modules/media.js';
 import { collectPermissionsData } from './modules/permissions.js';
-import { detectBot } from './modules/bot_detection.js';
+import { detectBot } from './modules/integrity.js';
 import { collectClientHints } from './modules/client_hints.js';
 import { collectMediaDevices } from './modules/media_devices.js';
 import { runBootSequence } from './modules/boot.js';
@@ -62,13 +62,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderToElement('webgl-info', { Error: "Failed to load" });
     }
 
-    // --- 5. Digital Fingerprint ---
+    // --- 5. Digital Identity ---
     try {
         const fingerprintData = await collectFingerprintData();
-        renderToElement('fingerprint-info', fingerprintData);
+        renderToElement('identity-info', fingerprintData);
     } catch (e) {
-        console.error("Fingerprint module failed:", e);
-        renderToElement('fingerprint-info', { Error: "Failed to load" });
+        console.error("Identity module failed:", e);
+        renderToElement('identity-info', { Error: "Failed to load" });
     }
 
     // --- 10. Fonts ---
@@ -98,13 +98,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderToElement('perms-info', { Error: "Failed to load" });
     }
 
-    // --- 13. Bot Detection ---
+    // --- 13. System Integrity ---
     try {
         const botData = detectBot();
-        renderToElement('bot-info', botData);
+        renderToElement('integrity-info', botData);
     } catch (e) {
-        console.error("Bot detection failed:", e);
-        renderToElement('bot-info', { Error: "Failed to load" });
+        console.error("Integrity check failed:", e);
+        renderToElement('integrity-info', { Error: "Failed to load" });
     }
 
     // --- 14. Advanced Client Hints ---

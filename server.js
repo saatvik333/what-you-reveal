@@ -15,11 +15,6 @@ app.use(requestIp.mw());
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Explicit root route for Vercel
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
 // Mount API routes
 app.use('/api', apiRoutes);
 
