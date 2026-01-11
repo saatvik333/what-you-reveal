@@ -23,10 +23,12 @@ body {
 
 .container {
   max-width: 1400px;
+  width: 96%; /* Leave room for bezel */
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   height: 100%;
+  padding: 40px; /* Push content away from curved corners */
 }
 
 /* Data Display */

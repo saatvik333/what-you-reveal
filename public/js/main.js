@@ -21,7 +21,10 @@ import { collectMediaDevices } from './modules/media_devices.js';
 import { runBootSequence } from './modules/boot.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Run Boot Sequence first
+    // Wait for CRT "turn on" animation (approx 3s)
+    await new Promise(r => setTimeout(r, 3500));
+    
+    // Run Boot Sequence
     await runBootSequence();
 
     // --- 1. Browser/Navigator Data ---

@@ -1,15 +1,144 @@
 /**
- * CRT Scanline Effect
+ * CRT & Retro Effects
  */
 
-body::before {
+/* 1. CRT Monitor Container (The physical screen boundary) */
+.crt-monitor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: var(--bg-color);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 0;
+}
+
+/* 2. The Screen Surface (Curved Glass Simulation) */
+.crt-screen {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  /* IMPORTANT: Frame is static, content scrolls inside layer */
+  overflow: hidden;
+
+  background-color: var(--screen-bg);
+  /* Bezel & Glass Edge Highlights */
+  /* Complex shadow for depth + gloss reflection on edges */
+  box-shadow: inset 0 0 8rem rgba(0, 0, 0, 0.75),
+    /* Vignette */ inset 0 0 3rem rgba(0, 0, 0, 0.9),
+    /* Deep corners */ inset 5px 5px 20px rgba(255, 255, 255, 0.05),
+    /* Top-left gloss */ inset -5px -5px 20px rgba(255, 255, 255, 0.05); /* Bottom-right gloss */
+
+  /* PHYSICAL CURVATURE: 3D Transform */
+  /* We use a large perspective to minimize strong trapezoidal distortion */
+  transform: perspective(3000px) scale(1.02); /* Overscale to hide any background gaps */
+  transform-style: preserve-3d;
+  border-radius: 12px; /* Slight physical roundness */
+
+  /* OPTICAL DISTORTION: SVG Filter */
+  /* Applies wobbly glass effect to everything inside */
+  filter: url(#crt-optical-distortion);
+
+  /* Performance Optimization */
+  will-change: transform, filter;
+
+  /* Physics: Beam Jitter + Flicker */
+  animation: flicker var(--flicker-strength) infinite, jitter 0.15s infinite;
+}
+
+/* Physics: Beam Jitter (Interlacing instability) */
+@keyframes jitter {
+  0% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(0.4px, 0.4px);
+  }
+  50% {
+    transform: translate(0, 0);
+  }
+  75% {
+    transform: translate(-0.4px, 0);
+  }
+  100% {
+    transform: translate(0, 0.4px);
+  }
+}
+
+/* New Scrollable Layer */
+.crt-content-layer {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  z-index: 2; /* Below distortion/scanlines but above screen bg */
+}
+
+/* Customize Scrollbar on the content layer */
+.crt-content-layer::-webkit-scrollbar {
+  width: 12px;
+}
+.crt-content-layer::-webkit-scrollbar-track {
+  background: #000;
+  border-left: 1px solid var(--dim-color);
+}
+.crt-content-layer::-webkit-scrollbar-thumb {
+  background: var(--dim-color);
+  border: 1px solid #000;
+}
+
+/* Container inside needs to scroll if content is long,
+   but we want the scanlines to stay fixed over it.
+   So we move scrolling to a child if possible,
+   OR we just let the scanlines be fixed position (which they are).
+*/
+
+/* Better "Beam" Turn On */
+@keyframes turnOn {
+  0% {
+    transform: scale(1, 0.002); /* Start full width, thin line */
+    filter: brightness(30);
+    opacity: 1;
+  }
+  30% {
+    transform: scale(1, 0.002); /* Hold line */
+    filter: brightness(30);
+    opacity: 1;
+  }
+  60% {
+    transform: scale(1, 1); /* Vertical Expand */
+    filter: brightness(2);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1, 1); /* Full Size, No Shrink */
+    filter: brightness(1);
+    opacity: 1;
+  }
+}
+
+.crt-screen {
+  animation: turnOn 3s ease-in-out forwards;
+}
+
+/* 3. Scanline Overlay */
+.crt-screen::before {
   content: " ";
   display: block;
-  position: fixed;
+  position: absolute; /* Changed from fixed to absolute to stick to the .crt-screen frame */
   top: 0;
   left: 0;
   bottom: 0;
   right: 0;
+  width: 100%;
+  height: 100%;
+
+  /* Thicker lines */
   background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
     linear-gradient(
       90deg,
@@ -17,72 +146,262 @@ body::before {
       rgba(0, 255, 0, 0.02),
       rgba(0, 0, 255, 0.06)
     );
-  z-index: 1000;
-  background-size: 100% 2px, 3px 100%;
+
+  /* 4px size = 2px line, 2px gap */
+  background-size: 100% 4px, 6px 100%;
+
+  z-index: 10; /* Above content */
   pointer-events: none;
 }
 
-/* Boot Overlay */
-#boot-overlay {
-  position: fixed;
+/* 4. Vignette & Static Noise */
+.crt-screen::after {
+  content: " ";
+  display: block;
+  position: absolute; /* Changed from fixed to absolute */
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+
+  /* darker vignette + noise */
+  background: radial-gradient(
+      circle,
+      rgba(0, 0, 0, 0) 50%,
+      rgba(0, 0, 0, 0.4) 80%,
+      rgba(0, 0, 0, 0.9) 100%
+    ),
+    url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)" opacity="0.3"/%3E%3C/svg%3E');
+
+  background-size: 100% 100%, 200px 200px;
+  z-index: 9; /* Below scanlines, above content */
+  pointer-events: none;
+
+  animation: noise 0.2s infinite;
+}
+
+@keyframes noise {
+  0% {
+    background-position: 0 0, 0 0;
+  }
+  10% {
+    background-position: 0 0, -10px -10px;
+  }
+  20% {
+    background-position: 0 0, 15px 5px;
+  }
+  30% {
+    background-position: 0 0, -5px 25px;
+  }
+  100% {
+    background-position: 0 0, 10px 0;
+  }
+}
+
+/* 5. Moving Scanline / Hum Bar */
+.scanline-roll {
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: var(--bg-color); /* Was #000, consistent with body */
-  z-index: 9999;
-  padding: 20px;
+  z-index: 10000; /* Above everything */
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0) 50%,
+    rgba(0, 0, 0, 0.2) 50%,
+    rgba(255, 255, 255, 0) 50.1%,
+    /* Razor thin dark line */ rgba(255, 255, 255, 0.05) 90%,
+    /* Trailing light */ rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 100% 30px; /* Small repeating bar? No, we want one big rolling bar */
+
+  /* Actually for a roll bar we want a single gradient that moves */
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0) 50%,
+    rgba(0, 0, 0, 0.4) 50%,
+    rgba(0, 0, 0, 0.1) 51%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 100% 100%; /* Cover whole screen */
+  animation: roll 10s linear infinite;
+  opacity: 0.5;
+}
+
+@keyframes roll {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+/* RGB Shift Animation on the wrapper */
+@keyframes rgbShift {
+  0% {
+    text-shadow: 2px 0 1px #f00, -2px 0 1px #00f;
+  }
+  25% {
+    text-shadow: -2px 0 1px #f00, 2px 0 1px #00f;
+  }
+  50% {
+    text-shadow: 2px 0 1px #f00, -2px 0 1px #00f;
+  }
+  75% {
+    text-shadow: -2px 0 1px #f00, 2px 0 1px #00f;
+  }
+  100% {
+    text-shadow: 2px 0 1px #f00, -2px 0 1px #00f;
+  }
+}
+
+/* 5. Text Glow & Fonts */
+body {
   font-family: var(--font-stack);
   color: var(--text-color);
-  font-size: 14px;
-  overflow: hidden;
+  text-shadow: var(--text-glow);
+  -webkit-font-smoothing: none; /* Crucial for retro feel */
+  font-smoothing: none;
+  font-size: var(--font-base-size);
+  line-height: 1.4;
+  margin: 0;
+  /* Scrollbar styling handled in main styles usually, but let's override */
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 14px;
+}
+::-webkit-scrollbar-track {
+  background: #111;
+  border-left: 1px solid var(--dim-color);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--dim-color);
+  border: 2px solid #111;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-color);
+}
+
+/* 6. Flicker Animation */
+@keyframes flicker {
+  0% {
+    opacity: 0.98;
+  }
+  5% {
+    opacity: 0.95;
+  }
+  10% {
+    opacity: 0.98;
+  }
+  15% {
+    opacity: 1;
+  }
+  20% {
+    opacity: 0.98;
+  }
+  50% {
+    opacity: 0.95;
+  }
+  55% {
+    opacity: 0.99;
+  }
+  60% {
+    opacity: 0.96;
+  }
+  75% {
+    opacity: 0.99;
+  }
+  100% {
+    opacity: 0.98;
+  }
+}
+
+/* 7. Glitch Effect */
+.glitch {
+  position: relative;
+}
+.glitch::before,
+.glitch::after {
+  content: attr(data-text); /* Use JS to set this or duplicate content */
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--bg-color);
+}
+.glitch::before {
+  left: 2px;
+  text-shadow: -1px 0 #ff00c1;
+  clip: rect(44px, 450px, 56px, 0);
+  animation: glitch-anim-1 5s infinite linear alternate-reverse;
+}
+.glitch::after {
+  left: -2px;
+  text-shadow: -1px 0 #00fff9;
+  clip: rect(44px, 450px, 56px, 0);
+  animation: glitch-anim-2 5s infinite linear alternate-reverse;
+}
+
+/* 8. Boot Overlay Styles */
+#boot-overlay {
+  position: absolute; /* Fixed to absolute because parent has transform */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg-color);
+  z-index: 8; /* Below scanlines (10) and vignette (9), above content (2) */
+  padding: 40px;
+  box-sizing: border-box;
+  font-family: var(--font-stack);
+  color: var(--text-color);
+  font-size: 16px;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end; /* Terminal logs usually scroll up */
+  justify-content: flex-end;
 }
 
 .boot-line {
-  display: block;
-  margin-bottom: 2px;
-  text-shadow: 0 0 5px var(--text-color);
-  white-space: pre-wrap; /* Preserve spacing */
-}
-
-.boot-timestamp {
-  color: var(--dim-color);
-  margin-right: 10px;
+  margin-bottom: 4px;
+  white-space: pre-wrap;
 }
 
 .boot-cursor {
   display: inline-block;
-  color: var(--highlight);
-  animation: blink 1s step-end infinite;
+  background-color: var(--text-color);
+  color: #000;
+  animation: blink 0.53s step-end infinite; /* 530ms standard */
+  padding: 0 4px;
 }
 
-/* Glitch Effect for Headers */
-@keyframes glitch-anim {
-  0% {
-    transform: translate(0);
-  }
-  20% {
-    transform: translate(-2px, 2px);
-  }
-  40% {
-    transform: translate(-2px, -2px);
-  }
-  60% {
-    transform: translate(2px, 2px);
-  }
-  80% {
-    transform: translate(2px, -2px);
-  }
+@keyframes blink {
+  0%,
   100% {
-    transform: translate(0);
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
   }
 }
 
-.glitch:hover {
-  animation: glitch-anim 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite;
-  color: #fff;
-  text-shadow: 2px 0 #f00, -2px 0 #0f0;
+/* 9. Utility Classes for Animation */
+.flicker-in {
+  animation: fadeIn 0.1s steps(2, end);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }

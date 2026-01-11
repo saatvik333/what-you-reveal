@@ -1,15 +1,35 @@
-/**
- * CSS Variables - What You Reveal Theme
- */
-
-@import url("https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap");
-
 :root {
-  --bg-color: #0c0c0c;
-  --text-color: #00ff41;
-  --dim-color: #008f11;
-  --border-color: #003b00;
-  --highlight: #00ff41;
-  --alert: #ff3333;
-  --font-stack: "Fira Code", "Courier New", monospace;
+  /* CRT Color Palette */
+  --phosphor-primary: #33ff33; /* Classic Green */
+  --phosphor-amber: #ffbb00; /* Amber Alternative */
+  --phosphor-secondary: #ccffcc;
+  --bg-color: #050505; /* Deep Black/Gray */
+  --screen-bg: #000000;
+
+  /* Text & Glow */
+  --text-color: var(--phosphor-primary);
+  --text-shadow-color: rgba(51, 255, 51, 0.6);
+  --text-glow: 0 0 2px var(--text-shadow-color),
+    0 0 5px var(--text-shadow-color);
+
+  /* Accents */
+  --dim-color: rgba(51, 255, 51, 0.5);
+  --border-color: var(--dim-color);
+  --alert-color: #ff3333;
+
+  /* CRT Physical Properties */
+  --curve-strength: 3deg;
+  --scanline-opacity: 0.15;
+  --vignette-opacity: 0.3;
+  --flicker-strength: 0.02;
+
+  /* Fonts */
+  --font-stack: "VT323", "Courier Prime", monospace;
+  --font-base-size: 18px;
+}
+
+body.amber-mode {
+  --text-color: var(--phosphor-amber);
+  --text-shadow-color: rgba(255, 187, 0, 0.6);
+  --dim-color: rgba(255, 187, 0, 0.5);
 }

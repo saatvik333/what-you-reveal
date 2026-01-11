@@ -72,33 +72,57 @@ export function cyrb53(str, seed = 0) {
 }
 
 /**
- * Types HTML content line by line to an element
+ * Global Observer for reveal effects
+ */
+const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const el = entry.target;
+            const content = el.getAttribute('data-content');
+            if (content) {
+                // Determine speed based on content length
+                const speed = 5; 
+                typeWriterEffect(el, content, speed);
+                revealObserver.unobserve(el);
+            }
+        }
+    });
+}, { threshold: 0.1 });
+
+/**
+ * Simulates typing effect for text content.
+ * Note: For HTML tables, we'll blast the HTML but animate the lines if possible, 
+ * or just fade in to avoid breaking markup structure during typing.
  * @param {HTMLElement} element 
  * @param {string} html 
+ * @param {number} speed 
  */
-async function typeWriterHTML(element, html) {
-    // Basic implementation: Set content immediately but animate opacity or just "add" lines?
-    // "Typing" HTML is hard because of tags. 
-    // Hack: Parse output into lines (since it's <pre> content usually) and append line by line.
-    
-    // Check if it is a pre block
-    if (html.startsWith('<pre>') && html.endsWith('</pre>')) {
-        element.innerHTML = '<pre></pre>';
-        const pre = element.querySelector('pre');
-        const content = html.substring(5, html.length - 6);
-        // Split by newlines, but be careful with nested tags like <span class="warning">
-        // Our createTable generates specific format: line\n or <span..>line</span>
-        // Let's rely on the fact that createTable puts \n at end of lines
-        
-        // Actually, simpler: Just set it. The boot sequence is the main effect. 
-        // Typing every single panel might be too slow for UX.
-        // Let's do a "fast reveal" - add a class that flickers in.
+function typeWriterEffect(element, html, speed) {
+    // If it's a pre block (ASCII table), we can split by lines
+    if (html.startsWith('<pre>') || html.includes('<pre>')) {
         element.innerHTML = html;
         element.classList.add('flicker-in');
+        
+        // Optional: Sequential line reveal could go here but is complex with HTML tags.
+        // Simple flicker-in is strictly "retro" enough for data dumps.
+        // But let's try to add a "scanning" class
+        element.style.opacity = '1';
         return;
     }
     
-    element.innerHTML = html;
+    // For simple text, we can type it
+    element.textContent = '';
+    element.style.opacity = '1';
+    
+    let i = 0;
+    function type() {
+        if (i < html.length) {
+            element.textContent += html.charAt(i);
+            i++;
+            setTimeout(type, speed);
+        }
+    }
+    type();
 }
 
 /**
@@ -109,6 +133,14 @@ async function typeWriterHTML(element, html) {
 export function renderToElement(elementId, data) {
     const element = document.getElementById(elementId);
     if (element) {
-        typeWriterHTML(element, createTable(data));
+        const htmlContent = createTable(data);
+        
+        // If element is already visible, run immediately? 
+        // Or strictly use observer?
+        // Let's use observer for everything to be consistent.
+        
+        element.setAttribute('data-content', htmlContent);
+        element.style.opacity = '0'; // Hide initially
+        revealObserver.observe(element);
     }
 }
