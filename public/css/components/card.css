@@ -24,6 +24,7 @@
   box-shadow: 0 0 10px rgba(51, 255, 51, 0.1);
   overflow: hidden;
   height: 100%;
+  /* Ensure card allows content to determine height but flex layout works */
 }
 
 /* Window Title Bar */
@@ -53,4 +54,52 @@
 .code-block {
   max-height: 400px;
   overflow-y: auto;
+}
+
+/* Terminal Table Layout (Replaces ASCII tables) */
+.terminal-table {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  font-family: 'Courier New', Courier, monospace; /* Ensure monospace */
+}
+
+.terminal-row {
+  display: flex;
+  align-items: flex-end; /* Align to bottom so dots sit on baseline */
+  width: 100%;
+  line-height: 1.4;
+  margin-bottom: 2px;
+}
+
+.terminal-row .key {
+  white-space: normal; /* Allow keys to wrap on small screens */
+  margin-right: 0.5ch;
+  flex-shrink: 1;
+  max-width: 60%; /* Prevent key from crowding out value */
+  text-align: left;
+}
+
+.terminal-row .dots {
+  flex-grow: 1; /* Take up all available space */
+  border-bottom: 2px dotted currentColor; /* Create dotted line */
+  margin: 0 0.5ch 4px 0.5ch; /* Align dotted line with text baseline */
+  opacity: 0.5;
+  min-width: 1ch; /* Ensure at least one dot is visible if possible */
+  flex-shrink: 1;
+}
+
+.terminal-row .value {
+  text-align: right;
+  flex-shrink: 0; /* Try not to shrink value below content size */
+  max-width: 60%; /* Prevent value from taking over entire line */
+  min-width: 20%; /* Ensure value has some breathing room */
+  word-wrap: break-word; /* Wrap long values nicely */
+  overflow-wrap: break-word;
+}
+
+/* Warning styling within table */
+.terminal-row.warning .value {
+  color: #ff3333; /* Red for warnings */
+  text-shadow: 0 0 5px #ff0000;
 }

@@ -1,3 +1,3 @@
-## 2026-01-11 - Retro CRT Reduced Motion
-**Learning:** CRT interfaces often rely on JS-driven delays (boot sequences, typing) that CSS media queries alone cannot disable.
-**Action:** Always pair `prefers-reduced-motion` CSS overrides with a JS check to bypass artificial delays and typing animations.
+## 2024-05-23 - [Semantic Terminal Tables]
+**Learning:** ASCII table alignment breaks on small viewports/wrapping.
+**Action:** Use flexbox with a flex-grow 'dots' element (border-bottom: dotted) to simulate leader dots while maintaining responsiveness and semantic HTML structure.

@@ -23,7 +23,7 @@ export function createTable(data) {
     
     if (entries.length === 0) return '<span class="loading">No accessible data.</span>';
 
-    const maxKeyLen = Math.max(...entries.map(([k]) => k.length));
+    output += '<div class="terminal-table">';
     
     for (const [key, value] of entries) {
         // Handle nested objects or arrays by converting to string
@@ -40,17 +40,15 @@ export function createTable(data) {
             displayValue = JSON.stringify(value, null, 2); 
         }
 
-        // ASCII Formatting: KEY ............ VALUE
-        const padding = '.'.repeat(maxKeyLen - key.length + 4);
-        const line = `${key} ${padding} ${displayValue}\n`;
-        
-        if (warning) {
-            output += `<span class="warning">${line}</span>`;
-        } else {
-            output += line;
-        }
+        // Semantic HTML Structure: Row -> Key + Dots + Value
+        output += `<div class="terminal-row${warning ? ' warning' : ''}">`;
+        output += `<span class="key">${key}</span>`;
+        output += `<span class="dots"></span>`;
+        output += `<span class="value">${displayValue}</span>`;
+        output += `</div>`;
     }
-    return '<pre>' + output + '</pre>';
+    output += '</div>';
+    return output;
 }
 
 /**
@@ -98,14 +96,10 @@ const revealObserver = new IntersectionObserver((entries) => {
  * @param {number} speed 
  */
 function typeWriterEffect(element, html, speed) {
-    // If it's a pre block (ASCII table), we can split by lines
-    if (html.startsWith('<pre>') || html.includes('<pre>')) {
+    // If it's a table or pre block, just reveal it
+    if (html.startsWith('<div class="terminal-table">') || html.startsWith('<pre>') || html.includes('<pre>')) {
         element.innerHTML = html;
         element.classList.add('flicker-in');
-        
-        // Optional: Sequential line reveal could go here but is complex with HTML tags.
-        // Simple flicker-in is strictly "retro" enough for data dumps.
-        // But let's try to add a "scanning" class
         element.style.opacity = '1';
         return;
     }
