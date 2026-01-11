@@ -7,6 +7,21 @@
  * @param {Object} data - Key-value pairs to display
  * @returns {string} HTML string with formatted table
  */
+/**
+ * Escapes HTML special characters to prevent XSS
+ * @param {string} str
+ * @returns {string}
+ */
+function escapeHtml(str) {
+    if (typeof str !== 'string') return str;
+    return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 export function createTable(data) {
     let output = '';
     // Filter keys first
@@ -41,14 +56,64 @@ export function createTable(data) {
         }
 
         // Semantic HTML Structure: Row -> Key + Dots + Value
-        output += `<div class="terminal-row${warning ? ' warning' : ''}">`;
-        output += `<span class="key">${key}</span>`;
+        // Escape values for display and attributes
+        const safeValue = String(displayValue).replace(/"/g, '&quot;'); // For data-copy attribute
+        const escapedKey = escapeHtml(key);
+        const escapedValue = escapeHtml(String(displayValue));
+
+        output += `<div class="terminal-row${warning ? ' warning' : ''} copyable" role="button" tabindex="0" aria-label="Copy ${escapedKey}: ${safeValue}" data-copy="${safeValue}">`;
+        output += `<span class="key">${escapedKey}</span>`;
         output += `<span class="dots"></span>`;
-        output += `<span class="value">${displayValue}</span>`;
+        output += `<span class="value">${escapedValue}</span>`;
         output += `</div>`;
     }
     output += '</div>';
     return output;
+}
+
+// Global Event Delegation for Copy Functionality
+if (typeof document !== 'undefined') {
+    document.addEventListener('click', handleCopyClick);
+    document.addEventListener('keydown', (e) => {
+        if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('.copyable')) {
+            e.preventDefault();
+            handleCopyClick(e);
+        }
+    });
+}
+
+/**
+ * Handles copy actions from delegation
+ * @param {Event} e
+ */
+async function handleCopyClick(e) {
+    const row = e.target.closest('.copyable');
+    if (!row) return;
+
+    const text = row.getAttribute('data-copy');
+    if (text) {
+        try {
+            await navigator.clipboard.writeText(text);
+            flashFeedback(row);
+        } catch (err) {
+            console.error('Failed to copy:', err);
+            // Fallback for non-secure contexts if needed, but modern clipboard API usually requires secure context.
+            // In a real terminal app, we might show a "ACCESS DENIED" error.
+        }
+    }
+}
+
+/**
+ * Visual feedback for copy action
+ * @param {HTMLElement} row
+ */
+function flashFeedback(row) {
+    row.classList.add('copied');
+
+    // Remove class after animation completes (matches CSS animation duration)
+    setTimeout(() => {
+        row.classList.remove('copied');
+    }, 500);
 }
 
 /**

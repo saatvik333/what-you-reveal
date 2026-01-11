@@ -103,3 +103,36 @@
   color: #ff3333; /* Red for warnings */
   text-shadow: 0 0 5px #ff0000;
 }
+
+/* Copy interaction styles */
+.terminal-row.copyable {
+  cursor: pointer;
+  transition: background-color 0.2s;
+  padding: 0 4px;
+  margin-left: -4px;
+  border-radius: 2px;
+}
+
+.terminal-row.copyable:hover, .terminal-row.copyable:focus {
+  background-color: rgba(51, 255, 51, 0.15);
+  outline: none;
+}
+
+.terminal-row.copied {
+  background-color: var(--phosphor-primary);
+  color: #000;
+  text-shadow: none;
+  animation: flash-copy 0.5s ease-out;
+}
+
+.terminal-row.copied .key,
+.terminal-row.copied .value,
+.terminal-row.copied .dots {
+  color: #000;
+  border-bottom-color: #000;
+}
+
+@keyframes flash-copy {
+  0% { background-color: var(--phosphor-primary); color: #000; }
+  100% { background-color: rgba(51, 255, 51, 0.15); color: var(--text-color); }
+}
