@@ -5,12 +5,12 @@
 /* Grid Layout for "Windows" */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 15px;
   align-items: start;
 }
 
-@media (max-width: 400px) {
+@media (max-width: 768px) {
   .grid {
     grid-template-columns: 1fr;
   }
