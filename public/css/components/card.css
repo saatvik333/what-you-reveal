@@ -186,3 +186,5 @@
         border-bottom: none;
     }
 }
+
+/* Reverted has-element fixes to use standard baseline alignment with tighter canvas */

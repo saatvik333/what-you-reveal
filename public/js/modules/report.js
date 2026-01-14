@@ -17,34 +17,79 @@ User Agent: ${navigator.userAgent}
 
 `;
 
-    // Gather all info blocks from the DOM
-    const blocks = document.querySelectorAll('.card');
-    
-    blocks.forEach(card => {
-        const title = card.querySelector('h2').textContent;
-        report += `
-[ ${title} ]
+    // Gather all info blocks from global store for accuracy
+    const data = window.collectedData || {};
+
+    if (Object.keys(data).length === 0) {
+        report += "\n[WARNING]: No data collected (or run before initialization complete).\n\n";
+    }
+
+    // --- THREAT SUMMARY ---
+    report += `
+[ THREAT INTELLIGENCE SUMMARY ]
+-------------------------------
 `;
-        report += '-'.repeat(title.length + 4) + '\n';
+    // Aggregated threats
+    const threats = [];
+    if (data['Privacy Mode'] && data['Privacy Mode']['Browsing Mode'] && data['Privacy Mode']['Browsing Mode'].warning) {
+        threats.push(`- Browsing Mode: ${data['Privacy Mode']['Browsing Mode'].value}`);
+    }
+    if (data['Fingerprint'] && data['Fingerprint']['Trackability Estimate'] && data['Fingerprint']['Trackability Estimate'].warning) {
+        threats.push(`- Trackability: ${data['Fingerprint']['Trackability Estimate'].value}`);
+    }
+    if (data['Network Info'] && data['Network Info']['VPN/Proxy Detected'] && typeof data['Network Info']['VPN/Proxy Detected'] === 'object' && data['Network Info']['VPN/Proxy Detected'].warning) {
+        threats.push(`- Network: Proxy/VPN Detected`);
+    }
+    if (data['Extensions'] && data['Extensions']['Ad Blocker'] && data['Extensions']['Ad Blocker'].warning) {
+         threats.push(`- Vulnerability: No Ad Blocker detected. You are susceptible to tracking pixels.`);
+    }
+
+    if (threats.length > 0) {
+        report += threats.join('\n');
+    } else {
+        report += "No critical privacy threats detected (or detection failed).";
+    }
+    report += '\n\n';
+
+
+    // --- DETAILED BREAKDOWN ---
+    for (const [section, sectionData] of Object.entries(data)) {
+        if (section === 'Headers') continue; // Handle separately
+
+        report += `
+[ ${section.toUpperCase()} ]
+${'-'.repeat(section.length + 4)}
+`;
         
-        const content = card.querySelector('.info-block');
-        if (content) {
-            // Extract text from the "terminal-table" structure
-            // Or fallback to innerText if simple pre
-            if (content.querySelector('.terminal-table')) {
-                const rows = content.querySelectorAll('.terminal-row');
-                rows.forEach(row => {
-                    const key = row.querySelector('.key').textContent;
-                    const val = row.querySelector('.value').textContent;
-                    report += `${key.padEnd(30)}: ${val}\n`;
-                });
-            } else {
-                // Raw text (like headers)
-                report += content.innerText + '\n';
-            }
+        if (typeof sectionData === 'object') {
+             for (const [key, val] of Object.entries(sectionData)) {
+                 let displayVal = val;
+                 if (typeof val === 'object' && val !== null) {
+                     if ('element' in val) {
+                         displayVal = "[Visual Data File - Cannot Export to TXT]";
+                     } else if ('value' in val) {
+                         displayVal = val.value;
+                     } else {
+                         displayVal = JSON.stringify(val);
+                     }
+                 }
+                 report += `${key.padEnd(30)}: ${displayVal}\n`;
+             }
         }
         report += '\n';
-    });
+    }
+
+    // Headers
+    if (data['Headers']) {
+        report += `
+[ RAW HEADERS ]
+---------------
+`;
+        for (const [key, val] of Object.entries(data['Headers'])) {
+            report += `${key.padEnd(30)}: ${val}\n`;
+        }
+        report += '\n';
+    }
 
     report += `
 =============================================================

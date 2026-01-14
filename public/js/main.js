@@ -18,18 +18,26 @@ import { collectPermissionsData } from './modules/permissions.js';
 import { detectBot } from './modules/integrity.js';
 import { collectClientHints } from './modules/client_hints.js';
 import { collectMediaDevices } from './modules/media_devices.js';
+import { detectExtensions } from './modules/extensions.js';
+import { collectClipboardData } from './modules/clipboard.js';
 import { runBootSequence } from './modules/boot.js';
 import { detectPrivacyMode } from './modules/privacy.js';
 import { downloadReport } from './modules/report.js';
+
+// Global Data Store for Report
+window.collectedData = {};
 
 /**
  * Executes a task safely and renders the result to the DOM
  * @param {string} elementId 
  * @param {Function} taskFn - Async or sync function returning data
  */
-async function runTask(elementId, taskFn) {
+async function runTask(elementId, taskFn, dataKey) {
     try {
         const data = await taskFn();
+        if (dataKey) {
+            window.collectedData[dataKey] = data;
+        }
         renderToElement(elementId, data);
     } catch (e) {
         console.error(`Module failed for ${elementId}:`, e);
@@ -64,18 +72,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     // If the element is hidden by the boot overlay, it's fine.
     
     const tasks = [
-        runTask('incognito-info', detectPrivacyMode),
-        runTask('browser-info', collectBrowserData),
-        runTask('screen-info', collectScreenData),
-        runTask('hardware-info', collectHardwareData),
-        runTask('webgl-info', collectWebGLData),
-        runTask('identity-info', collectFingerprintData),
-        runTask('fonts-info', collectFontData), // Now Async
-        runTask('media-info', collectMediaData),
-        runTask('perms-info', collectPermissionsData),
-        runTask('integrity-info', detectBot),
-        runTask('hints-info', collectClientHints),
-        runTask('media-devices-info', collectMediaDevices)
+        runTask('incognito-info', detectPrivacyMode, 'Privacy Mode'),
+        runTask('browser-info', collectBrowserData, 'Browser Info'),
+        runTask('screen-info', collectScreenData, 'Screen Info'),
+        runTask('hardware-info', collectHardwareData, 'Hardware Info'),
+        runTask('webgl-info', collectWebGLData, 'WebGL Info'),
+        runTask('identity-info', collectFingerprintData, 'Fingerprint'),
+        runTask('fonts-info', collectFontData, 'Fonts'), 
+        runTask('media-info', collectMediaData, 'Media Codecs'),
+        runTask('perms-info', collectPermissionsData, 'Permissions'),
+        runTask('integrity-info', detectBot, 'System Integrity'),
+        runTask('hints-info', collectClientHints, 'Client Hints'),
+        runTask('media-devices-info', collectMediaDevices, 'Media Devices'),
+        runTask('extensions-info', detectExtensions, 'Extensions'),
+        runTask('clipboard-info', collectClipboardData, 'Clipboard')
     ];
 
     // Network & Server Data (Dependent chain)
@@ -90,15 +100,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Render Device Info (Parsed from server UA)
             const deviceData = parseDeviceInfo(serverData);
+            window.collectedData['Device Info'] = deviceData;
             renderToElement('device-info', deviceData);
 
             // Render Network Info (GeoIP, Latency, etc.)
             const networkData = await collectNetworkData(serverData, 'network-info');
+            window.collectedData['Network Info'] = networkData;
             renderToElement('network-info', networkData);
 
             // Render Headers
             const headersInfoEl = document.getElementById('headers-info');
             if (headersInfoEl && serverData.headers) {
+                window.collectedData['Headers'] = serverData.headers;
                 headersInfoEl.innerHTML = formatHeaders(serverData.headers);
             }
         } catch (e) {

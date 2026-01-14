@@ -44,24 +44,30 @@ export function createTable(data) {
         // Handle nested objects or arrays by converting to string
         let displayValue = value;
         let warning = false;
+        let isElement = false;
 
         // Check if value is an object containing 'value' and 'warning' properties (for our alerts)
-        if (typeof value === 'object' && value !== null && 'value' in value && 'warning' in value) {
-            displayValue = value.value;
-            if (value.warning) {
-                warning = true;
+        if (typeof value === 'object' && value !== null) {
+            if ('value' in value) {
+                displayValue = value.value;
+                if (value.warning) warning = true;
+            } else if ('element' in value) {
+                // Special case for DOM elements (Image/Canvas)
+                displayValue = value.element; // Should be an HTML string or processed later
+                isElement = true;
+                if (value.warning) warning = true;
+            } else {
+                displayValue = JSON.stringify(value, null, 2); 
             }
-        } else if (typeof value === 'object' && value !== null) {
-            displayValue = JSON.stringify(value, null, 2); 
         }
 
         // Semantic HTML Structure: Row -> Key + Dots + Value
         // Escape values for display and attributes
-        const safeValue = String(displayValue).replace(/"/g, '&quot;'); // For data-copy attribute
+        const safeValue = isElement ? '[Complex Data]' : String(displayValue).replace(/"/g, '&quot;'); // For data-copy attribute
         const escapedKey = escapeHtml(key);
-        const escapedValue = escapeHtml(String(displayValue));
+        const escapedValue = isElement ? displayValue : escapeHtml(String(displayValue)); // Don't escape HTML elements we intend to render
 
-        output += `<div class="terminal-row${warning ? ' warning' : ''} copyable" role="button" tabindex="0" aria-label="Copy ${escapedKey}: ${safeValue}" data-copy="${safeValue}">`;
+        output += `<div class="terminal-row${warning ? ' warning' : ''}${!isElement ? ' copyable' : ''}${isElement ? ' has-element' : ''}" ${!isElement ? `role="button" tabindex="0" aria-label="Copy ${escapedKey}: ${safeValue}" data-copy="${safeValue}"` : ''}>`;
         output += `<span class="key">${escapedKey}</span>`;
         output += `<span class="dots"></span>`;
         output += `<span class="value">${escapedValue}</span>`;
@@ -144,7 +150,8 @@ const revealObserver = new IntersectionObserver((entries) => {
  */
 function typeWriterEffect(element, html, speed) {
     // If it's a table or pre block, just reveal it
-    if (html.startsWith('<div class="terminal-table">') || html.startsWith('<pre>') || html.includes('<pre>')) {
+    // Check for our custom table or pre or if it contains an image/canvas tag which shouldn't be typed
+    if (html.startsWith('<div class="terminal-table">') || html.startsWith('<pre>') || html.includes('<pre>') || html.includes('<img') || html.includes('<canvas')) {
         element.innerHTML = html;
         element.classList.add('flicker-in');
         element.style.opacity = '1';

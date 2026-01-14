@@ -12,7 +12,7 @@ async function getCanvasFingerprint() {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     canvas.width = 200;
-    canvas.height = 50;
+    canvas.height = 25;
     
     // Text with mixing
     ctx.textBaseline = "top";
@@ -21,9 +21,9 @@ async function getCanvasFingerprint() {
     ctx.fillStyle = "#f60";
     ctx.fillRect(125, 1, 62, 20);
     ctx.fillStyle = "#069";
-    ctx.fillText("Hello World 😃", 2, 15);
+    ctx.fillText("Hello World 😃", 2, 17); // Moved down slightly to utilize height
     ctx.fillStyle = "rgba(102, 204, 0, 0.7)";
-    ctx.fillText("Hello World 😃", 4, 17);
+    ctx.fillText("Hello World 😃", 4, 19);
     
     return canvas.toDataURL();
 }
@@ -83,6 +83,10 @@ export async function collectFingerprintData() {
     return {
         'Canvas Hash': cyrb53(canvasFP).toString(16),
         'Audio Hash': cyrb53(audioFP).toString(16),
+        'Canvas Visual': { 
+            element: `<img src="${canvasFP}" style="border: 1px solid var(--primary); max-width: 200px; max-height: 25px; vertical-align: bottom;" alt="Canvas Fingerprint" />`, 
+            warning: true 
+        },
         'Composite Device ID': { value: deviceHash.toUpperCase(), warning: true },
         'Trackability Estimate': { value: 'High (Unique Hardware/Canvas)', warning: true }
     };
