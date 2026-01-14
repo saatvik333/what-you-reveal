@@ -3,35 +3,92 @@
  */
 
 header {
-  text-align: center;
-  border-bottom: 2px solid var(--text-color);
-  margin-bottom: 20px;
-  padding-bottom: 10px;
+    text-align: center;
+    border-bottom: 2px solid var(--text-color);
+    margin-bottom: var(--space-md);
+    padding-bottom: var(--space-sm);
 }
 
 h1 {
-  font-size: 2em;
-  text-transform: uppercase;
-  letter-spacing: 5px;
-  margin: 0;
-  text-shadow: 0 0 10px var(--text-color);
+    font-size: var(--fs-xl);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin: 0;
+    text-shadow: 0 0 10px var(--text-color);
 }
 
 .subtitle {
-  font-size: 0.9em;
-  color: var(--dim-color);
+    font-size: var(--fs-sm);
+    color: var(--dim-color);
+    margin-bottom: var(--space-md);
 }
 
 .ascii-header {
-  font-size: 0.5em;
-  line-height: 1.1;
-  letter-spacing: 0;
-  white-space: pre;
-  overflow-x: hidden;
+    font-size: clamp(4px, 1.4vw, 10px); /* Hyper-aggressive scaling for safety */
+    line-height: 0.9; /* Tighter line height for better scaling */
+    letter-spacing: -0.5px; /* Slight tracking reduction */
+    white-space: pre;
+    overflow-x: hidden;
+    width: 100%; /* Ensure full width container */
+    max-width: 100%;
+    opacity: 0.8;
+    text-align: center;
+    margin: 0 auto;
+    display: block; /* Block allows text-align center to work on content */
+}
+
+/* Header Controls */
+.controls {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-md);
+    margin-top: var(--space-sm);
+}
+
+.control-btn {
+    background: transparent;
+    border: none;
+    color: var(--dim-color);
+    font-family: var(--font-stack);
+    font-size: var(--fs-sm);
+    cursor: pointer;
+    text-transform: uppercase;
+    padding: 0.25em 0.5em;
+    transition: all 0.2s ease;
+}
+
+.control-btn:hover,
+.control-btn:focus {
+    color: var(--text-color);
+    text-shadow: 0 0 8px var(--text-shadow-color);
+    outline: none;
+    background-color: rgba(51, 255, 51, 0.1);
+}
+
+/* Adjust for amber mode */
+body.amber-mode .control-btn:hover {
+    background-color: rgba(255, 187, 0, 0.1);
 }
 
 @media (max-width: 768px) {
-  .ascii-header {
-    display: none;
-  }
+    /* Visible on mobile but scrollable/scaled */
+    .ascii-header {
+        display: block;
+        /* Font size handled globally by clamp now, but we can ensure it fits */
+        width: 100%;
+        overflow-y: hidden;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    /* Chrome/Safari: Hide scrollbar */
+    .ascii-header::-webkit-scrollbar {
+        display: none;
+    }
+
+    .controls {
+        flex-direction: row; /* Keep in row as requested */
+        flex-wrap: wrap; /* Safety wrap for tiny screens */
+        gap: var(--space-sm);
+    }
 }

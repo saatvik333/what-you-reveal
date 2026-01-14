@@ -4,136 +4,185 @@
 
 /* Grid Layout for "Windows" */
 .grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 15px;
-  align-items: start;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-md); /* Fluid Gap */
+    align-items: start;
 }
 
 @media (max-width: 768px) {
-  .grid {
-    grid-template-columns: 1fr;
-  }
+    .grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .card {
-  background: rgba(0, 0, 0, 0.85); /* Slight transparency */
-  border: 2px solid var(--border-color);
-  padding: 15px;
-  position: relative;
-  box-shadow: 0 0 10px rgba(51, 255, 51, 0.1);
-  overflow: hidden;
-  height: 100%;
-  /* Ensure card allows content to determine height but flex layout works */
+    background: rgba(0, 0, 0, 0.85); /* Slight transparency */
+    border: 2px solid var(--border-color);
+    padding: var(--space-md);
+    position: relative;
+    box-shadow: 0 0 0.625rem rgba(51, 255, 51, 0.1);
+    overflow: hidden;
+    height: 100%;
 }
 
 /* Window Title Bar */
 .card h2 {
-  margin: -15px -15px 15px -15px;
-  background: var(--dim-color);
-  color: #000;
-  font-size: 1.1em;
-  padding: 5px 15px;
-  text-transform: uppercase;
-  font-weight: bold;
-  letter-spacing: 1px;
-  border-bottom: 2px solid var(--border-color);
+    /* Negative margin must match padding to hug the borders */
+    margin: calc(var(--space-md) * -1) calc(var(--space-md) * -1) var(--space-md)
+        calc(var(--space-md) * -1);
+    background: var(--dim-color);
+    color: #000;
+    font-size: var(--fs-md);
+    padding: var(--space-xs) var(--space-md);
+    text-transform: uppercase;
+    font-weight: bold;
+    letter-spacing: 1px;
+    border-bottom: 2px solid var(--border-color);
 }
 
 .full-width {
-  grid-column: 1 / -1;
-  margin-top: 20px;
-  background: #000;
-  border: 1px solid var(--dim-color);
-  padding: 10px;
-  position: relative;
-  box-shadow: 0 0 5px var(--border-color);
+    grid-column: 1 / -1;
+    margin-top: var(--space-md);
+    background: #000;
+    border: 1px solid var(--dim-color);
+    padding: var(--space-sm);
+    position: relative;
+    box-shadow: 0 0 5px var(--border-color);
 }
 
 /* Ensure code block inside full-width doesn't break layout */
 .code-block {
-  max-height: 400px;
-  overflow-y: auto;
+    max-height: 25rem;
+    overflow-y: auto;
 }
 
 /* Terminal Table Layout (Replaces ASCII tables) */
 .terminal-table {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  font-family: 'Courier New', Courier, monospace; /* Ensure monospace */
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    font-family: 'Courier New', Courier, monospace;
 }
 
 .terminal-row {
-  display: flex;
-  align-items: flex-end; /* Align to bottom so dots sit on baseline */
-  width: 100%;
-  line-height: 1.4;
-  margin-bottom: 2px;
+    display: flex;
+    align-items: flex-end; /* Dots align with baseline */
+    width: 100%;
+    line-height: 1.4;
+    margin-bottom: 2px;
+    position: relative;
+    overflow: hidden; /* Prevent horizontal spill */
 }
 
 .terminal-row .key {
-  white-space: normal; /* Allow keys to wrap on small screens */
-  margin-right: 0.5ch;
-  flex-shrink: 1;
-  max-width: 60%; /* Prevent key from crowding out value */
-  text-align: left;
+    white-space: nowrap; /* Keep keys on one line if possible */
+    margin-right: 4px;
+    flex-shrink: 0; /* Never shrink key, important context */
+    text-align: left;
+    max-width: 50%; /* Prevent key from taking too much space */
+    overflow: hidden;
+    text-overflow: ellipsis; /* Ellipsis properly if key is huge */
 }
 
 .terminal-row .dots {
-  flex-grow: 1; /* Take up all available space */
-  border-bottom: 2px dotted currentColor; /* Create dotted line */
-  margin: 0 0.5ch 4px 0.5ch; /* Align dotted line with text baseline */
-  opacity: 0.5;
-  min-width: 1ch; /* Ensure at least one dot is visible if possible */
-  flex-shrink: 1;
+    flex: 1; /* Grow to fill ALL available space */
+    border-bottom: 2px dotted var(--dim-color);
+    margin: 0 4px 5px 4px; /* Adjust margin-bottom to align with text baseline */
+    opacity: 0.5;
+    min-width: 4px; /* Allow shrinking more on mobile */
 }
 
 .terminal-row .value {
-  text-align: right;
-  flex-shrink: 0; /* Try not to shrink value below content size */
-  max-width: 60%; /* Prevent value from taking over entire line */
-  min-width: 20%; /* Ensure value has some breathing room */
-  word-wrap: break-word; /* Wrap long values nicely */
-  overflow-wrap: break-word;
-  white-space: pre-wrap;
+    text-align: right;
+    flex-shrink: 1; /* Allow shrinking */
+    word-break: break-word; /* Important for long strings */
+    overflow-wrap: break-word;
+    margin-left: 4px;
+    max-width: 70%; /* Reserve space */
 }
 
 /* Warning styling within table */
 .terminal-row.warning .value {
-  color: #ff3333; /* Red for warnings */
-  text-shadow: 0 0 5px #ff0000;
+    color: var(--alert-color);
+    text-shadow: 0 0 5px #ff0000;
 }
 
 /* Copy interaction styles */
 .terminal-row.copyable {
-  cursor: pointer;
-  transition: background-color 0.2s;
-  padding: 0 4px;
-  margin-left: -4px;
-  border-radius: 2px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    padding: 0 0.25rem;
+    margin-left: -0.25rem;
+    border-radius: 2px;
 }
 
-.terminal-row.copyable:hover, .terminal-row.copyable:focus {
-  background-color: rgba(51, 255, 51, 0.15);
-  outline: none;
+.terminal-row.copyable:hover,
+.terminal-row.copyable:focus {
+    background-color: rgba(51, 255, 51, 0.15);
+    outline: none;
 }
 
 .terminal-row.copied {
-  background-color: var(--phosphor-primary);
-  color: #000;
-  text-shadow: none;
-  animation: flash-copy 0.5s ease-out;
+    background-color: var(--phosphor-primary);
+    color: #000;
+    text-shadow: none;
+    animation: flash-copy 0.5s ease-out;
 }
 
 .terminal-row.copied .key,
 .terminal-row.copied .value,
 .terminal-row.copied .dots {
-  color: #000;
-  border-bottom-color: #000;
+    color: #000;
+    border-bottom-color: #000;
 }
 
 @keyframes flash-copy {
-  0% { background-color: var(--phosphor-primary); color: #000; }
-  100% { background-color: rgba(51, 255, 51, 0.15); color: var(--text-color); }
+    0% {
+        background-color: var(--phosphor-primary);
+        color: #000;
+    }
+    100% {
+        background-color: rgba(51, 255, 51, 0.15);
+        color: var(--text-color);
+    }
+}
+
+/* Smart Mobile Layout: Stacked Data Pairs */
+@media (max-width: 600px) {
+    .terminal-row {
+        flex-direction: column;
+        align-items: flex-start;
+        border-bottom: 1px dashed var(--dim-color);
+        padding-bottom: 4px;
+        margin-bottom: 8px;
+    }
+
+    .terminal-row .key {
+        width: 100%;
+        max-width: 100%;
+        margin-right: 0;
+        margin-bottom: 2px;
+        opacity: 0.8;
+        font-size: 0.9em;
+    }
+
+    /* Hide dots in stacked mode as they don't connect anything */
+    .terminal-row .dots {
+        display: none;
+    }
+
+    .terminal-row .value {
+        width: 100%;
+        max-width: 100%;
+        text-align: left;
+        margin-left: 0;
+        padding-left: 1ch; /* Indent slightly */
+        color: var(--phosphor-secondary); /* Highlight value */
+    }
+
+    /* Remove the dashed border from the last item to avoid clutter */
+    .terminal-row:last-child {
+        border-bottom: none;
+    }
 }

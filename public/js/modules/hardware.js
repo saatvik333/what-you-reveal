@@ -14,7 +14,7 @@ export async function collectHardwareData() {
     };
 
     // Battery API
-    if (navigator.getBattery) {
+    if (typeof navigator.getBattery === 'function') {
         try {
             const battery = await navigator.getBattery();
             hardwareData['Battery Level'] = (battery.level * 100) + '%';
@@ -22,16 +22,20 @@ export async function collectHardwareData() {
             hardwareData['Charging Time'] = battery.chargingTime === Infinity ? 'Unknown' : battery.chargingTime + ' s';
             hardwareData['Discharging Time'] = battery.dischargingTime === Infinity ? 'Unknown' : battery.dischargingTime + ' s';
         } catch (e) {
-            hardwareData['Battery Status'] = 'Not accessible';
+            hardwareData['Battery Status'] = 'Blocked / Not Accessible';
         }
+    } else {
+        hardwareData['Battery Status'] = 'Not Supported / Deprecated';
     }
     
     // Performance Memory (Chrome only)
-    if (performance && performance.memory) {
-        hardwareData['JS Heap Size Limit'] = (performance.memory.jsHeapSizeLimit / 1048576).toFixed(2) + ' MB';
-        hardwareData['Total JS Heap Size'] = (performance.memory.totalJSHeapSize / 1048576).toFixed(2) + ' MB';
-        hardwareData['Used JS Heap Size'] = (performance.memory.usedJSHeapSize / 1048576).toFixed(2) + ' MB';
-    }
+    try {
+        if (performance && performance.memory) {
+            hardwareData['JS Heap Size Limit'] = (performance.memory.jsHeapSizeLimit / 1048576).toFixed(2) + ' MB';
+            hardwareData['Total JS Heap Size'] = (performance.memory.totalJSHeapSize / 1048576).toFixed(2) + ' MB';
+            hardwareData['Used JS Heap Size'] = (performance.memory.usedJSHeapSize / 1048576).toFixed(2) + ' MB';
+        }
+    } catch(e) {}
     
     // Storage Estimate
     if (navigator.storage && navigator.storage.estimate) {
@@ -39,7 +43,9 @@ export async function collectHardwareData() {
             const estimate = await navigator.storage.estimate();
             hardwareData['Storage Quota'] = (estimate.quota / 1048576).toFixed(2) + ' MB';
             hardwareData['Storage Usage'] = (estimate.usage / 1048576).toFixed(2) + ' MB';
-        } catch(e) {}
+        } catch(e) {
+             hardwareData['Storage Info'] = 'Access Denied';
+        }
     }
 
     return hardwareData;

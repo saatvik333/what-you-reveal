@@ -4,413 +4,450 @@
 
 /* 1. CRT Monitor Container (The physical screen boundary) */
 .crt-monitor {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: var(--bg-color);
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: var(--bg-color);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 0;
 }
 
 /* 2. The Screen Surface (Curved Glass Simulation) */
 .crt-screen {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  /* IMPORTANT: Frame is static, content scrolls inside layer */
-  overflow: hidden;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    /* IMPORTANT: Frame is static, content scrolls inside layer */
+    overflow: hidden;
 
-  background-color: var(--screen-bg);
-  /* Bezel & Glass Edge Highlights */
-  /* Complex shadow for depth + gloss reflection on edges */
-  box-shadow: inset 0 0 10rem rgba(0, 0, 0, 0.9),
-    /* Vignette */ inset 0 0 4rem rgba(0, 0, 0, 0.95),
-    /* Deep corners */ inset 10px 10px 30px rgba(255, 255, 255, 0.03),
-    /* Top-left gloss */ inset -5px -5px 20px rgba(255, 255, 255, 0.05); /* Bottom-right gloss */
+    background-color: var(--screen-bg);
+    /* Bezel & Glass Edge Highlights */
+    /* Complex shadow for depth + gloss reflection on edges */
+    box-shadow:
+        inset 0 0 10rem rgba(0, 0, 0, 0.9),
+        /* Vignette */ inset 0 0 4rem rgba(0, 0, 0, 0.95),
+        /* Deep corners */ inset 0.625rem 0.625rem 1.875rem rgba(255, 255, 255, 0.03),
+        /* Top-left gloss */ inset -0.3125rem -0.3125rem 1.25rem rgba(255, 255, 255, 0.05); /* Bottom-right gloss */
 
-  /* PHYSICAL CURVATURE: 3D Transform */
-  /* We use a large perspective to minimize strong trapezoidal distortion */
-  transform: perspective(3000px) scale(1.02); /* Overscale to hide any background gaps */
-  transform-style: preserve-3d;
-  border-radius: 12px; /* Slight physical roundness */
+    /* PHYSICAL CURVATURE: 3D Transform */
+    /* We use a large perspective to minimize strong trapezoidal distortion */
+    transform: perspective(3000px) scale(1.02); /* Overscale to hide any background gaps */
+    transform-style: preserve-3d;
+    border-radius: 0.75rem; /* ~12px */
 
-  /* OPTICAL DISTORTION: SVG Filter */
-  /* Applies wobbly glass effect to everything inside */
-  filter: url(#crt-optical-distortion);
+    /* OPTICAL DISTORTION: SVG Filter */
+    /* Applies wobbly glass effect to everything inside */
+    filter: url(#crt-optical-distortion);
 
-  /* Performance Optimization */
-  will-change: transform, filter;
+    /* Performance Optimization */
+    will-change: transform, filter;
 
-  /* Physics: Beam Jitter + Flicker */
-  animation: flicker var(--flicker-strength) infinite, jitter 0.15s infinite;
+    /* Physics: Beam Jitter + Flicker */
+    animation:
+        flicker var(--flicker-strength) infinite,
+        jitter 0.15s infinite;
 }
 
 /* Physics: Beam Jitter (Interlacing instability) */
 @keyframes jitter {
-  0% {
-    transform: translate(0, 0);
-  }
-  25% {
-    transform: translate(0.4px, 0.4px);
-  }
-  50% {
-    transform: translate(0, 0);
-  }
-  75% {
-    transform: translate(-0.4px, 0);
-  }
-  100% {
-    transform: translate(0, 0.4px);
-  }
+    0% {
+        transform: translate(0, 0);
+    }
+    25% {
+        transform: translate(0.025rem, 0.025rem);
+    }
+    50% {
+        transform: translate(0, 0);
+    }
+    75% {
+        transform: translate(-0.025rem, 0);
+    }
+    100% {
+        transform: translate(0, 0.025rem);
+    }
 }
 
 /* New Scrollable Layer */
 .crt-content-layer {
-  width: 100%;
-  height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-  position: relative;
-  z-index: 2; /* Below distortion/scanlines but above screen bg */
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    position: relative;
+    z-index: 2; /* Below distortion/scanlines but above screen bg */
 }
 
 /* Customize Scrollbar on the content layer */
 .crt-content-layer::-webkit-scrollbar {
-  width: 12px;
+    width: 0.75rem;
 }
 .crt-content-layer::-webkit-scrollbar-track {
-  background: #000;
-  border-left: 1px solid var(--dim-color);
+    background: #000;
+    border-left: 1px solid var(--dim-color);
 }
 .crt-content-layer::-webkit-scrollbar-thumb {
-  background: var(--dim-color);
-  border: 1px solid #000;
+    background: var(--dim-color);
+    border: 1px solid #000;
 }
-
-/* Container inside needs to scroll if content is long,
-   but we want the scanlines to stay fixed over it.
-   So we move scrolling to a child if possible,
-   OR we just let the scanlines be fixed position (which they are).
-*/
 
 /* Better "Beam" Turn On */
 @keyframes turnOn {
-  0% {
-    transform: scale(1, 0.002); /* Start full width, thin line */
-    filter: brightness(30);
-    opacity: 1;
-  }
-  30% {
-    transform: scale(1, 0.002); /* Hold line */
-    filter: brightness(30);
-    opacity: 1;
-  }
-  60% {
-    transform: scale(1, 1); /* Vertical Expand */
-    filter: brightness(2);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1, 1); /* Full Size, No Shrink */
-    filter: brightness(1);
-    opacity: 1;
-  }
+    0% {
+        transform: scale(1, 0.002); /* Start full width, thin line */
+        filter: brightness(30);
+        opacity: 1;
+    }
+    30% {
+        transform: scale(1, 0.002); /* Hold line */
+        filter: brightness(30);
+        opacity: 1;
+    }
+    60% {
+        transform: scale(1, 1); /* Vertical Expand */
+        filter: brightness(2);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1, 1); /* Full Size, No Shrink */
+        filter: brightness(1);
+        opacity: 1;
+    }
 }
 
 .crt-screen {
-  animation: turnOn 3s ease-in-out forwards;
+    animation: turnOn 3s ease-in-out forwards;
 }
 
 /* 3. Scanline Overlay */
 .crt-screen::before {
-  content: " ";
-  display: block;
-  position: absolute; /* Changed from fixed to absolute to stick to the .crt-screen frame */
-  top: 0;
-  left: 0;
-  bottom: 0;
-  right: 0;
-  width: 100%;
-  height: 100%;
+    content: ' ';
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
 
-  /* Thicker lines for realistic low-res CRT feel */
-  background: linear-gradient(
-      to bottom,
-      rgba(18, 16, 16, 0) 50%,
-      rgba(0, 0, 0, 0.4) 50%
-    ),
-    linear-gradient(
-      90deg,
-      rgba(255, 0, 0, 0.06),
-      rgba(0, 255, 0, 0.02),
-      rgba(0, 0, 255, 0.06)
-    );
+    /* Thicker lines for realistic low-res CRT feel */
+    background:
+        linear-gradient(to bottom, rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.4) 50%),
+        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
 
-  /* 4px size = 2px line, 2px gap (Visible scanlines) */
-  background-size: 100% 4px, 6px 100%;
+    /* 4px size = 2px line, 2px gap (Visible scanlines) */
+    background-size:
+        100% 0.25rem,
+        0.375rem 100%;
 
-  z-index: 10; /* Above content */
-  pointer-events: none;
+    z-index: 10; /* Above content */
+    pointer-events: none;
 }
 
 /* 4. Vignette & Static Noise */
 .crt-screen::after {
-  content: " ";
-  display: block;
-  position: absolute; /* Changed from fixed to absolute */
-  top: 0;
-  left: 0;
-  bottom: 0;
-  right: 0;
+    content: ' ';
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
 
-  /* darker vignette + noise */
-  background: radial-gradient(
-      circle,
-      rgba(0, 0, 0, 0) 50%,
-      rgba(0, 0, 0, 0.4) 80%,
-      rgba(0, 0, 0, 0.9) 100%
-    ),
-    url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)" opacity="0.3"/%3E%3C/svg%3E');
+    /* darker vignette + noise */
+    background:
+        radial-gradient(
+            circle,
+            rgba(0, 0, 0, 0) 50%,
+            rgba(0, 0, 0, 0.4) 80%,
+            rgba(0, 0, 0, 0.9) 100%
+        ),
+        url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)" opacity="0.3"/%3E%3C/svg%3E');
 
-  background-size: 100% 100%, 200px 200px;
-  z-index: 9; /* Below scanlines, above content */
-  pointer-events: none;
+    background-size:
+        100% 100%,
+        12.5rem 12.5rem;
+    z-index: 9; /* Below scanlines, above content */
+    pointer-events: none;
 
-  animation: noise 0.2s infinite;
+    animation: noise 0.2s infinite;
 }
 
 @keyframes noise {
-  0% {
-    background-position: 0 0, 0 0;
-  }
-  10% {
-    background-position: 0 0, -10px -10px;
-  }
-  20% {
-    background-position: 0 0, 15px 5px;
-  }
-  30% {
-    background-position: 0 0, -5px 25px;
-  }
-  100% {
-    background-position: 0 0, 10px 0;
-  }
+    0% {
+        background-position:
+            0 0,
+            0 0;
+    }
+    10% {
+        background-position:
+            0 0,
+            -0.625rem -0.625rem;
+    }
+    20% {
+        background-position:
+            0 0,
+            0.9375rem 0.3125rem;
+    }
+    30% {
+        background-position:
+            0 0,
+            -0.3125rem 1.5625rem;
+    }
+    100% {
+        background-position:
+            0 0,
+            0.625rem 0;
+    }
 }
 
 /* 5. Moving Scanline / Hum Bar */
 .scanline-roll {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 10000; /* Above everything */
-  pointer-events: none;
-  background: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0),
-    rgba(255, 255, 255, 0) 50%,
-    rgba(0, 0, 0, 0.2) 50%,
-    rgba(0, 0, 0, 0.1) 60%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  background-size: 100% 100%;
-  animation: roll 6s linear infinite; /* Faster roll */
-  opacity: 0.3; /* Subtle */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10000; /* Above everything */
+    pointer-events: none;
+    /* Use a lighter gradient to make it visible on black */
+    background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0),
+        rgba(255, 255, 255, 0) 50%,
+        rgba(255, 255, 255, 0.05) 50%,
+        /* Slight white band */ rgba(255, 255, 255, 0.02) 60%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    background-size: 100% 100%;
+    animation: roll 10s linear infinite; /* Slower, smoother roll */
+    opacity: 1; /* Gradient controls opacity itself */
 }
 
 @keyframes roll {
-  0% {
-    transform: translateY(-100%);
-  }
-  100% {
-    transform: translateY(100%);
-  }
+    0% {
+        transform: translateY(-100%);
+    }
+    100% {
+        transform: translateY(100%);
+    }
 }
 
 /* RGB Shift Animation on the wrapper */
 @keyframes rgbShift {
-  0% {
-    text-shadow: 1px 0 1px rgba(255,0,0,0.5), -1px 0 1px rgba(0,0,255,0.5), 0 0 3px var(--text-shadow-color);
-  }
-  25% {
-    text-shadow: -1px 0 1px rgba(255,0,0,0.5), 1px 0 1px rgba(0,0,255,0.5), 0 0 3px var(--text-shadow-color);
-  }
-  50% {
-    text-shadow: 1px 0 1px rgba(255,0,0,0.5), -1px 0 1px rgba(0,0,255,0.5), 0 0 3px var(--text-shadow-color);
-  }
-  75% {
-    text-shadow: -1px 0 1px rgba(255,0,0,0.5), 1px 0 1px rgba(0,0,255,0.5), 0 0 3px var(--text-shadow-color);
-  }
-  100% {
-    text-shadow: 1px 0 1px rgba(255,0,0,0.5), -1px 0 1px rgba(0,0,255,0.5), 0 0 3px var(--text-shadow-color);
-  }
+    0% {
+        text-shadow:
+            1px 0 1px rgba(255, 0, 0, 0.5),
+            -1px 0 1px rgba(0, 0, 255, 0.5),
+            0 0 3px var(--text-shadow-color);
+    }
+    25% {
+        text-shadow:
+            -1px 0 1px rgba(255, 0, 0, 0.5),
+            1px 0 1px rgba(0, 0, 255, 0.5),
+            0 0 3px var(--text-shadow-color);
+    }
+    50% {
+        text-shadow:
+            1px 0 1px rgba(255, 0, 0, 0.5),
+            -1px 0 1px rgba(0, 0, 255, 0.5),
+            0 0 3px var(--text-shadow-color);
+    }
+    75% {
+        text-shadow:
+            -1px 0 1px rgba(255, 0, 0, 0.5),
+            1px 0 1px rgba(0, 0, 255, 0.5),
+            0 0 3px var(--text-shadow-color);
+    }
+    100% {
+        text-shadow:
+            1px 0 1px rgba(255, 0, 0, 0.5),
+            -1px 0 1px rgba(0, 0, 255, 0.5),
+            0 0 3px var(--text-shadow-color);
+    }
 }
 
 /* 5. Text Glow & Fonts */
 body {
-  font-family: var(--font-stack);
-  color: var(--text-color);
-  text-shadow: var(--text-glow);
-  -webkit-font-smoothing: none; /* Crucial for retro feel */
-  font-smoothing: none;
-  font-size: var(--font-base-size);
-  line-height: 1.4;
-  margin: 0;
-  /* Animation for Chromatic Aberration */
-  animation: rgbShift 4s infinite linear alternate;
-}
-
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 14px;
-}
-::-webkit-scrollbar-track {
-  background: #111;
-  border-left: 1px solid var(--dim-color);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--dim-color);
-  border: 2px solid #111;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--text-color);
+    /* ... Base properties handled in base.css ... */
+    /* Animation for Chromatic Aberration */
+    animation: rgbShift 4s infinite linear alternate;
 }
 
 /* 6. Flicker Animation */
 @keyframes flicker {
-  0% { opacity: 0.97; }
-  5% { opacity: 0.95; }
-  10% { opacity: 0.99; }
-  15% { opacity: 0.95; }
-  20% { opacity: 0.99; }
-  25% { opacity: 0.96; }
-  30% { opacity: 0.99; }
-  35% { opacity: 0.96; }
-  40% { opacity: 0.98; }
-  45% { opacity: 0.95; }
-  50% { opacity: 0.99; }
-  55% { opacity: 0.94; }
-  60% { opacity: 0.98; }
-  65% { opacity: 0.96; }
-  70% { opacity: 1; }
-  75% { opacity: 0.96; }
-  80% { opacity: 0.98; }
-  85% { opacity: 0.95; }
-  90% { opacity: 0.98; }
-  95% { opacity: 0.97; }
-  100% { opacity: 0.98; }
+    0% {
+        opacity: 0.97;
+    }
+    5% {
+        opacity: 0.95;
+    }
+    10% {
+        opacity: 0.99;
+    }
+    15% {
+        opacity: 0.95;
+    }
+    20% {
+        opacity: 0.99;
+    }
+    25% {
+        opacity: 0.96;
+    }
+    30% {
+        opacity: 0.99;
+    }
+    35% {
+        opacity: 0.96;
+    }
+    40% {
+        opacity: 0.98;
+    }
+    45% {
+        opacity: 0.95;
+    }
+    50% {
+        opacity: 0.99;
+    }
+    55% {
+        opacity: 0.94;
+    }
+    60% {
+        opacity: 0.98;
+    }
+    65% {
+        opacity: 0.96;
+    }
+    70% {
+        opacity: 1;
+    }
+    75% {
+        opacity: 0.96;
+    }
+    80% {
+        opacity: 0.98;
+    }
+    85% {
+        opacity: 0.95;
+    }
+    90% {
+        opacity: 0.98;
+    }
+    95% {
+        opacity: 0.97;
+    }
+    100% {
+        opacity: 0.98;
+    }
 }
 
 /* 7. Glitch Effect */
 .glitch {
-  position: relative;
+    position: relative;
 }
 .glitch::before,
 .glitch::after {
-  content: attr(data-text); /* Use JS to set this or duplicate content */
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: var(--bg-color);
+    content: 'SYSTEM ANALYSIS TOOL v3.1.0 // BROWSER FINGERPRINT DEMO'; /* Hardcoded fallback or use attr */
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--bg-color);
 }
 .glitch::before {
-  left: 2px;
-  text-shadow: -1px 0 #ff00c1;
-  clip: rect(44px, 450px, 56px, 0);
-  animation: glitch-anim-1 5s infinite linear alternate-reverse;
+    left: 0.125rem;
+    text-shadow: -1px 0 #ff00c1;
+    clip: rect(44px, 450px, 56px, 0);
+    animation: glitch-anim-1 5s infinite linear alternate-reverse;
 }
 .glitch::after {
-  left: -2px;
-  text-shadow: -1px 0 #00fff9;
-  clip: rect(44px, 450px, 56px, 0);
-  animation: glitch-anim-2 5s infinite linear alternate-reverse;
+    left: -0.125rem;
+    text-shadow: -1px 0 #00fff9;
+    clip: rect(44px, 450px, 56px, 0);
+    animation: glitch-anim-2 5s infinite linear alternate-reverse;
 }
 
 /* 8. Boot Overlay Styles */
 #boot-overlay {
-  position: absolute; /* Fixed to absolute because parent has transform */
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: var(--bg-color);
-  z-index: 8; /* Below scanlines (10) and vignette (9), above content (2) */
-  padding: 40px;
-  box-sizing: border-box;
-  font-family: var(--font-stack);
-  color: var(--text-color);
-  font-size: 16px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-}
-
-@media (max-width: 600px) {
-  #boot-overlay {
-    padding: 20px;
-  }
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-color);
+    z-index: 8;
+    padding: var(--space-lg);
+    box-sizing: border-box;
+    font-family: var(--font-stack);
+    color: var(--text-color);
+    font-size: var(--fs-base);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
 }
 
 .boot-line {
-  margin-bottom: 4px;
-  white-space: pre-wrap;
+    margin-bottom: 0.25rem;
+    white-space: pre-wrap;
 }
 
 .boot-cursor {
-  display: inline-block;
-  background-color: var(--text-color);
-  color: #000;
-  animation: blink 0.53s step-end infinite; /* 530ms standard */
-  padding: 0 4px;
+    display: inline-block;
+    background-color: var(--text-color);
+    color: #000;
+    animation: blink 0.53s step-end infinite;
+    padding: 0;
+    width: 0.6em; /* Fixed width like a character */
+    height: 1em; /* Match line height visually */
+    vertical-align: text-bottom;
+    margin-left: 2px;
 }
 
 @keyframes blink {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0;
-  }
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0;
+    }
 }
 
 /* 9. Utility Classes for Animation */
 .flicker-in {
-  animation: fadeIn 0.1s steps(2, end);
+    animation: fadeIn 0.1s steps(2, end);
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
 /* Accessibility: Reduced Motion */
 @media (prefers-reduced-motion: reduce) {
-  .crt-screen,
-  .crt-screen::after,
-  .scanline-roll,
-  .glitch::before,
-  .glitch::after {
-    animation: none !important;
-    transform: none !important;
-  }
+    .crt-screen,
+    .crt-screen::after,
+    .scanline-roll,
+    .glitch::before,
+    .glitch::after {
+        animation: none !important;
+        transform: none !important;
+    }
 
-  /* Ensure screen is visible and bright enough without turnOn animation */
-  .crt-screen {
-    opacity: 1;
-    filter: none;
-    transform: scale(1) !important;
-  }
+    .crt-screen {
+        opacity: 1;
+        filter: none;
+        transform: scale(1) !important;
+    }
 }

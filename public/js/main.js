@@ -5,7 +5,7 @@
  * to websites, demonstrating browser fingerprinting techniques.
  */
 
-import { renderToElement, createTable } from './utils.js';
+import { renderToElement } from './utils.js';
 import { collectBrowserData } from './modules/browser.js';
 import { collectScreenData } from './modules/screen.js';
 import { collectHardwareData } from './modules/hardware.js';
@@ -19,150 +19,108 @@ import { detectBot } from './modules/integrity.js';
 import { collectClientHints } from './modules/client_hints.js';
 import { collectMediaDevices } from './modules/media_devices.js';
 import { runBootSequence } from './modules/boot.js';
+import { detectPrivacyMode } from './modules/privacy.js';
+import { downloadReport } from './modules/report.js';
+
+/**
+ * Executes a task safely and renders the result to the DOM
+ * @param {string} elementId 
+ * @param {Function} taskFn - Async or sync function returning data
+ */
+async function runTask(elementId, taskFn) {
+    try {
+        const data = await taskFn();
+        renderToElement(elementId, data);
+    } catch (e) {
+        console.error(`Module failed for ${elementId}:`, e);
+        renderToElement(elementId, { Error: "Failed to load data" });
+    }
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Check for reduced motion preference
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    // Wait for CRT "turn on" animation (approx 3s)
-    if (!reduceMotion) {
-        await new Promise(r => setTimeout(r, 3500));
+    // 0. Setup UI Controls
+    const themeBtn = document.getElementById('theme-toggle');
+    if (themeBtn) {
+        themeBtn.addEventListener('click', () => {
+            document.body.classList.toggle('amber-mode');
+        });
     }
+
+    const downloadBtn = document.getElementById('download-report');
+    if (downloadBtn) {
+        downloadBtn.addEventListener('click', () => {
+            downloadReport();
+        });
+    }
+
+    // 1. Start Boot Animation (Visuals)
+    const bootPromise = runBootSequence();
+
+    // 2. Start Data Collection (Logic) - PARALLEL EXECUTION
+    // We do NOT await these immediately. We let them run in the background.
+    // However, we want to ensure the boot sequence 'feels' like it's initializing them.
+    // Ideally, we wait for the boot to finish before *revealing* them, but the 'renderToElement'
+    // function uses an IntersectionObserver which handles visibility. 
+    // If the element is hidden by the boot overlay, it's fine.
     
-    // Run Boot Sequence
-    await runBootSequence();
+    const tasks = [
+        runTask('incognito-info', detectPrivacyMode),
+        runTask('browser-info', collectBrowserData),
+        runTask('screen-info', collectScreenData),
+        runTask('hardware-info', collectHardwareData),
+        runTask('webgl-info', collectWebGLData),
+        runTask('identity-info', collectFingerprintData),
+        runTask('fonts-info', collectFontData), // Now Async
+        runTask('media-info', collectMediaData),
+        runTask('perms-info', collectPermissionsData),
+        runTask('integrity-info', detectBot),
+        runTask('hints-info', collectClientHints),
+        runTask('media-devices-info', collectMediaDevices)
+    ];
 
-    // --- 1. Browser/Navigator Data ---
-    try {
-        const browserData = collectBrowserData();
-        renderToElement('browser-info', browserData);
-    } catch (e) {
-        console.error("Browser module failed:", e);
-        renderToElement('browser-info', { Error: "Failed to load" });
-    }
+    // Network & Server Data (Dependent chain)
+    const networkTask = (async () => {
+        try {
+            // Fetch server info first
+            const serverData = await fetchServerInfo();
+            
+            if (!serverData) {
+                throw new Error("No server data");
+            }
 
+            // Render Device Info (Parsed from server UA)
+            const deviceData = parseDeviceInfo(serverData);
+            renderToElement('device-info', deviceData);
 
+            // Render Network Info (GeoIP, Latency, etc.)
+            const networkData = await collectNetworkData(serverData, 'network-info');
+            renderToElement('network-info', networkData);
 
-    // --- 2. Screen Data ---
-    try {
-        const screenData = collectScreenData();
-        renderToElement('screen-info', screenData);
-    } catch (e) {
-        console.error("Screen module failed:", e);
-        renderToElement('screen-info', { Error: "Failed to load" });
-    }
-
-    // --- 3. Hardware Data ---
-    try {
-        const hardwareData = await collectHardwareData();
-        renderToElement('hardware-info', hardwareData);
-    } catch (e) {
-        console.error("Hardware module failed:", e);
-        renderToElement('hardware-info', { Error: "Failed to load" });
-    }
-
-    // --- 4. WebGL Data ---
-    try {
-        const webglData = collectWebGLData();
-        renderToElement('webgl-info', webglData);
-    } catch (e) {
-        console.error("WebGL module failed:", e);
-        renderToElement('webgl-info', { Error: "Failed to load" });
-    }
-
-    // --- 5. Digital Identity ---
-    try {
-        const fingerprintData = await collectFingerprintData();
-        renderToElement('identity-info', fingerprintData);
-    } catch (e) {
-        console.error("Identity module failed:", e);
-        renderToElement('identity-info', { Error: "Failed to load" });
-    }
-
-    // --- 10. Fonts ---
-    try {
-        const fontData = collectFontData();
-        renderToElement('fonts-info', fontData);
-    } catch (e) {
-        console.error("Font module failed:", e);
-        renderToElement('fonts-info', { Error: "Failed to load" });
-    }
-
-    // --- 11. Media Codecs ---
-    try {
-        const mediaData = collectMediaData();
-        renderToElement('media-info', mediaData);
-    } catch (e) {
-        console.error("Media module failed:", e);
-        renderToElement('media-info', { Error: "Failed to load" });
-    }
-
-    // --- 12. Permissions ---
-    try {
-        const permData = await collectPermissionsData();
-        renderToElement('perms-info', permData);
-    } catch (e) {
-        console.error("Permissions module failed:", e);
-        renderToElement('perms-info', { Error: "Failed to load" });
-    }
-
-    // --- 13. System Integrity ---
-    try {
-        const botData = detectBot();
-        renderToElement('integrity-info', botData);
-    } catch (e) {
-        console.error("Integrity check failed:", e);
-        renderToElement('integrity-info', { Error: "Failed to load" });
-    }
-
-    // --- 14. Advanced Client Hints ---
-    try {
-        const hintsData = await collectClientHints();
-        renderToElement('hints-info', hintsData);
-    } catch (e) {
-        console.error("Client Hints failed:", e);
-        renderToElement('hints-info', { Error: "Failed to load" });
-    }
-
-    // --- 15. Media Devices ---
-    try {
-        const mediaDeviceData = await collectMediaDevices();
-        renderToElement('media-devices-info', mediaDeviceData);
-    } catch (e) {
-        console.error("Media Devices failed:", e);
-        renderToElement('media-devices-info', { Error: "Failed to load" });
-    }
-
-    // --- 6. Server-Side Data ---
-    let serverData = null;
-    try {
-        serverData = await fetchServerInfo();
-        
-        if (!serverData) {
-            throw new Error("No server data");
+            // Render Headers
+            const headersInfoEl = document.getElementById('headers-info');
+            if (headersInfoEl && serverData.headers) {
+                headersInfoEl.innerHTML = formatHeaders(serverData.headers);
+            }
+        } catch (e) {
+            console.error("Server/Network module failed:", e);
+            document.getElementById('network-info').innerText = "Failed to load server info.";
+            document.getElementById('device-info').innerText = "Failed to load device info.";
+            document.getElementById('headers-info').innerText = "Failed to load headers.";
         }
+    })();
 
-        // --- 7. Device Info (from server) ---
-        const deviceData = parseDeviceInfo(serverData);
-        renderToElement('device-info', deviceData);
+    tasks.push(networkTask);
 
-        // --- 8. Network & GeoIP Data ---
-        const networkData = await collectNetworkData(serverData, 'network-info');
-        renderToElement('network-info', networkData);
+    // 3. Wait for visual boot to finish
+    await bootPromise;
 
-        // --- 9. Request Headers ---
-        // Moved inside try block to verify serverData exists
-        const headersInfoEl = document.getElementById('headers-info');
-        if (headersInfoEl && serverData.headers) {
-            headersInfoEl.innerHTML = formatHeaders(serverData.headers);
-        }
-
-    } catch (e) {
-        console.error("Server/Network module failed:", e);
-        document.getElementById('network-info').innerText = "Failed to load server info.";
-        document.getElementById('device-info').innerText = "Failed to load device info.";
-        document.getElementById('headers-info').innerText = "Failed to load headers.";
-    }
-
-    // --- 9. Request Headers ---
+    // 4. Ensure all tasks are at least initiated (they are)
+    // The UI will update as each promise resolves via runTask -> renderToElement
+    // We don't strictly need to await Promise.all(tasks) unless we want a "global done" state.
+    
+    // Optional: Log completion
+    Promise.allSettled(tasks).then(() => {
+        const logLine = document.getElementById('log-line');
+        if (logLine) logLine.textContent = "System Analysis Complete. Waiting for user input...";
+    });
 });

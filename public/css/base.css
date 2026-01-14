@@ -2,74 +2,71 @@
  * Base Styles - Body, Container, Scrollbar
  */
 
-* {
-  box-sizing: border-box;
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
 }
 
 body {
-  background-color: var(--bg-color);
-  color: var(--text-color);
-  font-family: var(--font-stack);
-  margin: 0;
-  padding: 20px;
-  height: 100vh;
-  overflow-x: hidden;
-  text-shadow: 0 0 2px var(--dim-color);
-}
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: var(--font-stack);
+    margin: 0;
 
-@media (max-width: 600px) {
-  body {
-    padding: 10px;
-    font-size: 0.9em;
-  }
+    /* Use Fluid Typography & Spacing */
+    font-size: var(--fs-base);
+    padding: var(--space-md);
+
+    height: 100vh;
+    overflow-x: hidden;
+    text-shadow: 0 0 2px var(--dim-color);
+    line-height: 1.5;
 }
 
 .container {
-  max-width: 1400px;
-  width: 96%; /* Leave room for bezel */
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  padding: 40px; /* Push content away from curved corners */
-}
+    max-width: 1440px; /* Aligns with our clamp upper bound */
+    width: 100%; /* Fluid width */
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 
-@media (max-width: 600px) {
-  .container {
-    padding: 10px;
-  }
+    /* Fluid Padding from bezel */
+    padding: var(--space-lg);
 }
 
 /* Data Display */
 pre {
-  margin: 0;
-  white-space: pre-wrap;
-  word-break: break-word;
-  font-size: 0.9em;
-  line-height: 1.4;
-  color: var(--text-color);
-  overflow-x: hidden;
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 0.9em; /* Relative to parent */
+    line-height: 1.4;
+    color: var(--text-color);
+    overflow-x: hidden;
 }
 
 .warning {
-  color: var(--alert);
-  font-weight: bold;
-  text-decoration: underline;
+    color: var(--alert-color);
+    font-weight: bold;
+    text-decoration: underline;
 }
 
 /* Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
+    width: 0.5rem; /* ~8px */
 }
 
 ::-webkit-scrollbar-track {
-  background: #000;
+    background: var(--screen-bg);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--dim-color);
+    background: var(--dim-color);
+    border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-color);
+    background: var(--text-color);
 }

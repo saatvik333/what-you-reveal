@@ -2,7 +2,7 @@
  * Digital fingerprinting module
  */
 
-import { cyrb53 } from '../utils.js';
+import { cyrb53 } from './crypto.js';
 
 /**
  * Generates a canvas fingerprint

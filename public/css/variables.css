@@ -1,36 +1,75 @@
 :root {
-  /* CRT Color Palette */
-  --phosphor-primary: #33ff33; /* Classic Green */
-  --phosphor-amber: #ffbb00; /* Amber Alternative */
-  --phosphor-secondary: #ccffcc;
-  --bg-color: #050505; /* Deep Black/Gray */
-  --screen-bg: #000000;
+    /* =========================================
+     1. Design Tokens: Colors (Phosphor Palette)
+     ========================================= */
+    --phosphor-primary: #33ff33; /* Classic Green */
+    --phosphor-amber: #ffbb00; /* Amber Alternative */
+    --phosphor-secondary: #ccffcc;
 
-  /* Text & Glow */
-  --text-color: var(--phosphor-primary);
-  --text-shadow-color: rgba(51, 255, 51, 0.6);
-  --text-glow: 0 0 2px var(--text-shadow-color),
-    0 0 5px var(--text-shadow-color),
-    0 0 10px var(--text-shadow-color);
+    --bg-color: #050505;
+    --screen-bg: #000000;
 
-  /* Accents */
-  --dim-color: rgba(51, 255, 51, 0.5);
-  --border-color: var(--dim-color);
-  --alert-color: #ff3333;
+    --dim-color: rgba(51, 255, 51, 0.5);
+    --border-color: var(--dim-color);
+    --alert-color: #ff3333;
 
-  /* CRT Physical Properties */
-  --curve-strength: 3deg;
-  --scanline-opacity: 0.15;
-  --vignette-opacity: 0.3;
-  --flicker-strength: 0.02;
+    /* =========================================
+     2. Fluid Typography (Clamp)
+     Viewport range: 320px - 1440px
+     ========================================= */
+    --font-stack: 'VT323', 'Courier Prime', monospace;
 
-  /* Fonts */
-  --font-stack: "VT323", "Courier Prime", monospace;
-  --font-base-size: 18px;
+    /* fs-sm: 12px -> 16px */
+    --fs-sm: clamp(0.75rem, 0.7rem + 0.27vw, 1rem);
+
+    /* fs-base: 14px -> 18px */
+    --fs-base: clamp(0.875rem, 0.8rem + 0.25vw, 1.125rem);
+
+    /* fs-md: 16px -> 22px */
+    --fs-md: clamp(1rem, 0.92rem + 0.36vw, 1.375rem);
+
+    /* fs-lg: 20px -> 32px */
+    --fs-lg: clamp(1.25rem, 1.15rem + 0.75vw, 2rem);
+
+    /* fs-xl: 28px -> 48px */
+    --fs-xl: clamp(1.75rem, 1.5rem + 1.5vw, 3rem);
+
+    /* =========================================
+     3. Fluid Spacing (Clamp)
+     ========================================= */
+    /* xs: 2px -> 8px */
+    --space-xs: clamp(0.125rem, 0.1rem + 0.36vw, 0.5rem);
+
+    /* sm: 8px -> 16px */
+    --space-sm: clamp(0.5rem, 0.4rem + 0.54vw, 1rem);
+
+    /* md: 12px -> 30px */
+    --space-md: clamp(0.75rem, 0.65rem + 0.89vw, 1.875rem);
+
+    /* lg: 24px -> 60px */
+    --space-lg: clamp(1.5rem, 1.3rem + 1.79vw, 3.75rem);
+
+    /* =========================================
+     4. Effects & Physics
+     ========================================= */
+    /* Text Glow */
+    --text-color: var(--phosphor-primary);
+    --text-shadow-color: rgba(51, 255, 51, 0.6);
+    --text-glow:
+        0 0 2px var(--text-shadow-color), 0 0 5px var(--text-shadow-color),
+        0 0 10px var(--text-shadow-color);
+
+    /* CRT Physics */
+    --curve-strength: 3deg;
+    --scanline-opacity: 0.15;
+    --vignette-opacity: 0.3;
+    --flicker-strength: 0.02;
 }
 
+/* Theme Override: Amber Mode */
 body.amber-mode {
-  --text-color: var(--phosphor-amber);
-  --text-shadow-color: rgba(255, 187, 0, 0.6);
-  --dim-color: rgba(255, 187, 0, 0.5);
+    --text-color: var(--phosphor-amber);
+    --text-shadow-color: rgba(255, 187, 0, 0.6);
+    --dim-color: rgba(255, 187, 0, 0.5);
+    --border-color: var(--dim-color);
 }

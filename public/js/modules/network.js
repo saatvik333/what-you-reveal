@@ -75,25 +75,33 @@ export async function collectNetworkData(serverData, elementId) {
     // Latency
     networkData['Latency (Avg of 3 pings)'] = await runPingTest();
     
-    // Local IP via WebRTC (Best Effort, Multiple Candidates)
-    const rtcCandidates = new Set();
-    try {
-        const rtcPeer = new RTCPeerConnection({iceServers: []});
-        rtcPeer.createDataChannel('');
-        rtcPeer.createOffer().then(offer => rtcPeer.setLocalDescription(offer));
-        rtcPeer.onicecandidate = (event) => {
-            if (event && event.candidate && event.candidate.candidate) {
-                const ipMatch = event.candidate.candidate.match(/([0-9]{1,3}(\.[0-9]{1,3}){3}|[a-f0-9]{1,4}(:[a-f0-9]{1,4}){7})/);
-                if (ipMatch) {
-                    rtcCandidates.add(ipMatch[1]);
-                    networkData['Local IP (WebRTC Leak)'] = Array.from(rtcCandidates).join(', ');
-                    const netInfoEl = document.getElementById(elementId);
-                    if (netInfoEl) netInfoEl.innerHTML = createTable(networkData);
-                }
-            }
-        };
-    } catch(e) {}
-
+            // Local IP via WebRTC (Best Effort, Multiple Candidates)
+            const rtcCandidates = new Set();
+            try {
+                const rtcPeer = new RTCPeerConnection({iceServers: []});
+                rtcPeer.createDataChannel('');
+                rtcPeer.createOffer().then(offer => rtcPeer.setLocalDescription(offer));
+                rtcPeer.onicecandidate = (event) => {
+                    if (event && event.candidate && event.candidate.candidate) {
+                        // Match IPv4, IPv6, and mDNS (.local)
+                        const ipMatch = event.candidate.candidate.match(/([0-9]{1,3}(\.[0-9]{1,3}){3}|[a-f0-9]{1,4}(:[a-f0-9]{1,4}){7}|[a-f0-9-]+\.local)/);
+                        if (ipMatch) {
+                            const detectedIp = ipMatch[1];
+                            
+                            if (detectedIp.endsWith('.local')) {
+                                // mDNS Obfuscation detected
+                                rtcCandidates.add(`${detectedIp} (mDNS Obfuscated)`);
+                            } else {
+                                rtcCandidates.add(detectedIp);
+                            }
+    
+                            networkData['Local IP (WebRTC Leak)'] = Array.from(rtcCandidates).join(', ');
+                            const netInfoEl = document.getElementById(elementId);
+                            if (netInfoEl) netInfoEl.innerHTML = createTable(networkData);
+                        }
+                    }
+                };
+            } catch(e) {}
     // GeoIP & Security Check
     networkData['VPN/Proxy Detected'] = 'Checking...';
     networkData['Cloud/Datacenter IP'] = 'Checking...';

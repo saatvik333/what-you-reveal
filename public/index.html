@@ -96,9 +96,21 @@
               <div class="subtitle glitch">
                 SYSTEM ANALYSIS TOOL v3.1.0 // BROWSER FINGERPRINT DEMO
               </div>
+              <div class="controls">
+                  <button id="theme-toggle" class="control-btn">[ SWITCH THEME ]</button>
+                  <button id="download-report" class="control-btn">[ DOWNLOAD LOG ]</button>
+              </div>
             </header>
   
             <div class="grid">
+              <!-- New Section for Privacy Mode -->
+              <section class="card">
+                <h2>0. PRIVACY_MODE</h2>
+                <div id="incognito-info" class="info-block">
+                  <pre>Analyzing storage...</pre>
+                </div>
+              </section>
+
               <section class="card">
                 <h2>1. NETWORK_INFO</h2>
                 <div id="network-info" class="info-block">

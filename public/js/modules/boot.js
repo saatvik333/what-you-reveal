@@ -9,6 +9,11 @@ export async function runBootSequence() {
 
     // Check for reduced motion preference
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    
+    // Wait for CSS "turn on" animation to complete
+    if (!reduceMotion) {
+        await new Promise(r => setTimeout(r, 3500));
+    }
 
     try {
         // Clear initial content
@@ -42,11 +47,8 @@ export async function runBootSequence() {
 
         const sleep = (ms) => new Promise(r => setTimeout(r, ms));
         
-        // Create a cursor element
-        const cursor = document.createElement('span');
-        cursor.className = 'boot-cursor';
-        cursor.innerHTML = '&#9608;'; // Block character
-        overlay.appendChild(cursor);
+        // Cursor removed as per user request
+        // const cursor = document.createElement('span'); ...
 
         for (const log of logs) {
             // Create line container
@@ -65,8 +67,8 @@ export async function runBootSequence() {
             p.appendChild(timestampSpan);
             p.appendChild(textSpan);
             
-            // Insert before cursor
-            overlay.insertBefore(p, cursor);
+            // Append directly to overlay
+            overlay.appendChild(p);
             
             // Scroll to bottom
             overlay.scrollTop = overlay.scrollHeight;
@@ -89,7 +91,7 @@ export async function runBootSequence() {
         const clearCmd = document.createElement('div');
         clearCmd.className = 'boot-line';
         clearCmd.textContent = "$ clear";
-        overlay.insertBefore(clearCmd, cursor);
+        overlay.appendChild(clearCmd);
         
         if (!reduceMotion) await sleep(300);
 
