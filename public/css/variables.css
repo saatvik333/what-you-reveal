@@ -218,3 +218,31 @@ body.theme-mrrobot .card h2 {
     color: var(--text-color);
     background: var(--card-header-bg);
 }
+
+/* =========================================
+   Theme-specific Cursors
+   ========================================= */
+
+/* Cyberpunk: Magenta/Cyan crosshair */
+body.theme-cyberpunk {
+    cursor:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cline x1='12' y1='0' x2='12' y2='10' stroke='%23ff00ff' stroke-width='2'/%3E%3Cline x1='12' y1='14' x2='12' y2='24' stroke='%2300ffff' stroke-width='2'/%3E%3Cline x1='0' y1='12' x2='10' y2='12' stroke='%23ff00ff' stroke-width='2'/%3E%3Cline x1='14' y1='12' x2='24' y2='12' stroke='%2300ffff' stroke-width='2'/%3E%3C/svg%3E")
+            12 12,
+        crosshair;
+}
+
+/* Security HUD: Blue crosshair */
+body.theme-security {
+    cursor:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cline x1='12' y1='0' x2='12' y2='10' stroke='%234da6ff' stroke-width='2'/%3E%3Cline x1='12' y1='14' x2='12' y2='24' stroke='%234da6ff' stroke-width='2'/%3E%3Cline x1='0' y1='12' x2='10' y2='12' stroke='%234da6ff' stroke-width='2'/%3E%3Cline x1='14' y1='12' x2='24' y2='12' stroke='%234da6ff' stroke-width='2'/%3E%3C/svg%3E")
+            12 12,
+        crosshair;
+}
+
+/* Mr. Robot: Minimal white crosshair */
+body.theme-mrrobot {
+    cursor:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cline x1='12' y1='0' x2='12' y2='10' stroke='%23e0e0e0' stroke-width='1'/%3E%3Cline x1='12' y1='14' x2='12' y2='24' stroke='%23e0e0e0' stroke-width='1'/%3E%3Cline x1='0' y1='12' x2='10' y2='12' stroke='%23e0e0e0' stroke-width='1'/%3E%3Cline x1='14' y1='12' x2='24' y2='12' stroke='%23e0e0e0' stroke-width='1'/%3E%3C/svg%3E")
+            12 12,
+        crosshair;
+}

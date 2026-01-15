@@ -5,9 +5,9 @@
  * Import this single file in your HTML.
  */
 
-@import url("css/variables.css");
-@import url("css/base.css");
-@import url("css/effects.css");
-@import url("css/components/header.css");
-@import url("css/components/card.css");
-@import url("css/components/footer.css");
+@import url('css/variables.css');
+@import url('css/base.css');
+@import url('css/effects.css');
+@import url('css/components/header.css');
+@import url('css/components/card.css');
+@import url('css/components/footer.css');
