@@ -1,13 +1,402 @@
-/**
- * What You Reveal - Main Stylesheet
- * 
- * This is the barrel file that imports all CSS modules.
- * Import this single file in your HTML.
+/*
+ * What You Reveal - Minimal Terminal Theme
+ * Pure black & white, responsive design
  */
 
-@import url('css/variables.css');
-@import url('css/base.css');
-@import url('css/effects.css');
-@import url('css/components/header.css');
-@import url('css/components/card.css');
-@import url('css/components/footer.css');
+/* ============================================
+   CSS VARIABLES
+   ============================================ */
+:root {
+    --bg: #000000;
+    --fg: #ffffff;
+    --fg-dim: #888888;
+    --fg-muted: #555555;
+    --border: #333333;
+    --border-bright: #555555;
+    --font-mono: 'JetBrains Mono', 'Courier Prime', monospace;
+    --font-size-base: 13px;
+    --font-size-sm: 11px;
+    --font-size-lg: 14px;
+    --spacing-xs: 0.5rem;
+    --spacing-sm: 1rem;
+    --spacing-md: 1.5rem;
+    --spacing-lg: 2rem;
+}
+
+/* ============================================
+   BASE STYLES
+   ============================================ */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    font-size: var(--font-size-base);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+}
+
+body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-mono);
+    line-height: 1.6;
+    padding: var(--spacing-sm);
+    overflow-x: hidden;
+}
+
+::selection {
+    background: var(--fg);
+    color: var(--bg);
+}
+
+/* ============================================
+   CONTAINER
+   ============================================ */
+.container {
+    max-width: 1000px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 var(--spacing-sm);
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
+header {
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+}
+
+.ascii-header {
+    font-size: 0.4rem;
+    line-height: 1.15;
+    white-space: pre;
+    color: var(--fg);
+    margin-bottom: var(--spacing-sm);
+    display: inline-block;
+    text-align: left;
+}
+
+@media (min-width: 600px) {
+    .ascii-header {
+        font-size: 0.55rem;
+    }
+}
+
+@media (min-width: 900px) {
+    .ascii-header {
+        font-size: 0.7rem;
+    }
+}
+
+.subtitle {
+    color: var(--fg-dim);
+    font-size: var(--font-size-sm);
+    letter-spacing: 0.1em;
+    margin-bottom: var(--spacing-md);
+    text-transform: uppercase;
+}
+
+.controls {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+}
+
+.control-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--fg-dim);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.control-btn:hover {
+    border-color: var(--fg);
+    color: var(--fg);
+}
+
+.control-btn:focus {
+    outline: 1px solid var(--fg);
+    outline-offset: 2px;
+}
+
+/* ============================================
+   GRID LAYOUT - 2 COLUMNS
+   ============================================ */
+.grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+}
+
+@media (min-width: 700px) {
+    .grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* ============================================
+   CARDS - TERMINAL STYLE
+   ============================================ */
+.card {
+    border: 1px solid var(--border);
+    background: var(--bg);
+    position: relative;
+}
+
+/* Terminal window title bar */
+.card::before {
+    content: '';
+    display: block;
+    height: 1px;
+    background: var(--border);
+}
+
+.card h2 {
+    font-size: var(--font-size-sm);
+    font-weight: 400;
+    color: var(--fg);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-bottom: 1px solid var(--border);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.card h2::before {
+    content: '> ';
+    color: var(--fg-muted);
+}
+
+.card h2:hover {
+    color: var(--fg);
+}
+
+/* Decrypt text effect styles */
+.card h2 .decrypt-char {
+    transition: none;
+}
+
+.card h2 .decrypt-char.encrypted {
+    color: var(--fg-muted);
+}
+
+.card h2 .decrypt-char.revealed {
+    color: var(--fg);
+}
+
+.info-block {
+    padding: var(--spacing-sm);
+    font-size: var(--font-size-sm);
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.info-block pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: var(--font-mono);
+    color: var(--fg);
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* Data row styling - each line is a key: value pair */
+.data-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.3rem 0;
+    border-bottom: 1px dotted var(--border);
+    gap: 1rem;
+}
+
+.data-row:last-child {
+    border-bottom: none;
+}
+
+.data-key {
+    color: var(--fg-muted);
+    flex-shrink: 0;
+}
+
+.data-value {
+    color: var(--fg);
+    text-align: right;
+    word-break: break-all;
+}
+
+/* Code block styling */
+.code-block pre {
+    background: transparent;
+    font-size: var(--font-size-sm);
+    overflow-x: auto;
+}
+
+/* ============================================
+   FOOTER - TERMINAL PROMPT
+   ============================================ */
+footer {
+    padding: var(--spacing-md) 0;
+    border-top: 1px solid var(--border);
+    font-size: var(--font-size-sm);
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+}
+
+.prompt {
+    color: var(--fg-dim);
+}
+
+.prompt::before {
+    content: '>';
+    margin-right: 0.5ch;
+    color: var(--fg-muted);
+}
+
+#log-line {
+    color: var(--fg);
+}
+
+.cursor {
+    display: inline-block;
+    width: 0.6em;
+    height: 1em;
+    background: var(--fg);
+    margin-left: 0.25em;
+    animation: blink 1s step-end infinite;
+    vertical-align: text-bottom;
+}
+
+@keyframes blink {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0;
+    }
+}
+
+/* ============================================
+   SCROLLBAR - MINIMAL
+   ============================================ */
+::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--fg-dim);
+}
+
+/* ============================================
+   TERMINAL AESTHETIC EXTRAS
+   ============================================ */
+
+/* Subtle scanline overlay */
+body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.1) 2px,
+        rgba(0, 0, 0, 0.1) 4px
+    );
+    z-index: 9999;
+    opacity: 0.3;
+}
+
+/* Subtle vignette - disabled for minimal look */
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+.hidden {
+    display: none !important;
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}
+
+/* State modifiers */
+.data-row.warning .data-value {
+    font-weight: 700;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+}
+
+.data-row.copied {
+    background: var(--fg);
+}
+
+.data-row.copied .data-key,
+.data-row.copied .data-value {
+    color: var(--bg);
+}
+
+/* ============================================
+   RESPONSIVE FIXES
+   ============================================ */
+@media (max-width: 600px) {
+    body {
+        padding: var(--spacing-xs);
+    }
+
+    .container {
+        padding: 0 var(--spacing-xs);
+    }
+
+    .card h2 {
+        font-size: 10px;
+    }
+
+    .info-block {
+        font-size: 10px;
+        padding: var(--spacing-xs);
+    }
+
+    .info-block td:first-child {
+        max-width: 100px;
+    }
+}

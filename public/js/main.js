@@ -1,8 +1,13 @@
 /**
  * What You Reveal - Main Application Entry Point
  * 
- * This application reveals what information your browser exposes
- * to websites, demonstrating browser fingerprinting techniques.
+ * A browser fingerprinting demonstration showing what information
+ * your browser exposes to websites.
+ * 
+ * Architecture:
+ * - Modules in /js/modules/ handle specific data collection
+ * - Theme system supports CRT and Terminal modes
+ * - Data is collected in parallel for performance
  */
 
 import { renderToElement } from './utils.js';
@@ -19,20 +24,27 @@ import { detectBot } from './modules/integrity.js';
 import { collectClientHints } from './modules/client_hints.js';
 import { collectMediaDevices } from './modules/media_devices.js';
 import { collectClipboardData } from './modules/clipboard.js';
-import { runBootSequence } from './modules/boot.js';
 import { detectPrivacyMode } from './modules/privacy.js';
 import { downloadReport } from './modules/report.js';
 import { collectIntlData } from './modules/intl.js';
-import { initTheme, cycleTheme } from './modules/theme.js';
-import { initCursor } from './modules/cursor.js';
+import { initDecryptedText } from './modules/decrypt-text.js';
 
-// Global Data Store for Report
+// ============================================================
+// GLOBAL STATE
+// ============================================================
+
+/** Collected data for report generation */
 window.collectedData = {};
 
+// ============================================================
+// TASK RUNNER
+// ============================================================
+
 /**
- * Executes a task safely and renders the result to the DOM
- * @param {string} elementId 
- * @param {Function} taskFn - Async or sync function returning data
+ * Execute a data collection task and render results
+ * @param {string} elementId - Target DOM element ID
+ * @param {Function} taskFn - Data collection function
+ * @param {string} dataKey - Key for storing in collectedData
  */
 async function runTask(elementId, taskFn, dataKey) {
     try {
@@ -42,108 +54,87 @@ async function runTask(elementId, taskFn, dataKey) {
         }
         renderToElement(elementId, data);
     } catch (e) {
-        console.error(`Module failed for ${elementId}:`, e);
-        renderToElement(elementId, { Error: 'Failed to load data' });
+        console.error(`[${dataKey || elementId}] Collection failed:`, e);
+        renderToElement(elementId, { Error: 'Data unavailable' });
     }
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
-    // 0. Initialize Theme System
-    initTheme();
-    
-    // 0.5 Initialize Custom Cursor
-    initCursor();
-    
-    // Setup UI Controls
-    const themeBtn = document.getElementById('theme-toggle');
-    if (themeBtn) {
-        themeBtn.addEventListener('click', cycleTheme);
-    }
+// ============================================================
+// NETWORK DATA (DEPENDENT CHAIN)
+// ============================================================
 
-    const downloadBtn = document.getElementById('download-report');
-    if (downloadBtn) {
-        downloadBtn.addEventListener('click', () => {
-            downloadReport();
-        });
-    }
-
-    // 1. Start Boot Animation (Visuals)
-    const bootPromise = runBootSequence();
-
-    // 2. Start Data Collection (Logic) - PARALLEL EXECUTION
-    // OPTIMIZATION: Use requestIdleCallback to defer heavy processing
-    // This ensures the boot animation starts smoothly without main thread blocking
-    const startDataCollection = () => {
-        const tasks = [
-            runTask('incognito-info', detectPrivacyMode, 'Privacy Mode'),
-            runTask('browser-info', collectBrowserData, 'Browser Info'),
-            runTask('screen-info', collectScreenData, 'Screen Info'),
-            runTask('hardware-info', collectHardwareData, 'Hardware Info'),
-            runTask('webgl-info', collectWebGLData, 'WebGL Info'),
-            runTask('identity-info', collectFingerprintData, 'Fingerprint'),
-            runTask('fonts-info', collectFontData, 'Fonts'), 
-            runTask('media-info', collectMediaData, 'Media Codecs'),
-            runTask('perms-info', collectPermissionsData, 'Permissions'),
-            runTask('integrity-info', detectBot, 'System Integrity'),
-            runTask('hints-info', collectClientHints, 'Client Hints'),
-            runTask('media-devices-info', collectMediaDevices, 'Media Devices'),
-            runTask('clipboard-info', collectClipboardData, 'Clipboard'),
-            runTask('intl-info', collectIntlData, 'Internationalization')
-        ];
-    };
-
-    if ('requestIdleCallback' in window) {
-        requestIdleCallback(startDataCollection, { timeout: 2000 });
-    } else {
-        setTimeout(startDataCollection, 500);
-    }
-
-    // Network & Server Data (Dependent chain)
-    const networkTask = (async () => {
-        try {
-            // Fetch server info first
-            const serverData = await fetchServerInfo();
-            
-            if (!serverData) {
-                throw new Error('No server data');
-            }
-
-            // Render Device Info (Parsed from server UA)
-            const deviceData = parseDeviceInfo(serverData);
-            window.collectedData['Device Info'] = deviceData;
-            renderToElement('device-info', deviceData);
-
-            // Render Network Info (GeoIP, Latency, etc.)
-            const networkData = await collectNetworkData(serverData, 'network-info');
-            window.collectedData['Network Info'] = networkData;
-            renderToElement('network-info', networkData);
-
-            // Render Headers
-            const headersInfoEl = document.getElementById('headers-info');
-            if (headersInfoEl && serverData.headers) {
-                window.collectedData['Headers'] = serverData.headers;
-                headersInfoEl.innerHTML = formatHeaders(serverData.headers);
-            }
-        } catch (e) {
-            console.error('Server/Network module failed:', e);
-            document.getElementById('network-info').innerText = 'Failed to load server info.';
-            document.getElementById('device-info').innerText = 'Failed to load device info.';
-            document.getElementById('headers-info').innerText = 'Failed to load headers.';
+/**
+ * Fetch and render network-related data
+ * These tasks depend on server response so run sequentially
+ */
+async function collectNetworkChain() {
+    try {
+        const serverData = await fetchServerInfo();
+        
+        if (!serverData) {
+            throw new Error('No server data received');
         }
-    })();
 
-    tasks.push(networkTask);
+        // Device info from User-Agent
+        const deviceData = parseDeviceInfo(serverData);
+        window.collectedData['Device Info'] = deviceData;
+        renderToElement('device-info', deviceData);
 
-    // 3. Wait for visual boot to finish
-    await bootPromise;
+        // Network info (GeoIP, latency)
+        const networkData = await collectNetworkData(serverData, 'network-info');
+        window.collectedData['Network Info'] = networkData;
+        renderToElement('network-info', networkData);
 
-    // 4. Ensure all tasks are at least initiated (they are)
-    // The UI will update as each promise resolves via runTask -> renderToElement
-    // We don't strictly need to await Promise.all(tasks) unless we want a "global done" state.
+        // Raw headers
+        const headersEl = document.getElementById('headers-info');
+        if (headersEl && serverData.headers) {
+            window.collectedData['Headers'] = serverData.headers;
+            headersEl.innerHTML = formatHeaders(serverData.headers);
+        }
+    } catch (e) {
+        console.error('[Network] Chain failed:', e);
+        const fallback = 'Connection failed';
+        document.getElementById('network-info')?.replaceChildren(document.createTextNode(fallback));
+        document.getElementById('device-info')?.replaceChildren(document.createTextNode(fallback));
+        document.getElementById('headers-info')?.replaceChildren(document.createTextNode(fallback));
+    }
+}
+
+// ============================================================
+// INITIALIZATION
+// ============================================================
+
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Initialize UI systems
+    initDecryptedText();
     
-    // Optional: Log completion
+    // 2. Setup UI controls
+    document.getElementById('download-report')?.addEventListener('click', downloadReport);
+
+    // 3. Start data collection (parallel for independent tasks)
+    const tasks = [
+        runTask('incognito-info', detectPrivacyMode, 'Privacy Mode'),
+        runTask('browser-info', collectBrowserData, 'Browser Info'),
+        runTask('screen-info', collectScreenData, 'Screen Info'),
+        runTask('hardware-info', collectHardwareData, 'Hardware Info'),
+        runTask('webgl-info', collectWebGLData, 'WebGL Info'),
+        runTask('identity-info', collectFingerprintData, 'Fingerprint'),
+        runTask('fonts-info', collectFontData, 'Fonts'),
+        runTask('media-info', collectMediaData, 'Media Codecs'),
+        runTask('perms-info', collectPermissionsData, 'Permissions'),
+        runTask('integrity-info', detectBot, 'System Integrity'),
+        runTask('hints-info', collectClientHints, 'Client Hints'),
+        runTask('media-devices-info', collectMediaDevices, 'Media Devices'),
+        runTask('clipboard-info', collectClipboardData, 'Clipboard'),
+        runTask('intl-info', collectIntlData, 'Internationalization'),
+        collectNetworkChain()
+    ];
+
+    // 4. Update footer when complete
     Promise.allSettled(tasks).then(() => {
         const logLine = document.getElementById('log-line');
-        if (logLine) logLine.textContent = 'System Analysis Complete. Waiting for user input...';
+        if (logLine) {
+            logLine.textContent = 'Analysis complete. All modules loaded.';
+        }
     });
 });

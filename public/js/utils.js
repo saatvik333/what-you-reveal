@@ -67,10 +67,9 @@ export function createTable(data) {
         const escapedKey = escapeHtml(key);
         const escapedValue = isElement ? displayValue : escapeHtml(String(displayValue)); // Don't escape HTML elements we intend to render
 
-        output += `<div class="terminal-row${warning ? ' warning' : ''}${!isElement ? ' copyable' : ''}${isElement ? ' has-element' : ''}" ${!isElement ? `role="button" tabindex="0" aria-label="Copy ${escapedKey}: ${safeValue}" data-copy="${safeValue}"` : ''}>`;
-        output += `<span class="key">${escapedKey}</span>`;
-        output += '<span class="dots"></span>';
-        output += `<span class="value">${escapedValue}</span>`;
+        output += `<div class="data-row${warning ? ' warning' : ''}${!isElement ? ' copyable' : ''}${isElement ? ' has-element' : ''}" ${!isElement ? `role="button" tabindex="0" aria-label="Copy ${escapedKey}: ${safeValue}" data-copy="${safeValue}"` : ''}>`;
+        output += `<span class="data-key">${escapedKey}</span>`;
+        output += `<span class="data-value">${escapedValue}</span>`;
         output += '</div>';
     }
     output += '</div>';
@@ -153,7 +152,6 @@ function typeWriterEffect(element, html, speed) {
     // Check for our custom table or pre or if it contains an image/canvas tag which shouldn't be typed
     if (html.startsWith('<div class="terminal-table">') || html.startsWith('<pre>') || html.includes('<pre>') || html.includes('<img') || html.includes('<canvas')) {
         element.innerHTML = html;
-        element.classList.add('flicker-in');
         element.style.opacity = '1';
         return;
     }

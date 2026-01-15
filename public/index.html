@@ -1,129 +1,95 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    
-    <!-- Primary Meta Tags -->
-    <title>What You Reveal | Advanced Browser Fingerprinting & Privacy Test</title>
-    <meta name="title" content="What You Reveal | Advanced Browser Fingerprinting & Privacy Test" />
-    <meta name="description" content="Discover exactly what data your browser exposes to the web. Analyze your digital identity, canvas fingerprint, hardware metrics, and network headers in a real-time hacker terminal interface." />
-    <meta name="keywords" content="browser fingerprinting, privacy test, digital identity, canvas fingerprint, webgl fingerprint, user agent parser, cyber security tool, ip address, device info, nano banana" />
-    <meta name="author" content="saatvik333" />
-    <meta name="theme-color" content="#0c0c0c" />
-    <meta name="robots" content="index, follow" />
-    <link rel="canonical" href="https://what-you-reveal.vercel.app/" />
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://what-you-reveal.vercel.app/" />
-    <meta property="og:title" content="What You Reveal | Advanced Browser Fingerprinting" />
-    <meta property="og:description" content="Enter the matrix. See your digital footprint in real-time. Analyze your privacy exposure with this advanced hacker-styled tool." />
-    <meta property="og:image" content="https://what-you-reveal.vercel.app/images/logo.jpg" />
-    <meta property="og:site_name" content="What You Reveal" />
+        <!-- Primary Meta Tags -->
+        <title>What You Reveal | Advanced Browser Fingerprinting & Privacy Test</title>
+        <meta
+            name="title"
+            content="What You Reveal | Advanced Browser Fingerprinting & Privacy Test"
+        />
+        <meta
+            name="description"
+            content="Discover exactly what data your browser exposes to the web. Analyze your digital identity, canvas fingerprint, hardware metrics, and network headers in a real-time hacker terminal interface."
+        />
+        <meta
+            name="keywords"
+            content="browser fingerprinting, privacy test, digital identity, canvas fingerprint, webgl fingerprint, user agent parser, cyber security tool, ip address, device info, nano banana"
+        />
+        <meta name="author" content="saatvik333" />
+        <meta name="theme-color" content="#0c0c0c" />
+        <meta name="robots" content="index, follow" />
+        <link rel="canonical" href="https://what-you-reveal.vercel.app/" />
 
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="https://what-you-reveal.vercel.app/" />
-    <meta property="twitter:title" content="What You Reveal | Advanced Browser Fingerprinting" />
-    <meta property="twitter:description" content="Discover exactly what data your browser exposes. Test your privacy now." />
-    <meta property="twitter:image" content="https://what-you-reveal.vercel.app/images/logo.jpg" />
+        <!-- Open Graph / Facebook -->
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://what-you-reveal.vercel.app/" />
+        <meta property="og:title" content="What You Reveal | Advanced Browser Fingerprinting" />
+        <meta
+            property="og:description"
+            content="Enter the matrix. See your digital footprint in real-time. Analyze your privacy exposure with this advanced hacker-styled tool."
+        />
+        <meta property="og:image" content="https://what-you-reveal.vercel.app/images/logo.jpg" />
+        <meta property="og:site_name" content="What You Reveal" />
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/jpeg" href="images/logo.jpg" />
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
-    
-    <link rel="stylesheet" href="style.css" />
+        <!-- Twitter -->
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:url" content="https://what-you-reveal.vercel.app/" />
+        <meta
+            property="twitter:title"
+            content="What You Reveal | Advanced Browser Fingerprinting"
+        />
+        <meta
+            property="twitter:description"
+            content="Discover exactly what data your browser exposes. Test your privacy now."
+        />
+        <meta
+            property="twitter:image"
+            content="https://what-you-reveal.vercel.app/images/logo.jpg"
+        />
 
-    <!-- JSON-LD Structured Data -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebApplication",
-      "name": "What You Reveal",
-      "url": "https://what-you-reveal.vercel.app/",
-      "description": "A browser fingerprinting demonstration showing what information your browser exposes using a retro hacker terminal interface.",
-      "applicationCategory": "SecurityApplication",
-      "operatingSystem": "Any",
-      "author": {
-        "@type": "Person",
-        "name": "saatvik333"
-      },
-      "image": "https://what-you-reveal.vercel.app/images/logo.jpg",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD"
-      }
-    }
-    </script>
-  </head>
-  <body>
-    <!-- SVG Filters for CRT Effects -->
-    <svg style="position: absolute; width: 0; height: 0; overflow: hidden;" aria-hidden="true">
-      <defs>
-        <!-- 
-          BARREL DISTORTION FILTER
-          Physics: Real CRT screens have curved glass that refracts light outward from center.
-          This creates barrel distortion where straight lines bow outward toward edges.
-          We simulate this using a radial gradient displacement map.
-        -->
-        <filter id="crt-optical-distortion" x="-5%" y="-5%" width="110%" height="110%"
-                color-interpolation-filters="sRGB">
-          
-          <!-- 1. Create radial gradient for barrel distortion -->
-          <!-- Dark center (no displacement) to light edges (max displacement) -->
-          <feFlood flood-color="#808080" result="gray"/>
-          <feBlend in="gray" in2="SourceGraphic" mode="normal" result="base"/>
-          
-          <!-- Radial component for outward push at edges -->
-          <feTurbulence type="fractalNoise" baseFrequency="0.001" numOctaves="1" 
-                        seed="42" result="subtleNoise"/>
-          
-          <!-- 2. Create the barrel effect via displacement -->
-          <!-- Scale controls distortion strength - subtle for readability -->
-          <feDisplacementMap in="SourceGraphic" in2="subtleNoise" 
-                             scale="4" 
-                             xChannelSelector="R" yChannelSelector="G" 
-                             result="barrelDistorted"/>
-          
-          <!-- 3. Add subtle chromatic aberration at edges (color fringing) -->
-          <feOffset in="barrelDistorted" dx="0.5" dy="0" result="redChannel"/>
-          <feOffset in="barrelDistorted" dx="-0.5" dy="0" result="blueChannel"/>
-          <feColorMatrix in="redChannel" type="matrix"
-                         values="1 0 0 0 0
-                                 0 0 0 0 0
-                                 0 0 0 0 0
-                                 0 0 0 1 0" result="redOnly"/>
-          <feColorMatrix in="barrelDistorted" type="matrix"
-                         values="0 0 0 0 0
-                                 0 1 0 0 0
-                                 0 0 0 0 0
-                                 0 0 0 1 0" result="greenOnly"/>
-          <feColorMatrix in="blueChannel" type="matrix"
-                         values="0 0 0 0 0
-                                 0 0 0 0 0
-                                 0 0 1 0 0
-                                 0 0 0 1 0" result="blueOnly"/>
-          
-          <!-- 4. Composite RGB channels back together -->
-          <feBlend in="redOnly" in2="greenOnly" mode="screen" result="rg"/>
-          <feBlend in="rg" in2="blueOnly" mode="screen" result="final"/>
-        </filter>
-      </defs>
-    </svg>
+        <!-- Favicon -->
+        <link rel="icon" type="image/jpeg" href="images/logo.jpg" />
+        <!-- Fonts -->
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=VT323&family=Courier+Prime:wght@400;700&display=swap"
+            rel="stylesheet"
+        />
 
-    <div class="crt-monitor">
-      <div class="crt-screen">
-        <div class="scanline-roll"></div>
-        <div id="boot-overlay"></div>
-        <div class="crt-content-layer">
-          <div class="container">
+
+        <link rel="stylesheet" href="style.css" />
+
+        <!-- JSON-LD Structured Data -->
+        <script type="application/ld+json">
+            {
+                "@context": "https://schema.org",
+                "@type": "WebApplication",
+                "name": "What You Reveal",
+                "url": "https://what-you-reveal.vercel.app/",
+                "description": "A browser fingerprinting demonstration showing what information your browser exposes using a retro hacker terminal interface.",
+                "applicationCategory": "SecurityApplication",
+                "operatingSystem": "Any",
+                "author": {
+                    "@type": "Person",
+                    "name": "saatvik333"
+                },
+                "image": "https://what-you-reveal.vercel.app/images/logo.jpg",
+                "offers": {
+                    "@type": "Offer",
+                    "price": "0",
+                    "priceCurrency": "USD"
+                }
+            }
+        </script>
+    </head>
+    <body>
+        <div class="container">
             <header>
-              <pre class="ascii-header">
+                <pre class="ascii-header">
  __        ___   _    _  _____  __   _____  _   _   ____  _______     _______    _    _     
  \ \      / / | | |  / \|_   _| \ \ / / _ \| | | | |  _ \| ____\ \   / / ____|  / \  | |    
   \ \ /\ / /| |_| | / _ \ | |    \ V / | | | | | | | |_) |  _|  \ \ / /|  _|   / _ \ | |    
@@ -131,156 +97,143 @@
     \_/\_/  |_| |_/_/   \_\_|     |_| \___/ \___/  |_| \_\_____|  \_/  |_____/_/   \_\_____|
                                                                                             
               </pre>
-              <div class="subtitle glitch">
-                SYSTEM ANALYSIS TOOL v3.1.0 // BROWSER FINGERPRINT DEMO
-              </div>
-              <div class="controls">
-                  <button id="theme-toggle" class="control-btn">[ SWITCH THEME ]</button>
-                  <button id="download-report" class="control-btn">[ DOWNLOAD LOG ]</button>
-              </div>
+                <div class="subtitle">
+                    SYSTEM ANALYSIS TOOL v3.1.0 // BROWSER FINGERPRINT DEMO
+                </div>
+                <div class="controls">
+                    <button id="download-report" class="control-btn">
+                        [ DOWNLOAD LOG ]
+                    </button>
+                </div>
             </header>
-  
+
             <div class="grid">
-              <!-- New Section for Privacy Mode -->
-              <section class="card">
-                <h2>0. PRIVACY_MODE</h2>
-                <div id="incognito-info" class="info-block">
-                  <pre>Analyzing storage...</pre>
-                </div>
-              </section>
+                            <!-- New Section for Privacy Mode -->
+                            <section class="card">
+                                <h2 data-decrypt data-decrypt-trigger="hover">0. PRIVACY_MODE</h2>
+                                <div id="incognito-info" class="info-block">
+                                    <pre>Analyzing storage...</pre>
+                                </div>
+                            </section>
 
-              <section class="card">
-                <h2>1. NETWORK_INFO</h2>
-                <div id="network-info" class="info-block">
-                  <pre>Initializing scan...</pre>
-                </div>
-              </section>
-  
-              <section class="card">
-                <h2>2. DEVICE_CORE</h2>
-                <div id="device-info" class="info-block">
-                  <pre>Scanning hardware...</pre>
-                </div>
-              </section>
-  
-              <section class="card">
-                <h2>3. NAVIGATOR_VARS</h2>
-                <div id="browser-info" class="info-block">
-                  <pre>Reading headers...</pre>
-                </div>
-              </section>
-  
-              <section class="card">
-                <h2>4. SCREEN_BUFFER</h2>
-                <div id="screen-info" class="info-block">
-                  <pre>Measuring viewport...</pre>
-                </div>
-              </section>
-  
-              <section class="card">
-                <h2>5. HARDWARE_METRICS</h2>
-                <div id="hardware-info" class="info-block">
-                  <pre>Querying sensors...</pre>
-                </div>
-              </section>
-  
-              <section class="card">
-                <h2>6. RENDER_ENGINE</h2>
-                <div id="webgl-info" class="info-block">
-                  <pre>Testing GPU...</pre>
-                </div>
-              </section>
-  
-              <section class="card">
-                <h2>7. SECURITY_TOKENS</h2>
-                <div id="perms-info" class="info-block">
-                  <pre>Auditing permissions...</pre>
-                </div>
-              </section>
-  
-              <section class="card">
-                <h2>8. DIGITAL_IDENTITY</h2>
-                <div id="identity-info" class="info-block">
-                  <pre>Calculating hash...</pre>
-                </div>
-              </section>
-  
-              <section class="card">
-                <h2>9. RAW_PACKET_HEADERS</h2>
-                <div id="headers-info" class="info-block code-block">
-                  <pre>Capturing stream...</pre>
-                </div>
-              </section>
-  
-              <section class="card">
-                <h2>10. FONTS_DETECTED</h2>
-                <div id="fonts-info" class="info-block">
-                  <pre>Scanning fonts...</pre>
-                </div>
-              </section>
-  
-              <section class="card">
-                <h2>11. MEDIA_CODECS</h2>
-                <div id="media-info" class="info-block">
-                  <pre>Checking support...</pre>
-                </div>
-              </section>
-              <section class="card">
-                <h2>12. SYSTEM_INTEGRITY</h2>
-                <div id="integrity-info" class="info-block">
-                  <pre>Analyzing behavior...</pre>
-                </div>
-              </section>
-  
-              <section class="card">
-                <h2>13. CLIENT_HINTS_ADV</h2>
-                <div id="hints-info" class="info-block">
-                  <pre>Requesting entropy...</pre>
-                </div>
-              </section>
-  
-              <section class="card">
-                <h2>14. MEDIA_DEVICES</h2>
-                <div id="media-devices-info" class="info-block">
-                  <pre>Enumerating I/O...</pre>
-                </div>
-              </section>
+                            <section class="card">
+                                <h2 data-decrypt data-decrypt-trigger="hover">1. NETWORK_INFO</h2>
+                                <div id="network-info" class="info-block">
+                                    <pre>Initializing scan...</pre>
+                                </div>
+                            </section>
 
-              <section class="card">
-                <h2>15. CLIPBOARD_ACCESS</h2>
-                <div id="clipboard-info" class="info-block">
-                  <pre>Checking capabilities...</pre>
-                </div>
-              </section>
+                            <section class="card">
+                                <h2 data-decrypt data-decrypt-trigger="hover">2. DEVICE_CORE</h2>
+                                <div id="device-info" class="info-block">
+                                    <pre>Scanning hardware...</pre>
+                                </div>
+                            </section>
 
-              <section class="card">
-                <h2>16. LOCALE_FINGERPRINT</h2>
-                <div id="intl-info" class="info-block">
-                  <pre>Analyzing locale settings...</pre>
-                </div>
-              </section>
-            </div>
-  
+                            <section class="card">
+                                <h2 data-decrypt data-decrypt-trigger="hover">3. NAVIGATOR_VARS</h2>
+                                <div id="browser-info" class="info-block">
+                                    <pre>Reading headers...</pre>
+                                </div>
+                            </section>
+
+                            <section class="card">
+                                <h2 data-decrypt data-decrypt-trigger="hover">4. SCREEN_BUFFER</h2>
+                                <div id="screen-info" class="info-block">
+                                    <pre>Measuring viewport...</pre>
+                                </div>
+                            </section>
+
+                            <section class="card">
+                                <h2 data-decrypt data-decrypt-trigger="hover">5. HARDWARE_METRICS</h2>
+                                <div id="hardware-info" class="info-block">
+                                    <pre>Querying sensors...</pre>
+                                </div>
+                            </section>
+
+                            <section class="card">
+                                <h2 data-decrypt data-decrypt-trigger="hover">6. RENDER_ENGINE</h2>
+                                <div id="webgl-info" class="info-block">
+                                    <pre>Testing GPU...</pre>
+                                </div>
+                            </section>
+
+                            <section class="card">
+                                <h2 data-decrypt data-decrypt-trigger="hover">7. SECURITY_TOKENS</h2>
+                                <div id="perms-info" class="info-block">
+                                    <pre>Auditing permissions...</pre>
+                                </div>
+                            </section>
+
+                            <section class="card">
+                                <h2 data-decrypt data-decrypt-trigger="hover">8. DIGITAL_IDENTITY</h2>
+                                <div id="identity-info" class="info-block">
+                                    <pre>Calculating hash...</pre>
+                                </div>
+                            </section>
+
+                            <section class="card">
+                                <h2 data-decrypt data-decrypt-trigger="hover">9. RAW_PACKET_HEADERS</h2>
+                                <div id="headers-info" class="info-block code-block">
+                                    <pre>Capturing stream...</pre>
+                                </div>
+                            </section>
+
+                            <section class="card">
+                                <h2 data-decrypt data-decrypt-trigger="hover">10. FONTS_DETECTED</h2>
+                                <div id="fonts-info" class="info-block">
+                                    <pre>Scanning fonts...</pre>
+                                </div>
+                            </section>
+
+                            <section class="card">
+                                <h2 data-decrypt data-decrypt-trigger="hover">11. MEDIA_CODECS</h2>
+                                <div id="media-info" class="info-block">
+                                    <pre>Checking support...</pre>
+                                </div>
+                            </section>
+                            <section class="card">
+                                <h2 data-decrypt data-decrypt-trigger="hover">12. SYSTEM_INTEGRITY</h2>
+                                <div id="integrity-info" class="info-block">
+                                    <pre>Analyzing behavior...</pre>
+                                </div>
+                            </section>
+
+                            <section class="card">
+                                <h2 data-decrypt data-decrypt-trigger="hover">13. CLIENT_HINTS_ADV</h2>
+                                <div id="hints-info" class="info-block">
+                                    <pre>Requesting entropy...</pre>
+                                </div>
+                            </section>
+
+                            <section class="card">
+                                <h2 data-decrypt data-decrypt-trigger="hover">14. MEDIA_DEVICES</h2>
+                                <div id="media-devices-info" class="info-block">
+                                    <pre>Enumerating I/O...</pre>
+                                </div>
+                            </section>
+
+                            <section class="card">
+                                <h2 data-decrypt data-decrypt-trigger="hover">15. CLIPBOARD_ACCESS</h2>
+                                <div id="clipboard-info" class="info-block">
+                                    <pre>Checking capabilities...</pre>
+                                </div>
+                            </section>
+
+                            <section class="card">
+                                <h2 data-decrypt data-decrypt-trigger="hover">16. LOCALE_FINGERPRINT</h2>
+                                <div id="intl-info" class="info-block">
+                                    <pre>Analyzing locale settings...</pre>
+                                </div>
+                            </section>
+                        </div>
+
             <footer>
-              <span class="prompt">user@what-you-reveal:~$</span>
-              <span id="log-line">Analysis complete. Waiting for input...</span
-              ><span class="cursor"></span>
+                <span class="prompt">user@what-you-reveal:~$</span>
+                <span id="log-line">Analysis complete. Waiting for input...</span><span class="cursor"></span>
             </footer>
-          </div>
         </div>
-      </div>
-    </div>
-    
-    <!-- SVG Filters for Distortion -->
-    <svg style="display: none;">
-      <defs>
-        <filter id="curvature">
-          <feTurbulence type="fractalNoise" baseFrequency="0.001" numOctaves="1" result="noise" />
-          <feDisplacementMap in="SourceGraphic" in2="noise" scale="6" />
-        </filter>
-      </defs>
-    </svg>
 
-    <script type="module" src="js/main.js"></script>
-  </body>
+        <script type="module" src="js/main.js"></script>
+    </body>
 </html>
