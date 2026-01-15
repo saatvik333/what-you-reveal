@@ -18,38 +18,35 @@
 
 **What You Reveal** visualises data exposed by modern web browsers.
 
-Designed with a focus on deep data collection and cinematic terminal aesthetics. No external tracking. No data storage. Everything runs locally.
+Redesigned with a **minimalist black & white terminal aesthetic**, it focuses on speed, clarity, and deep data inspection. No external tracking. No data storage. Everything runs locally.
 
 ## 0x02 // MODULES
 
-**HARDWARE**
-GPU renderer, memory estimation, battery status, CPU concurrency, peripheral detection (Gamepad/VR).
+**NETWORK INTELLIGENCE**
 
-**IDENTITY**
-Canvas fingerprinting, AudioContext analysis, WebGL render hash, Client Hints.
+- **Local Scan**: Instant detection of local IP leaks via WebRTC and latency pinging.
+- **Server Scan**: Deep GeoIP analysis (ISP, Organization, ASN) and proxy/VPN detection.
+- **Headers**: Full inspection of HTTP request headers.
 
-**NETWORK**
-WebRTC local IP leaks, DNS obfuscation detection, comprehensive GeoIP data, connection type tracking.
+**IDENTITY & FINGERPRINTING**
+
+- **Canvas & WebGL**: Render hashes and GPU vendor/renderer identification.
+- **System**: Font enumeration, screen properties, media devices, and battery status.
+- **Privacy**: Detection of Incognito mode, automation (WebDriver), and Global Privacy Control.
 
 **LOCALE**
-Deep analysis of Intl APIs (Timezone, Calendar, Numbering Systems) to triangulate user origin.
 
-**PRIVACY**
-Detection of Incognito/Private modes, Tor Browser, Global Privacy Control (GPC), and Do Not Track signals.
+- **Intl APIs**: Analysis of timezone, calendar, and numbering systems to pinpoint user origin.
 
-**SYSTEM**
-Font enumeration for OS detection, screen properties, multi-monitor inference.
+## 0x03 // FEATURES
 
-## 0x03 // THEMES
+- **Dynamic Reports**: Generate comprehensive forensic text logs of all collected data.
+- **Reactive UI**: Data streams in parallel; "Network Info" updates local stats instantly while server data loads.
+- **Zero-CLS Design**: Architecture optimized to prevent layout shifts during loading.
 
-Toggle between 4 visual modes:
+## 0x04 // INSTALL & RUN
 
-- **CRT GREEN**: Default phosphor terminal.
-- **CYBERPUNK**: High-contrast neon grid.
-- **SECURITY HUD**: Minimal blue dashboard.
-- **MR. ROBOT**: Authentic, low-contrast grey/red console.
-
-## 0x04 // INSTALL
+**Prerequisites**: Node.js 18+
 
 ```bash
 # Clone
@@ -59,7 +56,11 @@ git clone https://github.com/saatvik333/what-you-reveal.git
 cd what-you-reveal
 npm install
 
-# Run (localhost:3000)
+# Development (Vite + Server)
+npm run dev
+
+# Production
+npm run build
 npm start
 ```
 

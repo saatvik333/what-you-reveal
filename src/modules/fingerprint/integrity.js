@@ -65,8 +65,11 @@ export function detectBot() {
 
   // Result
   let status = 'Likely Human';
-  if (score >= 100) {status = 'BOT DETECTED!';}
-  else if (score > 0) {status = 'Suspicious';}
+  if (score >= 100) {
+    status = 'BOT DETECTED!';
+  } else if (score > 0) {
+    status = 'Suspicious';
+  }
 
   const data = {
     Status: score > 0 ? { value: status, warning: score >= 50 } : status,

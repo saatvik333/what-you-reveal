@@ -204,8 +204,16 @@ header {
 .info-block {
   padding: var(--spacing-sm);
   font-size: var(--font-size-sm);
+  min-height: 120px; /* Prevent layout shift */
   max-height: 300px;
   overflow-y: auto;
+}
+
+/* Taller blocks need more space to avoid shift */
+#network-info,
+#headers-info,
+#identity-info {
+  min-height: 200px;
 }
 
 .info-block pre {

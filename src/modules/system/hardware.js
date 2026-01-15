@@ -12,10 +12,14 @@ function estimateGPUMemory() {
     const canvas = document.createElement('canvas');
     const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
 
-    if (!gl) {return 'Unknown';}
+    if (!gl) {
+      return 'Unknown';
+    }
 
     const ext = gl.getExtension('WEBGL_debug_renderer_info');
-    if (!ext) {return 'Unknown';}
+    if (!ext) {
+      return 'Unknown';
+    }
 
     const renderer = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL);
 
@@ -27,9 +31,15 @@ function estimateGPUMemory() {
 
     // Estimate based on max texture size as rough proxy
     const maxTexture = gl.getParameter(gl.MAX_TEXTURE_SIZE);
-    if (maxTexture >= 16384) {return '>= 4GB (Estimated)';}
-    if (maxTexture >= 8192) {return '>= 2GB (Estimated)';}
-    if (maxTexture >= 4096) {return '>= 1GB (Estimated)';}
+    if (maxTexture >= 16384) {
+      return '>= 4GB (Estimated)';
+    }
+    if (maxTexture >= 8192) {
+      return '>= 2GB (Estimated)';
+    }
+    if (maxTexture >= 4096) {
+      return '>= 1GB (Estimated)';
+    }
     return '< 1GB (Estimated)';
   } catch (e) {
     return 'Error';

@@ -22,9 +22,10 @@ import { downloadReport } from './report.js';
 // Network Modules
 import { collectBrowserData } from '../modules/network/browser.js';
 import {
+  collectLocalNetworkData,
+  collectGeoIPData,
   fetchServerInfo,
   parseDeviceInfo,
-  collectNetworkData,
   formatHeaders,
 } from '../modules/network/network.js';
 import { collectClientHints } from '../modules/network/client_hints.js';
@@ -83,37 +84,64 @@ async function runTask(elementId, taskFn, dataKey) {
  * Fetch and render network-related data
  * These tasks depend on server response so run sequentially
  */
+/**
+ * Fetch and render network-related data (Parallelized)
+ */
 async function collectNetworkChain() {
-  try {
-    const serverData = await fetchServerInfo();
+  const elementId = 'network-info';
+  // Shared state for the Network Card
+  let networkState = {
+    'Status': 'Initializing parallel scan...',
+  };
 
-    if (!serverData) {
-      throw new Error('No server data received');
+  const updateUI = () => {
+    // Remove "Status" if we have real data
+    if (Object.keys(networkState).length > 1 && networkState['Status']) {
+      delete networkState['Status'];
     }
+    renderToElement(elementId, networkState);
+    // Update global store
+    window.collectedData['Network Info'] = networkState;
+  };
 
-    // Device info from User-Agent
-    const deviceData = parseDeviceInfo(serverData);
-    window.collectedData['Device Info'] = deviceData;
-    renderToElement('device-info', deviceData);
+  // 1. Start Local Scan (Immediate Feedback)
+  const localTask = collectLocalNetworkData((partial) => {
+    // Merge updates from local scan (latency, webrtc)
+    networkState = { ...networkState, ...partial };
+    updateUI();
+  });
 
-    // Network info (GeoIP, latency)
-    const networkData = await collectNetworkData(serverData, 'network-info');
-    window.collectedData['Network Info'] = networkData;
-    renderToElement('network-info', networkData);
+  // 2. Start Server Fetch (Parallel)
+  const serverTask = (async () => {
+    try {
+      const serverData = await fetchServerInfo();
+      if (!serverData) throw new Error('No server data');
 
-    // Raw headers
-    const headersEl = document.getElementById('headers-info');
-    if (headersEl && serverData.headers) {
-      window.collectedData['Headers'] = serverData.headers;
-      headersEl.innerHTML = formatHeaders(serverData.headers);
+      // 2a. Render Device Info & Headers immediately
+      const deviceData = parseDeviceInfo(serverData);
+      window.collectedData['Device Info'] = deviceData;
+      renderToElement('device-info', deviceData);
+
+      if (serverData.headers) {
+          window.collectedData['Headers'] = serverData.headers;
+          document.getElementById('headers-info').innerHTML = formatHeaders(serverData.headers);
+      }
+
+      // 2b. Start GeoIP (Depends on Server IP)
+      const geoData = await collectGeoIPData(serverData);
+      
+      // Merge GeoIP into shared state
+      networkState = { ...networkState, ...geoData };
+      updateUI();
+
+    } catch (e) {
+      console.error('[Network] Server chain failed:', e);
+      networkState['Server Connection'] = 'Failed';
+      updateUI();
     }
-  } catch (e) {
-    console.error('[Network] Chain failed:', e);
-    const fallback = 'Connection failed';
-    document.getElementById('network-info')?.replaceChildren(document.createTextNode(fallback));
-    document.getElementById('device-info')?.replaceChildren(document.createTextNode(fallback));
-    document.getElementById('headers-info')?.replaceChildren(document.createTextNode(fallback));
-  }
+  })();
+
+  await Promise.allSettled([localTask, serverTask]);
 }
 
 // ============================================================
@@ -123,6 +151,12 @@ async function collectNetworkChain() {
 document.addEventListener('DOMContentLoaded', () => {
   // 1. Initialize UI systems
   initDecryptedText();
+
+  // 1b. Inject Version
+  const subtitle = document.querySelector('.subtitle');
+  if (subtitle) {
+    subtitle.textContent = `SYSTEM ANALYSIS TOOL v${__APP_VERSION__} // BROWSER FINGERPRINT DEMO`;
+  }
 
   // 2. Setup UI controls
   document.getElementById('download-report')?.addEventListener('click', downloadReport);

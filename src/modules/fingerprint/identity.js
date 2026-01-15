@@ -67,7 +67,9 @@ function getWebGLCanvasFingerprint() {
     canvas.height = 64;
     const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
 
-    if (!gl) {return 'Not Supported';}
+    if (!gl) {
+      return 'Not Supported';
+    }
 
     // Draw gradient pattern using WebGL
     gl.clearColor(0.3, 0.5, 0.7, 1.0);
@@ -115,7 +117,9 @@ function getEmojiFingerprint() {
 async function getAudioFingerprint() {
   try {
     const AudioContext = window.OfflineAudioContext || window.webkitOfflineAudioContext;
-    if (!AudioContext) {return 'Not Supported';}
+    if (!AudioContext) {
+      return 'Not Supported';
+    }
 
     const context = new AudioContext(1, 5000, 44100);
 

@@ -69,14 +69,16 @@ class DecryptedText {
           }
         });
       },
-      { threshold: 0.1 },
+      { threshold: 0.1 }
     );
 
     observer.observe(this.element);
   }
 
   startAnimation() {
-    if (this.isAnimating) {return;}
+    if (this.isAnimating) {
+      return;
+    }
 
     this.isAnimating = true;
     this.revealedIndices = new Set();
@@ -125,7 +127,9 @@ class DecryptedText {
         }
         // Fallback
         for (let i = 0; i < len; i++) {
-          if (!revealed.has(i)) {return i;}
+          if (!revealed.has(i)) {
+            return i;
+          }
         }
         return 0;
       }
@@ -139,8 +143,12 @@ class DecryptedText {
     return this.originalText
       .split('')
       .map((char, i) => {
-        if (char === ' ') {return ' ';}
-        if (this.revealedIndices.has(i)) {return this.originalText[i];}
+        if (char === ' ') {
+          return ' ';
+        }
+        if (this.revealedIndices.has(i)) {
+          return this.originalText[i];
+        }
         return availableChars[Math.floor(Math.random() * availableChars.length)];
       })
       .join('');

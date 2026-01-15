@@ -1,124 +1,191 @@
 /**
- * Report Generation Module
- * Generates and downloads a text-based system report.
+ * Enhanced Report Generation Module
+ * Dynamically scans collected data for threats and generates a professional system report.
  */
 
-export function downloadReport() {
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const filename = `system_analysis_${timestamp}.txt`;
+// ============================================================
+// CONFIGURATION
+// ============================================================
+const CONFIG = {
+  appName: 'WHAT YOU REVEAL',
+  version: __APP_VERSION__,
+  reportTitle: 'SYSTEM ANALYSIS & PRIVACY REPORT',
+  width: 70, // Max width for ASCII tables
+};
 
-  let report = `
-=============================================================
-      WHAT YOU REVEAL - SYSTEM ANALYSIS REPORT
-=============================================================
-Date: ${new Date().toLocaleString()}
-User Agent: ${navigator.userAgent}
-=============================================================
+/**
+ * Escapes characters for safe text file output (mostly cosmetic)
+ * @param {string} str
+ * @returns {string}
+ */
+function sanitize(str) {
+  if (typeof str !== 'string') return String(str);
+  return str.replace(/[\u0000-\u001F\u007F-\u009F]/g, ''); // Remove non-printable control chars
+}
 
-`;
+/**
+ * Centers text within a defined width
+ * @param {string} text
+ * @param {number} width
+ * @returns {string}
+ */
+function center(text, width = CONFIG.width) {
+  const len = text.length;
+  if (len >= width) return text;
+  const padding = Math.floor((width - len) / 2);
+  return ' '.repeat(padding) + text;
+}
 
-  // Gather all info blocks from global store for accuracy
-  const data = window.collectedData || {};
+/**
+ * Creates a horizontal divider line
+ * @param {string} char
+ * @returns {string}
+ */
+function line(char = '=') {
+  return char.repeat(CONFIG.width);
+}
 
-  if (Object.keys(data).length === 0) {
-    report += '\n[WARNING]: No data collected (or run before initialization complete).\n\n';
+/**
+ * Recursively scans an object for detailed warning flags
+ * @param {Object} obj - Data object to scan
+ * @param {string} context - Breadcrumb context (e.g. "Network > VPN")
+ * @param {Array} results - Accumulator for threats found
+ */
+function scanForThreats(obj, context, results) {
+  if (!obj || typeof obj !== 'object') return;
+
+  // Check if current object is a warning object
+  if (obj.warning === true && obj.value) {
+    results.push({
+      vector: context,
+      value: String(obj.value),
+      severity: 'HIGH', // Could be dynamic if we added 'riskLevel' property later
+    });
   }
 
-  // --- THREAT SUMMARY ---
-  report += `
-[ THREAT INTELLIGENCE SUMMARY ]
--------------------------------
-`;
-  // Aggregated threats
-  const threats = [];
-  if (
-    data['Privacy Mode'] &&
-    data['Privacy Mode']['Browsing Mode'] &&
-    data['Privacy Mode']['Browsing Mode'].warning
-  ) {
-    threats.push(`- Browsing Mode: ${data['Privacy Mode']['Browsing Mode'].value}`);
+  // Recursive scan
+  for (const [key, value] of Object.entries(obj)) {
+    if (key === 'warning' || key === 'value') continue; // Skip internal keys
+    const nextContext = context ? `${context} > ${key}` : key;
+    scanForThreats(value, nextContext, results);
   }
-  if (
-    data['Fingerprint'] &&
-    data['Fingerprint']['Trackability Estimate'] &&
-    data['Fingerprint']['Trackability Estimate'].warning
-  ) {
-    threats.push(`- Trackability: ${data['Fingerprint']['Trackability Estimate'].value}`);
-  }
-  if (
-    data['Network Info'] &&
-    data['Network Info']['VPN/Proxy Detected'] &&
-    typeof data['Network Info']['VPN/Proxy Detected'] === 'object' &&
-    data['Network Info']['VPN/Proxy Detected'].warning
-  ) {
-    threats.push('- Network: Proxy/VPN Detected');
-  }
+}
 
-  if (threats.length > 0) {
-    report += threats.join('\n');
-  } else {
-    report += 'No critical privacy threats detected (or detection failed).';
-  }
-  report += '\n\n';
+/**
+ * Formats a single section of data into an aligned ASCII table look
+ * @param {Object} data - Section data
+ * @returns {string} Formatted string
+ */
+function formatSection(data) {
+  let output = '';
+  // Find max key length for alignment
+  const keys = Object.keys(data);
+  if (keys.length === 0) return '  [No Data]\n';
 
-  // --- DETAILED BREAKDOWN ---
-  for (const [section, sectionData] of Object.entries(data)) {
-    if (section === 'Headers') {continue;} // Handle separately
+  const maxKeyLen = Math.min(30, Math.max(...keys.map((k) => k.length)));
 
-    report += `
-[ ${section.toUpperCase()} ]
-${'-'.repeat(section.length + 4)}
-`;
+  for (const [key, val] of Object.entries(data)) {
+    let displayVal = val;
+    let isWarning = false;
 
-    if (typeof sectionData === 'object') {
-      for (const [key, val] of Object.entries(sectionData)) {
-        let displayVal = val;
-        if (typeof val === 'object' && val !== null) {
-          if ('element' in val) {
-            displayVal = '[Visual Data File - Cannot Export to TXT]';
-          } else if ('value' in val) {
-            displayVal = val.value;
-          } else {
-            displayVal = JSON.stringify(val);
-          }
-        }
-        report += `${key.padEnd(30)}: ${displayVal}\n`;
+    // Unwrap object format
+    if (typeof val === 'object' && val !== null) {
+      if ('element' in val) {
+        displayVal = '[Visual Evidence - Excluded from Text Report]';
+      } else if ('value' in val) {
+        displayVal = val.value;
+        if (val.warning) isWarning = true;
+      } else {
+        // Fallback for nested objects that aren't warning containers
+        displayVal = JSON.stringify(val);
       }
     }
-    report += '\n';
-  }
 
-  // Headers
-  if (data['Headers']) {
-    report += `
-[ RAW HEADERS ]
----------------
+    const keyStr = key.padEnd(maxKeyLen + 2, '.');
+    const warningMark = isWarning ? ' [!]' : '';
+    output += `  ${keyStr} : ${displayVal}${warningMark}\n`;
+  }
+  return output;
+}
+
+/**
+ * Main function to generate and download the report
+ */
+export function downloadReport() {
+  const data = window.collectedData || {};
+  const timestamp = new Date().toISOString();
+  const filename = `WYR_Analysis_${timestamp.replace(/[:.]/g, '-')}.txt`;
+
+  // 1. HEADER
+  let report = `
+${line('=')}
+${center(CONFIG.appName.toUpperCase())}
+${center(CONFIG.reportTitle)}
+${line('=')}
+
+Report ID   : ${Math.random().toString(36).substr(2, 9).toUpperCase()}
+Date        : ${new Date().toLocaleString()}
+Build       : v${CONFIG.version}
+Duration    : ${(performance.now() / 1000).toFixed(2)}s
+
+${line('-')}
+MISSION SUMMARY
+${line('-')}
+This document contains a forensic analysis of data exposed by your
+browser to any website you visit. 
+
 `;
-    for (const [key, val] of Object.entries(data['Headers'])) {
-      report += `${key.padEnd(30)}: ${val}\n`;
-    }
-    report += '\n';
+
+  // 2. DYNAMIC THREAT SCANNING
+  const threats = [];
+  scanForThreats(data, '', threats);
+
+  report += `[ THREAT INTELLIGENCE ]\n`;
+  if (threats.length > 0) {
+    report += `\n⚠  CRITICAL EXPOSURES DETECTED: ${threats.length}\n\n`;
+    threats.forEach((t, idx) => {
+      report += `${idx + 1}. vector : ${t.vector}\n`;
+      report += `   value  : ${t.value}\n`;
+      report += `   risk   : ${t.severity}\n\n`;
+    });
+  } else {
+    report += `\n✔  No high-risk vectors detected.\n   (Note: Zero risk is impossible on the modern web)\n\n`;
   }
 
+  // 3. DETAILED MODULE BREAKDOWN
+  report += `\n${line('=')}\nRunning Full Diagnostic Dump...\n${line('=')}\n\n`;
+
+  const sections = Object.keys(data).sort(); // Sort so headers/network don't jump around
+  
+  if (sections.length === 0) {
+    report += `[ERROR] No data collected. Did the analysis finish?\n`;
+  }
+
+  sections.forEach((section) => {
+    report += `[ ${section.toUpperCase()} ]\n${line('-')}\n`;
+    report += formatSection(data[section]);
+    report += `\n`;
+  });
+
+  // 4. FOOTER
   report += `
-=============================================================
-END OF REPORT
-Generated by What You Reveal
-=============================================================
+${line('=')}
+END OF REPORT // ${CONFIG.appName}
+${line('=')}
 `;
 
-  // Create Blob and trigger download
-  const blob = new Blob([report], { type: 'text/plain' });
+  // 5. DOWNLOAD TRIGGER
+  const blob = new Blob([report], { type: 'text/plain;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
-  document.body.appendChild(a);
+  document.body.appendChild(a); // Req for Firefox
   a.click();
 
   // Cleanup
   setTimeout(() => {
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
-  }, 100);
+  }, 500);
 }

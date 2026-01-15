@@ -64,7 +64,9 @@ const rateLimit =
     if (Math.random() < 0.01) {
       // 1% chance to cleanup
       for (const [key, val] of limiterStore.entries()) {
-        if (now > val.resetTime) {limiterStore.delete(key);}
+        if (now > val.resetTime) {
+          limiterStore.delete(key);
+        }
       }
     }
 

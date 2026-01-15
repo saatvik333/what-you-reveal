@@ -296,12 +296,19 @@ function categorizeFont(font, categories) {
     'Poppins',
   ];
 
-  if (winFonts.some((w) => font.includes(w))) {categories.windows.push(font);}
-  else if (macFonts.some((m) => font.includes(m))) {categories.macos.push(font);}
-  else if (linuxFonts.some((l) => font.includes(l))) {categories.linux.push(font);}
-  else if (cjkFonts.some((c) => font.includes(c))) {categories.cjk.push(font);}
-  else if (webFonts.some((w) => font.includes(w))) {categories.web.push(font);}
-  else {categories.other.push(font);}
+  if (winFonts.some((w) => font.includes(w))) {
+    categories.windows.push(font);
+  } else if (macFonts.some((m) => font.includes(m))) {
+    categories.macos.push(font);
+  } else if (linuxFonts.some((l) => font.includes(l))) {
+    categories.linux.push(font);
+  } else if (cjkFonts.some((c) => font.includes(c))) {
+    categories.cjk.push(font);
+  } else if (webFonts.some((w) => font.includes(w))) {
+    categories.web.push(font);
+  } else {
+    categories.other.push(font);
+  }
 }
 
 /**

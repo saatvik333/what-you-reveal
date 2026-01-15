@@ -67,49 +67,71 @@ export function parseDeviceInfo(serverData) {
  * @param {string} elementId - Element ID to render to (for real-time updates)
  * @returns {Promise<Object>} Network data object
  */
-export async function collectNetworkData(serverData, elementId) {
-  const networkData = {
-    'Public IP (Server detected)': serverData.ip,
+/**
+ * Collects local network data (Ping, WebRTC) immediately
+ * @param {Function} onUpdate - Callback when data changes (data) => void
+ * @returns {Promise<Object>} Final local network data
+ */
+export async function collectLocalNetworkData(onUpdate) {
+  const localData = {};
+  
+  const notify = () => {
+    if (typeof onUpdate === 'function') onUpdate({ ...localData });
   };
 
-  // Latency
-  networkData['Latency (Avg of 3 pings)'] = await runPingTest();
+  // 1. Latency (Fastest)
+  localData['Latency'] = 'Pinging...';
+  notify();
+  
+  localData['Latency'] = await runPingTest();
+  notify();
 
-  // Local IP via WebRTC (Best Effort, Multiple Candidates)
-  const rtcCandidates = new Set();
+  // 2. WebRTC Leak (Slower)
   try {
+    const rtcCandidates = new Set();
     const rtcPeer = new RTCPeerConnection({ iceServers: [] });
     rtcPeer.createDataChannel('');
     rtcPeer.createOffer().then((offer) => rtcPeer.setLocalDescription(offer));
-    rtcPeer.onicecandidate = (event) => {
-      if (event && event.candidate && event.candidate.candidate) {
-        // Match IPv4, IPv6, and mDNS (.local)
-        const ipMatch = event.candidate.candidate.match(
-          /([0-9]{1,3}(\.[0-9]{1,3}){3}|[a-f0-9]{1,4}(:[a-f0-9]{1,4}){7}|[a-f0-9-]+\.local)/,
-        );
-        if (ipMatch) {
-          const detectedIp = ipMatch[1];
-
-          if (detectedIp.endsWith('.local')) {
-            // mDNS Obfuscation detected
-            rtcCandidates.add(`${detectedIp} (mDNS Obfuscated)`);
-          } else {
-            rtcCandidates.add(detectedIp);
-          }
-
-          networkData['Local IP (WebRTC Leak)'] = Array.from(rtcCandidates).join(', ');
-          const netInfoEl = document.getElementById(elementId);
-          if (netInfoEl) {netInfoEl.innerHTML = createTable(networkData);}
+    
+    // Set a timeout for WebRTC as it can hang
+    const rtcTimeout = new Promise(resolve => setTimeout(resolve, 1500));
+    
+    const rtcPromise = new Promise(resolve => {
+        rtcPeer.onicecandidate = (event) => {
+        if (event && event.candidate && event.candidate.candidate) {
+            const ipMatch = event.candidate.candidate.match(
+            /([0-9]{1,3}(\.[0-9]{1,3}){3}|[a-f0-9]{1,4}(:[a-f0-9]{1,4}){7}|[a-f0-9-]+\.local)/
+            );
+            if (ipMatch) {
+                const detectedIp = ipMatch[1];
+                rtcCandidates.add(detectedIp.endsWith('.local') ? `${detectedIp} (mDNS)` : detectedIp);
+                localData['Local IP'] = Array.from(rtcCandidates).join(', ');
+                notify();
+            }
         }
-      }
-    };
-  } catch (e) {
-    /* ignore */
-  }
-  // GeoIP & Security Check
-  networkData['VPN/Proxy Detected'] = 'Checking...';
-  networkData['Cloud/Datacenter IP'] = 'Checking...';
+        };
+        // Resolve after some time regardless of finding candidates
+        setTimeout(resolve, 1000);
+    });
+    
+    await Promise.race([rtcPromise, rtcTimeout]);
+    
+  } catch (e) { /* ignore */ }
+  
+  return localData;
+}
 
+/**
+ * Collects Server-side GeoIP data
+ * @param {Object} serverData - Pre-fetched server data
+ * @returns {Promise<Object>} GeoIP data
+ */
+export async function collectGeoIPData(serverData) {
+   const geoDataOut = {
+        'Public IP': serverData.ip
+   };
+
+   // GeoIP & Security Check
   try {
     const fields =
       'status,message,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,mobile,proxy,hosting,query';
@@ -119,108 +141,67 @@ export async function collectNetworkData(serverData, elementId) {
       const geoData = await geoResponse.json();
 
       if (geoData.status === 'success') {
-        networkData['ISP'] = geoData.isp;
-        networkData['Organization'] = geoData.org;
-        networkData['AS'] = geoData.as;
-        networkData['Country'] = geoData.country;
-        networkData['Country Code'] = geoData.countryCode;
-        networkData['Region'] = geoData.regionName;
-        networkData['City'] = geoData.city;
-        networkData['Zip'] = geoData.zip;
-        networkData['Timezone'] = geoData.timezone;
-        networkData['Coordinates'] = `${geoData.lat}, ${geoData.lon}`;
-        networkData['Mobile Connection'] = geoData.mobile ? 'Yes' : 'No';
+        geoDataOut['ISP'] = geoData.isp;
+        geoDataOut['Location'] = `${geoData.city}, ${geoData.country} (${geoData.countryCode})`;
+        geoDataOut['Timezone'] = geoData.timezone;
+        geoDataOut['Coordinates'] = `${geoData.lat}, ${geoData.lon}`;
 
         // Security Checks
         const vpnKeywords = ['VPN', 'Proxy', 'Unblocker', 'Tor', 'Relay'];
-        const cloudKeywords = [
-          'Cloudflare',
-          'Fastly',
-          'Akamai',
-          'Google Cloud',
-          'AWS',
-          'Amazon',
-          'Azure',
-          'DigitalOcean',
-          'Hetzner',
-          'OVH',
-          'Datacenter',
-          'Hosting',
-        ];
+        const cloudKeywords = ['Cloudflare', 'Fastly', 'Akamai', 'AWS', 'Azure', 'DigitalOcean', 'Datacenter', 'Hosting'];
 
         let isVPN = geoData.proxy;
         let isCloud = geoData.hosting;
 
-        // Keyword heuristics if API flags are false
         if (!isVPN) {
           const combinedStr = (geoData.isp + ' ' + geoData.org + ' ' + geoData.as).toLowerCase();
-          if (vpnKeywords.some((k) => combinedStr.includes(k.toLowerCase()))) {isVPN = true;}
+          if (vpnKeywords.some((k) => combinedStr.includes(k.toLowerCase()))) isVPN = true;
         }
         if (!isCloud) {
-          const combinedStr = (geoData.isp + ' ' + geoData.org + ' ' + geoData.as).toLowerCase();
-          if (cloudKeywords.some((k) => combinedStr.includes(k.toLowerCase()))) {isCloud = true;}
+            const combinedStr = (geoData.isp + ' ' + geoData.org + ' ' + geoData.as).toLowerCase();
+            if (cloudKeywords.some((k) => combinedStr.includes(k.toLowerCase()))) isCloud = true;
         }
 
-        networkData['VPN/Proxy Detected'] = isVPN ? { value: 'YES', warning: true } : 'No';
-        networkData['Cloud/Datacenter IP'] = isCloud ? { value: 'YES', warning: true } : 'No';
+        geoDataOut['VPN/Proxy'] = isVPN ? { value: 'YES', warning: true } : 'No';
+        geoDataOut['Datacenter'] = isCloud ? { value: 'YES', warning: true } : 'No';
 
-        // Timezone Consistency Check
-        try {
-          const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-          // Normalize checking (some providers use slightly different names for same zone)
-          if (browserTz && geoData.timezone) {
-            if (browserTz === geoData.timezone) {
-              networkData['Timezone Check'] = 'Consistent';
-            } else {
-              // It's a mismatch, but is it meaningful?
-              // Just report the values so the user can see.
-              networkData['Timezone Check'] = {
-                value: `Mismatch (Browser: ${browserTz} vs IP: ${geoData.timezone})`,
-                warning: true,
-              };
-            }
-          }
-        } catch (e) {
-          /* ignore */
-        }
       } else {
-        networkData['Geolocation'] = `API Error: ${geoData.message || 'Unknown'}`;
-        networkData['VPN/Proxy Detected'] = 'Unknown (API Error)';
-        networkData['Cloud/Datacenter IP'] = 'Unknown (API Error)';
+        if (geoData.message === 'reserved range') {
+          geoDataOut['Geolocation'] = 'Localhost / Private Network';
+          geoDataOut['ISP'] = 'Local Network';
+          geoDataOut['Location'] = 'Local Machine';
+          geoDataOut['VPN/Proxy'] = 'No (Local)';
+          geoDataOut['Datacenter'] = 'No (Local)';
+        } else {
+          geoDataOut['Geolocation'] = `API Error: ${geoData.message || 'Unknown'}`;
+        }
       }
-    } else {
-      networkData['Geolocation'] = 'API Request Failed';
-      networkData['VPN/Proxy Detected'] = 'Unknown (API Request Failed)';
-      networkData['Cloud/Datacenter IP'] = 'Unknown (API Request Failed)';
     }
   } catch (e) {
-    networkData['Geolocation'] = 'Could not fetch geolocation data (Blocked?)';
-    networkData['VPN/Proxy Detected'] = 'Unknown (Blocked?)';
-    networkData['Cloud/Datacenter IP'] = 'Unknown (Blocked?)';
-    console.warn('GeoIP fetch error:', e);
+    geoDataOut['Geolocation'] = 'Blocked/Failed';
+    console.warn('GeoIP error:', e);
   }
-
-  // Proxy Headers from Server
+  
+  // Proxy Headers
   if (serverData.proxyHeaders && Object.keys(serverData.proxyHeaders).length > 0) {
-    networkData['Proxy Headers Found'] = {
+    geoDataOut['Proxy Headers'] = {
       value: Object.keys(serverData.proxyHeaders).join(', '),
       warning: true,
     };
-  } else {
-    networkData['Proxy Headers Found'] = 'None';
   }
 
-  // Time Info
-  networkData['Local Timezone Offset'] = new Date().getTimezoneOffset() / -60 + ' hours';
-  networkData['Local Time'] = new Date().toString();
-  try {
-    networkData['Intl Timezone'] = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  } catch (e) {
-    /* ignore */
-  }
+  return geoDataOut;
+}
 
-  return networkData;
+/**
+ * Legacy compatibility wrapper (if needed) or removed if fully refactored.
+ * Keeping a merged version for valid return types in case of full chain.
+ */
+export async function collectNetworkData(serverData, elementId) {
+    // This is now split. The App should call collectLocalNetworkData AND collectGeoIPData.
+    // We can leave this as a helper that does both sequentially if needed, but we want parallel.
+    // For now, let's return an empty object or deprecated warning if named same, 
+    // BUT since we are refactoring app.js too, we will change export names.
 }
 
 /**

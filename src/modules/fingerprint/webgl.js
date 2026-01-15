@@ -149,33 +149,33 @@ export function collectWebGLData() {
     webglData['Max Vertex Uniform Vectors'] = gl.getParameter(gl.MAX_VERTEX_UNIFORM_VECTORS);
     webglData['Max Fragment Uniform Vectors'] = gl.getParameter(gl.MAX_FRAGMENT_UNIFORM_VECTORS);
     webglData['Max Vertex Texture Image Units'] = gl.getParameter(
-      gl.MAX_VERTEX_TEXTURE_IMAGE_UNITS,
+      gl.MAX_VERTEX_TEXTURE_IMAGE_UNITS
     );
     webglData['Max Texture Image Units'] = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS);
     webglData['Max Combined Texture Image Units'] = gl.getParameter(
-      gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS,
+      gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS
     );
 
     // Shader Precision (Fingerprinting gold - varies per GPU)
     webglData['Vertex High Float Precision'] = getShaderPrecision(
       gl,
       gl.VERTEX_SHADER,
-      gl.HIGH_FLOAT,
+      gl.HIGH_FLOAT
     );
     webglData['Vertex Medium Float Precision'] = getShaderPrecision(
       gl,
       gl.VERTEX_SHADER,
-      gl.MEDIUM_FLOAT,
+      gl.MEDIUM_FLOAT
     );
     webglData['Fragment High Float Precision'] = getShaderPrecision(
       gl,
       gl.FRAGMENT_SHADER,
-      gl.HIGH_FLOAT,
+      gl.HIGH_FLOAT
     );
     webglData['Fragment Medium Float Precision'] = getShaderPrecision(
       gl,
       gl.FRAGMENT_SHADER,
-      gl.MEDIUM_FLOAT,
+      gl.MEDIUM_FLOAT
     );
 
     // Antialiasing

@@ -79,7 +79,7 @@ async function testFileSystem() {
         () => {
           // Error = likely incognito
           resolve({ supported: true, available: false, likelyIncognito: true });
-        },
+        }
       );
 
       // Timeout

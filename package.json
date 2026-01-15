@@ -1,6 +1,6 @@
 {
   "name": "what-you-reveal",
-  "version": "3.1.0",
+  "version": "3.3.0",
   "description": "A browser fingerprinting demonstration showing what information your browser exposes",
   "main": "server/server.js",
   "scripts": {

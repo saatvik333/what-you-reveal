@@ -27,9 +27,11 @@ app.use('/api', apiRoutes);
 // Export the app for Vercel (serverless)
 module.exports = app;
 
+const packageJson = require('../package.json');
+
 // Only start the server if this file is run directly
 if (require.main === module) {
   app.listen(port, () => {
-    console.log(`What You Reveal - Running on http://localhost:${port}`); // eslint-disable-line no-console
+    console.log(`What You Reveal v${packageJson.version} - Running on http://localhost:${port}`); // eslint-disable-line no-console
   });
 }

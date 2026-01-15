@@ -13,7 +13,9 @@
  * @returns {string}
  */
 function escapeHtml(str) {
-  if (typeof str !== 'string') {return str;}
+  if (typeof str !== 'string') {
+    return str;
+  }
   return str
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -26,7 +28,9 @@ export function createTable(data) {
   let output = '';
   // Filter keys first
   const entries = Object.entries(data).filter(([_k, v]) => {
-    if (!v) {return false;}
+    if (!v) {
+      return false;
+    }
     const strVal = typeof v === 'object' && v.value ? v.value : String(v);
     const lower = strVal.toLowerCase();
     return (
@@ -38,7 +42,9 @@ export function createTable(data) {
     );
   });
 
-  if (entries.length === 0) {return '<span class="loading">No accessible data.</span>';}
+  if (entries.length === 0) {
+    return '<span class="loading">No accessible data.</span>';
+  }
 
   output += '<div class="terminal-table">';
 
@@ -52,12 +58,16 @@ export function createTable(data) {
     if (typeof value === 'object' && value !== null) {
       if ('value' in value) {
         displayValue = value.value;
-        if (value.warning) {warning = true;}
+        if (value.warning) {
+          warning = true;
+        }
       } else if ('element' in value) {
         // Special case for DOM elements (Image/Canvas)
         displayValue = value.element; // Should be an HTML string or processed later
         isElement = true;
-        if (value.warning) {warning = true;}
+        if (value.warning) {
+          warning = true;
+        }
       } else {
         displayValue = JSON.stringify(value, null, 2);
       }
@@ -95,7 +105,9 @@ if (typeof document !== 'undefined') {
  */
 async function handleCopyClick(e) {
   const row = e.target.closest('.copyable');
-  if (!row) {return;}
+  if (!row) {
+    return;
+  }
 
   const text = row.getAttribute('data-copy');
   if (text) {
@@ -141,7 +153,7 @@ const revealObserver = new IntersectionObserver(
       }
     });
   },
-  { threshold: 0.1 },
+  { threshold: 0.1 }
 );
 
 /**
