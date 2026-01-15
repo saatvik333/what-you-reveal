@@ -4,10 +4,10 @@
  */
 
 export function downloadReport() {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filename = `system_analysis_${timestamp}.txt`;
-    
-    let report = `
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const filename = `system_analysis_${timestamp}.txt`;
+
+  let report = `
 =============================================================
       WHAT YOU REVEAL - SYSTEM ANALYSIS REPORT
 =============================================================
@@ -17,96 +17,108 @@ User Agent: ${navigator.userAgent}
 
 `;
 
-    // Gather all info blocks from global store for accuracy
-    const data = window.collectedData || {};
+  // Gather all info blocks from global store for accuracy
+  const data = window.collectedData || {};
 
-    if (Object.keys(data).length === 0) {
-        report += '\n[WARNING]: No data collected (or run before initialization complete).\n\n';
-    }
+  if (Object.keys(data).length === 0) {
+    report += '\n[WARNING]: No data collected (or run before initialization complete).\n\n';
+  }
 
-    // --- THREAT SUMMARY ---
-    report += `
+  // --- THREAT SUMMARY ---
+  report += `
 [ THREAT INTELLIGENCE SUMMARY ]
 -------------------------------
 `;
-    // Aggregated threats
-    const threats = [];
-    if (data['Privacy Mode'] && data['Privacy Mode']['Browsing Mode'] && data['Privacy Mode']['Browsing Mode'].warning) {
-        threats.push(`- Browsing Mode: ${data['Privacy Mode']['Browsing Mode'].value}`);
-    }
-    if (data['Fingerprint'] && data['Fingerprint']['Trackability Estimate'] && data['Fingerprint']['Trackability Estimate'].warning) {
-        threats.push(`- Trackability: ${data['Fingerprint']['Trackability Estimate'].value}`);
-    }
-    if (data['Network Info'] && data['Network Info']['VPN/Proxy Detected'] && typeof data['Network Info']['VPN/Proxy Detected'] === 'object' && data['Network Info']['VPN/Proxy Detected'].warning) {
-        threats.push('- Network: Proxy/VPN Detected');
-    }
+  // Aggregated threats
+  const threats = [];
+  if (
+    data['Privacy Mode'] &&
+    data['Privacy Mode']['Browsing Mode'] &&
+    data['Privacy Mode']['Browsing Mode'].warning
+  ) {
+    threats.push(`- Browsing Mode: ${data['Privacy Mode']['Browsing Mode'].value}`);
+  }
+  if (
+    data['Fingerprint'] &&
+    data['Fingerprint']['Trackability Estimate'] &&
+    data['Fingerprint']['Trackability Estimate'].warning
+  ) {
+    threats.push(`- Trackability: ${data['Fingerprint']['Trackability Estimate'].value}`);
+  }
+  if (
+    data['Network Info'] &&
+    data['Network Info']['VPN/Proxy Detected'] &&
+    typeof data['Network Info']['VPN/Proxy Detected'] === 'object' &&
+    data['Network Info']['VPN/Proxy Detected'].warning
+  ) {
+    threats.push('- Network: Proxy/VPN Detected');
+  }
 
-    if (threats.length > 0) {
-        report += threats.join('\n');
-    } else {
-        report += 'No critical privacy threats detected (or detection failed).';
-    }
-    report += '\n\n';
+  if (threats.length > 0) {
+    report += threats.join('\n');
+  } else {
+    report += 'No critical privacy threats detected (or detection failed).';
+  }
+  report += '\n\n';
 
+  // --- DETAILED BREAKDOWN ---
+  for (const [section, sectionData] of Object.entries(data)) {
+    if (section === 'Headers') {continue;} // Handle separately
 
-    // --- DETAILED BREAKDOWN ---
-    for (const [section, sectionData] of Object.entries(data)) {
-        if (section === 'Headers') continue; // Handle separately
-
-        report += `
+    report += `
 [ ${section.toUpperCase()} ]
 ${'-'.repeat(section.length + 4)}
 `;
-        
-        if (typeof sectionData === 'object') {
-             for (const [key, val] of Object.entries(sectionData)) {
-                 let displayVal = val;
-                 if (typeof val === 'object' && val !== null) {
-                     if ('element' in val) {
-                         displayVal = '[Visual Data File - Cannot Export to TXT]';
-                     } else if ('value' in val) {
-                         displayVal = val.value;
-                     } else {
-                         displayVal = JSON.stringify(val);
-                     }
-                 }
-                 report += `${key.padEnd(30)}: ${displayVal}\n`;
-             }
-        }
-        report += '\n';
-    }
 
-    // Headers
-    if (data['Headers']) {
-        report += `
+    if (typeof sectionData === 'object') {
+      for (const [key, val] of Object.entries(sectionData)) {
+        let displayVal = val;
+        if (typeof val === 'object' && val !== null) {
+          if ('element' in val) {
+            displayVal = '[Visual Data File - Cannot Export to TXT]';
+          } else if ('value' in val) {
+            displayVal = val.value;
+          } else {
+            displayVal = JSON.stringify(val);
+          }
+        }
+        report += `${key.padEnd(30)}: ${displayVal}\n`;
+      }
+    }
+    report += '\n';
+  }
+
+  // Headers
+  if (data['Headers']) {
+    report += `
 [ RAW HEADERS ]
 ---------------
 `;
-        for (const [key, val] of Object.entries(data['Headers'])) {
-            report += `${key.padEnd(30)}: ${val}\n`;
-        }
-        report += '\n';
+    for (const [key, val] of Object.entries(data['Headers'])) {
+      report += `${key.padEnd(30)}: ${val}\n`;
     }
+    report += '\n';
+  }
 
-    report += `
+  report += `
 =============================================================
 END OF REPORT
 Generated by What You Reveal
 =============================================================
 `;
 
-    // Create Blob and trigger download
-    const blob = new Blob([report], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    
-    // Cleanup
-    setTimeout(() => {
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-    }, 100);
+  // Create Blob and trigger download
+  const blob = new Blob([report], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+
+  // Cleanup
+  setTimeout(() => {
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  }, 100);
 }
