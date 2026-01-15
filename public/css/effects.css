@@ -149,44 +149,15 @@
      * - Dark gap (unexcited phosphor)
      */
     background:
-        /* Primary Scanline Pattern - Phosphor emission simulation */
-        repeating-linear-gradient(
-            to bottom,
-            /* Dark gap between scanlines (un-excited phosphor) */ rgba(0, 0, 0, 0.35) 0%,
-            rgba(0, 0, 0, 0.35) 25%,
-            /* Phosphor glow falloff (soft edge) */ rgba(0, 0, 0, 0.15) 30%,
-            /* Bright scanline core (peak emission) */ rgba(0, 0, 0, 0) 40%,
-            rgba(0, 0, 0, 0) 60%,
-            /* Phosphor glow falloff (soft edge) */ rgba(0, 0, 0, 0.15) 70%,
-            /* Dark gap for next scanline */ rgba(0, 0, 0, 0.35) 75%,
-            rgba(0, 0, 0, 0.35) 100%
-        ),
-        /* Aperture Grille Pattern - RGB phosphor columns (vertical stripes) */
-        repeating-linear-gradient(
-                90deg,
-                rgba(255, 0, 0, 0.04) 0px,
-                rgba(255, 0, 0, 0.04) 1px,
-                rgba(0, 255, 0, 0.03) 1px,
-                rgba(0, 255, 0, 0.03) 2px,
-                rgba(0, 0, 255, 0.04) 2px,
-                rgba(0, 0, 255, 0.04) 3px,
-                rgba(0, 0, 0, 0.08) 3px,
-                rgba(0, 0, 0, 0.08) 4px
-            ),
-        /* Subtle phosphor brightness variation (interlacing simulation) */
-        repeating-linear-gradient(
-                to bottom,
-                rgba(255, 255, 255, 0.008) 0%,
-                rgba(255, 255, 255, 0.008) 50%,
-                rgba(0, 0, 0, 0.008) 50%,
-                rgba(0, 0, 0, 0.008) 100%
-            );
+        /* Primary Scanline Pattern (Optimized SVG) */
+        url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNCIgaGVpZ2h0PSI0IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjEiIHk9IjAiIGZpbGw9ImJsYWNrIiBmaWxsLW9wYWNpdHk9IjAuMzUiLz4KICA8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSIxIiB5PSIzIiBmaWxsPSJibGFjayIgZmlsbC1vcGFjaXR5PSIwLjM1Ii8+Cjwvc3ZnPg=='),
+        /* Aperture Grille Pattern (Optimized SVG) */
+        url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNCIgaGVpZ2h0PSI0IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjQiIHg9IjAiIGZpbGw9InJlZCIgZmlsbC1vcGFjaXR5PSIwLjA0Ii8+CiAgPHJlY3Qgd2lkdGg9IjEiIGhlaWdodD0iNCIgeD0iMSIgZmlsbD0ibGltZSIgZmlsbC1vcGFjaXR5PSIwLjAzIi8+CiAgPHJlY3Qgd2lkdGg9IjEiIGhlaWdodD0iNCIgeD0iMiIgZmlsbD0iYmx1ZSIgZmlsbC1vcGFjaXR5PSIwLjA0Ii8+CiAgPHJlY3Qgd2lkdGg9IjEiIGhlaWdodD0iNCIgeD0iMyIgZmlsbD0iYmxhY2siIGZpbGwtb3BhY2l0eT0iMC4wOCIvPgo8L3N2Zz4=');
 
     /* Scanline size: 0.25rem (4px) maintained as requested */
     background-size:
-        100% 0.25rem,
-        /* Scanlines - 4px per line cycle */ 4px 100%,
-        /* Aperture grille - 4px RGB triplet */ 100% 0.5rem; /* Interlacing - double scanline height */
+        4px 4px,
+        4px 4px;
 
     z-index: 10;
     pointer-events: none;
@@ -351,6 +322,30 @@
             1px 0 1px rgba(255, 0, 0, 0.5),
             -1px 0 1px rgba(0, 0, 255, 0.5),
             0 0 3px var(--text-shadow-color);
+    }
+}
+
+/* Cursor-specific RGB Shift (uses filter: drop-shadow instead of text-shadow) */
+@keyframes cursorRgbShift {
+    0% {
+        filter: drop-shadow(1px 0 0 rgba(255, 0, 0, 0.5)) drop-shadow(-1px 0 0 rgba(0, 0, 255, 0.5))
+            drop-shadow(0 0 2px var(--text-shadow-color));
+    }
+    25% {
+        filter: drop-shadow(-1px 0 0 rgba(255, 0, 0, 0.5)) drop-shadow(1px 0 0 rgba(0, 0, 255, 0.5))
+            drop-shadow(0 0 2px var(--text-shadow-color));
+    }
+    50% {
+        filter: drop-shadow(1px 0 0 rgba(255, 0, 0, 0.5)) drop-shadow(-1px 0 0 rgba(0, 0, 255, 0.5))
+            drop-shadow(0 0 2px var(--text-shadow-color));
+    }
+    75% {
+        filter: drop-shadow(-1px 0 0 rgba(255, 0, 0, 0.5)) drop-shadow(1px 0 0 rgba(0, 0, 255, 0.5))
+            drop-shadow(0 0 2px var(--text-shadow-color));
+    }
+    100% {
+        filter: drop-shadow(1px 0 0 rgba(255, 0, 0, 0.5)) drop-shadow(-1px 0 0 rgba(0, 0, 255, 0.5))
+            drop-shadow(0 0 2px var(--text-shadow-color));
     }
 }
 

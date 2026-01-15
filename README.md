@@ -8,72 +8,63 @@
   </pre>
   
   <p align="center">
-    <strong>A cinematographic system fingerprinting tool.</strong>
-  </p>
-
-  <p align="center">
-    <a href="#features">Features</a> •
-    <a href="#installation">Installation</a> •
-    <a href="#disclaimer">Disclaimer</a>
+    <strong>SYSTEM FINGERPRINTING // BROWSER ANALYSIS TOOL</strong>
   </p>
 </div>
 
 ---
 
-## 🕵️‍♂️ About
+## 0x01 // ABOUT
 
-**What You Reveal** is an advanced browser fingerprinting and system analysis tool wrapped in a immersive, cinematic terminal interface. It demonstrates just how much information websites can collect about your device, network, and identity without your explicit permission.
+**What You Reveal** visualises data exposed by modern web browsers.
 
-Unlike standard "IP check" sites, this project focuses on **aesthetic presentation** and **deep data collection**, utilizing modern APIs like WebGL, WebRTC, Gamepad, Bluetooth, and Intl.
+Designed with a focus on deep data collection and cinematic terminal aesthetics. No external tracking. No data storage. Everything runs locally.
 
-## ✨ Features
+## 0x02 // MODULES
 
-### 🔍 Deep System Analysis
+**HARDWARE**
+GPU renderer, memory estimation, battery status, CPU concurrency, peripheral detection (Gamepad/VR).
 
-- **Hardware Fingerprinting**: GPU model, memory estimation, battery status, CPU concurrency.
-- **Identity & Tracking**: Canvas fingerprinting, AudioContext analysis, WebGL rendering hash.
-- **Network Intelligence**: WebRTC local IP leaks, DNS/mDNS obfuscation detection, comprehensive GeoIP data.
-- **Internationalization**: Deep locale analysis (timezone, currency, calendar, numbering systems) to pinpoint user location/origin.
-- **Privacy Detection**: Detects Incognito/Private modes, Tor Browser, Brave, and Global Privacy Control (GPC) signals.
-- **Font Enumeration**: Detects installed system fonts to infer Operating System (Windows vs macOS vs Linux).
+**IDENTITY**
+Canvas fingerprinting, AudioContext analysis, WebGL render hash, Client Hints.
 
-### 🎨 Immersive UI
+**NETWORK**
+WebRTC local IP leaks, DNS obfuscation detection, comprehensive GeoIP data, connection type tracking.
 
-- **Realistic CRT Simulation**: Scanlines, chromatic aberration, screen currency/barrel distortion, and phosphor persistency.
-- **Cinematic Boot Sequence**: Retro BIOS-style startup animation.
-- **Responsive Layout**: Works on desktop and mobile (with adaptations for touch interfaces).
+**LOCALE**
+Deep analysis of Intl APIs (Timezone, Calendar, Numbering Systems) to triangulate user origin.
 
-## 🛠️ Installation
+**PRIVACY**
+Detection of Incognito/Private modes, Tor Browser, Global Privacy Control (GPC), and Do Not Track signals.
+
+**SYSTEM**
+Font enumeration for OS detection, screen properties, multi-monitor inference.
+
+## 0x03 // THEMES
+
+Toggle between 4 visual modes:
+
+- **CRT GREEN**: Default phosphor terminal.
+- **CYBERPUNK**: High-contrast neon grid.
+- **SECURITY HUD**: Minimal blue dashboard.
+- **MR. ROBOT**: Authentic, low-contrast grey/red console.
+
+## 0x04 // INSTALL
 
 ```bash
-# 1. Clone the repository
+# Clone
 git clone https://github.com/saatvik333/what-you-reveal.git
 
-# 2. Enter directory
+# Install
 cd what-you-reveal
-
-# 3. Install dependencies
 npm install
-# or
-pnpm install
 
-# 4. Start the development server
+# Run (localhost:3000)
 npm start
 ```
 
-Open your browser to `http://localhost:3000`.
+## 0x05 // DISCLAIMER
 
-## 🏗️ Tech Stack
+Educational tool for research purposes only.
 
-- **Frontend**: Vanilla JavaScript (ES6 Modules), CSS Variables for theming.
-- **Backend**: Node.js / Express (for IP, Header, and GeoIP proxying).
-- **Styling**: Pure CSS with advanced filters (`feDisplacementMap`, `drop-shadow`) and fluid typography (`clamp()`).
-- **No Frameworks**: Built without React/Vue for maximum performance and "close to the metal" feel.
-
-## ⚠️ Disclaimer
-
-This tool is for **educational and research purposes only**. It runs entirely locally or communicates only with its own backend. No data is stored, shared, or sold. The goal is to raise awareness about browser fingerprinting techniques.
-
----
-
-> _"Enter the matrix. Your browser is the gateway."_
+> "Enter the matrix. Your browser is the gateway."

@@ -145,12 +145,14 @@
 
 @keyframes flash-copy {
     0% {
-        background-color: var(--phosphor-primary);
+        background-color: var(--accent-color);
         color: #000;
+        box-shadow: 0 0 10px var(--accent-color);
     }
     100% {
-        background-color: rgba(51, 255, 51, 0.15);
+        background-color: var(--dim-color);
         color: var(--text-color);
+        box-shadow: none;
     }
 }
 

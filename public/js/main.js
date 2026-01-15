@@ -24,6 +24,7 @@ import { detectPrivacyMode } from './modules/privacy.js';
 import { downloadReport } from './modules/report.js';
 import { collectIntlData } from './modules/intl.js';
 import { initTheme, cycleTheme } from './modules/theme.js';
+import { initCursor } from './modules/cursor.js';
 
 // Global Data Store for Report
 window.collectedData = {};
@@ -50,6 +51,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 0. Initialize Theme System
     initTheme();
     
+    // 0.5 Initialize Custom Cursor
+    initCursor();
+    
     // Setup UI Controls
     const themeBtn = document.getElementById('theme-toggle');
     if (themeBtn) {
@@ -67,28 +71,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     const bootPromise = runBootSequence();
 
     // 2. Start Data Collection (Logic) - PARALLEL EXECUTION
-    // We do NOT await these immediately. We let them run in the background.
-    // However, we want to ensure the boot sequence 'feels' like it's initializing them.
-    // Ideally, we wait for the boot to finish before *revealing* them, but the 'renderToElement'
-    // function uses an IntersectionObserver which handles visibility. 
-    // If the element is hidden by the boot overlay, it's fine.
-    
-    const tasks = [
-        runTask('incognito-info', detectPrivacyMode, 'Privacy Mode'),
-        runTask('browser-info', collectBrowserData, 'Browser Info'),
-        runTask('screen-info', collectScreenData, 'Screen Info'),
-        runTask('hardware-info', collectHardwareData, 'Hardware Info'),
-        runTask('webgl-info', collectWebGLData, 'WebGL Info'),
-        runTask('identity-info', collectFingerprintData, 'Fingerprint'),
-        runTask('fonts-info', collectFontData, 'Fonts'), 
-        runTask('media-info', collectMediaData, 'Media Codecs'),
-        runTask('perms-info', collectPermissionsData, 'Permissions'),
-        runTask('integrity-info', detectBot, 'System Integrity'),
-        runTask('hints-info', collectClientHints, 'Client Hints'),
-        runTask('media-devices-info', collectMediaDevices, 'Media Devices'),
-        runTask('clipboard-info', collectClipboardData, 'Clipboard'),
-        runTask('intl-info', collectIntlData, 'Internationalization')
-    ];
+    // OPTIMIZATION: Use requestIdleCallback to defer heavy processing
+    // This ensures the boot animation starts smoothly without main thread blocking
+    const startDataCollection = () => {
+        const tasks = [
+            runTask('incognito-info', detectPrivacyMode, 'Privacy Mode'),
+            runTask('browser-info', collectBrowserData, 'Browser Info'),
+            runTask('screen-info', collectScreenData, 'Screen Info'),
+            runTask('hardware-info', collectHardwareData, 'Hardware Info'),
+            runTask('webgl-info', collectWebGLData, 'WebGL Info'),
+            runTask('identity-info', collectFingerprintData, 'Fingerprint'),
+            runTask('fonts-info', collectFontData, 'Fonts'), 
+            runTask('media-info', collectMediaData, 'Media Codecs'),
+            runTask('perms-info', collectPermissionsData, 'Permissions'),
+            runTask('integrity-info', detectBot, 'System Integrity'),
+            runTask('hints-info', collectClientHints, 'Client Hints'),
+            runTask('media-devices-info', collectMediaDevices, 'Media Devices'),
+            runTask('clipboard-info', collectClipboardData, 'Clipboard'),
+            runTask('intl-info', collectIntlData, 'Internationalization')
+        ];
+    };
+
+    if ('requestIdleCallback' in window) {
+        requestIdleCallback(startDataCollection, { timeout: 2000 });
+    } else {
+        setTimeout(startDataCollection, 500);
+    }
 
     // Network & Server Data (Dependent chain)
     const networkTask = (async () => {
