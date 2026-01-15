@@ -2,7 +2,7 @@
  * Network information collection module
  */
 
-import { createTable } from '../utils.js';
+import { createTable } from '../../core/utils.js';
 
 /**
  * Runs a ping test to measure latency

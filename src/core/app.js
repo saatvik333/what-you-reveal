@@ -10,29 +10,40 @@
  * - Data is collected in parallel for performance
  */
 
+// Core & Utils
 import { renderToElement } from './utils.js';
-import { collectBrowserData } from './modules/browser.js';
-import { collectScreenData } from './modules/screen.js';
-import { collectHardwareData } from './modules/hardware.js';
-import { collectWebGLData } from './modules/webgl.js';
+
+// UI
+import { initDecryptedText } from '../modules/ui/decrypt-text.js';
+
+// Core Features
+import { downloadReport } from './report.js';
+
+// Network Modules
+import { collectBrowserData } from '../modules/network/browser.js';
 import {
   fetchServerInfo,
   parseDeviceInfo,
   collectNetworkData,
   formatHeaders,
-} from './modules/network.js';
-import { collectFingerprintData } from './modules/identity.js';
-import { collectFontData } from './modules/fonts.js';
-import { collectMediaData } from './modules/media.js';
-import { collectPermissionsData } from './modules/permissions.js';
-import { detectBot } from './modules/integrity.js';
-import { collectClientHints } from './modules/client_hints.js';
-import { collectMediaDevices } from './modules/media_devices.js';
-import { collectClipboardData } from './modules/clipboard.js';
-import { detectPrivacyMode } from './modules/privacy.js';
-import { downloadReport } from './modules/report.js';
-import { collectIntlData } from './modules/intl.js';
-import { initDecryptedText } from './modules/decrypt-text.js';
+} from '../modules/network/network.js';
+import { collectClientHints } from '../modules/network/client_hints.js';
+
+// System/Hardware Modules
+import { collectScreenData } from '../modules/system/screen.js';
+import { collectHardwareData } from '../modules/system/hardware.js';
+import { collectMediaData } from '../modules/system/media.js';
+import { collectPermissionsData } from '../modules/system/permissions.js';
+import { collectMediaDevices } from '../modules/system/media_devices.js';
+import { collectClipboardData } from '../modules/system/clipboard.js';
+
+// Fingerprinting Modules
+import { collectWebGLData } from '../modules/fingerprint/webgl.js';
+import { collectFingerprintData } from '../modules/fingerprint/identity.js';
+import { collectFontData } from '../modules/fingerprint/fonts.js';
+import { detectBot } from '../modules/fingerprint/integrity.js';
+import { detectPrivacyMode } from '../modules/fingerprint/privacy.js';
+import { collectIntlData } from '../modules/fingerprint/intl.js';
 
 // ============================================================
 // GLOBAL STATE

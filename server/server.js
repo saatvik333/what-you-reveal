@@ -5,15 +5,21 @@ const path = require('path');
 // Import routes
 const apiRoutes = require('./routes/api');
 
+const compression = require('compression');
+
+// ... (imports)
+
 const app = express();
 const port = process.env.PORT || 3000;
+
+// Enable Gzip/Brotli compression
+app.use(compression());
 
 // Middleware to get IP address
 app.use(requestIp.mw());
 
-// Serve static files
-// Serve static files
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve static files from 'dist' (Vite build output)
+app.use(express.static(path.join(__dirname, '../dist')));
 
 // Mount API routes
 app.use('/api', apiRoutes);

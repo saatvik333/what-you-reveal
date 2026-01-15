@@ -2,20 +2,22 @@
   "name": "what-you-reveal",
   "version": "3.1.0",
   "description": "A browser fingerprinting demonstration showing what information your browser exposes",
-  "main": "server.js",
+  "main": "server/server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js",
-    "build": "echo 'No build step necessary'",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server/server.js",
+    "dev": "concurrently \"vite\" \"node --watch server/server.js\"",
+    "build": "vite build",
+    "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
+    "concurrently": "^9.2.1",
     "eslint": "^8.56.0",
     "globals": "^17.0.0",
-    "prettier": "^3.2.4"
+    "prettier": "^3.2.4",
+    "vite": "^7.3.1"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -30,6 +32,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "compression": "^1.8.1",
     "express": "^5.1.0",
     "request-ip": "^3.3.0",
     "ua-parser-js": "^2.0.6"
