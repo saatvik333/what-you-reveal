@@ -19,7 +19,7 @@ export const CONFIG = {
 
     // Feature Flags / Toggles
     FEATURES: {
-        ENABLE_CRT_ flicker: true,
+        ENABLE_CRT_FLICKER: true,
         ENABLE_SOUND: false // Future use
     },
     

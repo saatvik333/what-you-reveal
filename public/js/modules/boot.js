@@ -33,16 +33,16 @@ export async function runBootSequence() {
             `[ OK ] CPU: ${cores} Logical Cores Detected`,
             `[ OK ] Memory: ${mem} Available`,
             `Loading User Agent: ${ua.substring(0, 40)}...`,
-            "Mounting DOM Environment...",
-            "[ OK ] LocalStorage: ACCESSIBLE",
-            "Loading Network Stack...",
+            'Mounting DOM Environment...',
+            '[ OK ] LocalStorage: ACCESSIBLE',
+            'Loading Network Stack...',
             `  - Connection: ${connection}`,
             `  - Downlink: ${navigator.connection ? navigator.connection.downlink + 'Mbps' : 'Unknown'}`,
             `Establishing secure connection to ${host}...`,
-            "Handshake: [SYN] -> [SYN, ACK] -> [ACK]",
-            "Decrypting payload...",
-            "ACCESS GRANTED.",
-            "Starting analysis daemon..."
+            'Handshake: [SYN] -> [SYN, ACK] -> [ACK]',
+            'Decrypting payload...',
+            'ACCESS GRANTED.',
+            'Starting analysis daemon...'
         ];
 
         const sleep = (ms) => new Promise(r => setTimeout(r, ms));
@@ -75,8 +75,8 @@ export async function runBootSequence() {
 
             // Variable delay based on content complexity
             let delay = Math.random() * 100 + 50; 
-            if (log.includes("...")) delay += 200;
-            if (log.includes("Decrypting")) delay += 600;
+            if (log.includes('...')) delay += 200;
+            if (log.includes('Decrypting')) delay += 600;
             
             // Skip delay if reduced motion is on
             if (reduceMotion) delay = 10;
@@ -90,13 +90,13 @@ export async function runBootSequence() {
         // Let's do a "Clear Screen" simulation
         const clearCmd = document.createElement('div');
         clearCmd.className = 'boot-line';
-        clearCmd.textContent = "$ clear";
+        clearCmd.textContent = '$ clear';
         overlay.appendChild(clearCmd);
         
         if (!reduceMotion) await sleep(300);
 
     } catch (e) {
-        console.error("Boot sequence failed:", e);
+        console.error('Boot sequence failed:', e);
     } finally {
         // Hard cut removal - ensure it happens
         overlay.style.display = 'none';

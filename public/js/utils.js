@@ -15,17 +15,17 @@
 function escapeHtml(str) {
     if (typeof str !== 'string') return str;
     return str
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 export function createTable(data) {
     let output = '';
     // Filter keys first
-    const entries = Object.entries(data).filter(([k, v]) => {
+    const entries = Object.entries(data).filter(([_k, v]) => {
         if (!v) return false;
         const strVal = (typeof v === 'object' && v.value) ? v.value : String(v);
         const lower = strVal.toLowerCase();
@@ -69,9 +69,9 @@ export function createTable(data) {
 
         output += `<div class="terminal-row${warning ? ' warning' : ''}${!isElement ? ' copyable' : ''}${isElement ? ' has-element' : ''}" ${!isElement ? `role="button" tabindex="0" aria-label="Copy ${escapedKey}: ${safeValue}" data-copy="${safeValue}"` : ''}>`;
         output += `<span class="key">${escapedKey}</span>`;
-        output += `<span class="dots"></span>`;
+        output += '<span class="dots"></span>';
         output += `<span class="value">${escapedValue}</span>`;
-        output += `</div>`;
+        output += '</div>';
     }
     output += '</div>';
     return output;

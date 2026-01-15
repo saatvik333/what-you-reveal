@@ -1,5 +1,5 @@
 const express = require('express');
-const requestIp = require('request-ip');
+
 const UAParser = require('ua-parser-js');
 
 const router = express.Router();
@@ -89,7 +89,7 @@ router.get('/geoip', async (req, res) => {
 
         res.json(data);
     } catch (error) {
-        console.error("GeoIP Proxy Error:", error);
+        console.error('GeoIP Proxy Error:', error);
         res.status(500).json({ status: 'fail', message: 'Internal Server Error' });
     }
 });

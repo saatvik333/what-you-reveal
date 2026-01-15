@@ -9,19 +9,19 @@ export function detectBot() {
 
     // 1. Check for WebDriver
     if (navigator.webdriver) {
-        findings.push("navigator.webdriver is true");
+        findings.push('navigator.webdriver is true');
         score += 100;
     }
 
     // 2. Check for inconsistent User-Agent / Platform
     if (navigator.userAgent.length < 20) {
-        findings.push("User-Agent too short");
+        findings.push('User-Agent too short');
         score += 20;
     }
 
     // 3. Check for Headless Chrome user agent
     if (/HeadlessChrome/.test(navigator.userAgent)) {
-        findings.push("HeadlessChrome detected in UA");
+        findings.push('HeadlessChrome detected in UA');
         score += 100;
     }
 
@@ -29,14 +29,14 @@ export function detectBot() {
     const isChrome = /Chrome/.test(navigator.userAgent) && !/Edge/.test(navigator.userAgent);
     if (isChrome) {
         if (!window.chrome) {
-            findings.push("window.chrome missing in Chrome");
+            findings.push('window.chrome missing in Chrome');
             score += 50;
         }
     }
 
     // 5. Check capabilities
     if (navigator.plugins.length === 0 && navigator.languages.length === 0) {
-        findings.push("No plugins or languages detected ( Suspicious)");
+        findings.push('No plugins or languages detected ( Suspicious)');
         score += 30;
     }
 
@@ -64,9 +64,9 @@ export function detectBot() {
     }
 
     // Result
-    let status = "Likely Human";
-    if (score >= 100) status = "BOT DETECTED!";
-    else if (score > 0) status = "Suspicious";
+    let status = 'Likely Human';
+    if (score >= 100) status = 'BOT DETECTED!';
+    else if (score > 0) status = 'Suspicious';
 
     const data = {
         'Status': score > 0 ? { value: status, warning: score >= 50 } : status,

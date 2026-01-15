@@ -17,13 +17,16 @@
 }
 
 .card {
-    background: rgba(0, 0, 0, 0.85); /* Slight transparency */
-    border: 2px solid var(--border-color);
+    background: var(--card-bg, rgba(0, 0, 0, 0.85));
+    border: 2px solid var(--card-border, var(--border-color));
     padding: var(--space-md);
     position: relative;
     box-shadow: 0 0 0.625rem rgba(51, 255, 51, 0.1);
     overflow: hidden;
     height: 100%;
+    transition:
+        background 0.3s ease,
+        border-color 0.3s ease;
 }
 
 /* Window Title Bar */
@@ -31,7 +34,7 @@
     /* Negative margin must match padding to hug the borders */
     margin: calc(var(--space-md) * -1) calc(var(--space-md) * -1) var(--space-md)
         calc(var(--space-md) * -1);
-    background: var(--dim-color);
+    background: var(--card-header-bg, var(--dim-color));
     color: #000;
     font-size: var(--fs-md);
     padding: var(--space-xs) var(--space-md);
@@ -39,6 +42,9 @@
     font-weight: bold;
     letter-spacing: 1px;
     border-bottom: 2px solid var(--border-color);
+    transition:
+        background 0.3s ease,
+        color 0.3s ease;
 }
 
 .full-width {
@@ -62,7 +68,7 @@
     display: flex;
     flex-direction: column;
     width: 100%;
-    font-family: 'Courier New', Courier, monospace;
+    font-family: var(--font-stack);
 }
 
 .terminal-row {
@@ -119,7 +125,7 @@
 
 .terminal-row.copyable:hover,
 .terminal-row.copyable:focus {
-    background-color: rgba(51, 255, 51, 0.15);
+    background-color: var(--dim-color);
     outline: none;
 }
 

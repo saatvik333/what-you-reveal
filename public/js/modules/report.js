@@ -21,7 +21,7 @@ User Agent: ${navigator.userAgent}
     const data = window.collectedData || {};
 
     if (Object.keys(data).length === 0) {
-        report += "\n[WARNING]: No data collected (or run before initialization complete).\n\n";
+        report += '\n[WARNING]: No data collected (or run before initialization complete).\n\n';
     }
 
     // --- THREAT SUMMARY ---
@@ -38,16 +38,13 @@ User Agent: ${navigator.userAgent}
         threats.push(`- Trackability: ${data['Fingerprint']['Trackability Estimate'].value}`);
     }
     if (data['Network Info'] && data['Network Info']['VPN/Proxy Detected'] && typeof data['Network Info']['VPN/Proxy Detected'] === 'object' && data['Network Info']['VPN/Proxy Detected'].warning) {
-        threats.push(`- Network: Proxy/VPN Detected`);
-    }
-    if (data['Extensions'] && data['Extensions']['Ad Blocker'] && data['Extensions']['Ad Blocker'].warning) {
-         threats.push(`- Vulnerability: No Ad Blocker detected. You are susceptible to tracking pixels.`);
+        threats.push('- Network: Proxy/VPN Detected');
     }
 
     if (threats.length > 0) {
         report += threats.join('\n');
     } else {
-        report += "No critical privacy threats detected (or detection failed).";
+        report += 'No critical privacy threats detected (or detection failed).';
     }
     report += '\n\n';
 
@@ -66,7 +63,7 @@ ${'-'.repeat(section.length + 4)}
                  let displayVal = val;
                  if (typeof val === 'object' && val !== null) {
                      if ('element' in val) {
-                         displayVal = "[Visual Data File - Cannot Export to TXT]";
+                         displayVal = '[Visual Data File - Cannot Export to TXT]';
                      } else if ('value' in val) {
                          displayVal = val.value;
                      } else {

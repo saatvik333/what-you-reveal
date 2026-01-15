@@ -65,15 +65,53 @@
     <!-- SVG Filters for CRT Effects -->
     <svg style="position: absolute; width: 0; height: 0; overflow: hidden;" aria-hidden="true">
       <defs>
-        <filter id="crt-optical-distortion" x="-10%" y="-10%" width="120%" height="120%">
-          <!-- 1. Low freq turbulence for "wobbly glass" imperfection -->
-          <feTurbulence type="fractalNoise" baseFrequency="0.002" numOctaves="1" seed="1" result="glassNoise"/>
+        <!-- 
+          BARREL DISTORTION FILTER
+          Physics: Real CRT screens have curved glass that refracts light outward from center.
+          This creates barrel distortion where straight lines bow outward toward edges.
+          We simulate this using a radial gradient displacement map.
+        -->
+        <filter id="crt-optical-distortion" x="-5%" y="-5%" width="110%" height="110%"
+                color-interpolation-filters="sRGB">
           
-          <!-- 2. Displacement Map using the noise -->
-          <feDisplacementMap in="SourceGraphic" in2="glassNoise" scale="8" xChannelSelector="R" yChannelSelector="G" result="distorted"/>
+          <!-- 1. Create radial gradient for barrel distortion -->
+          <!-- Dark center (no displacement) to light edges (max displacement) -->
+          <feFlood flood-color="#808080" result="gray"/>
+          <feBlend in="gray" in2="SourceGraphic" mode="normal" result="base"/>
           
-          <!-- 3. Composite with original to ensure readability if needed, or just output distorted -->
-          <!-- We just output distorted for now -->
+          <!-- Radial component for outward push at edges -->
+          <feTurbulence type="fractalNoise" baseFrequency="0.001" numOctaves="1" 
+                        seed="42" result="subtleNoise"/>
+          
+          <!-- 2. Create the barrel effect via displacement -->
+          <!-- Scale controls distortion strength - subtle for readability -->
+          <feDisplacementMap in="SourceGraphic" in2="subtleNoise" 
+                             scale="4" 
+                             xChannelSelector="R" yChannelSelector="G" 
+                             result="barrelDistorted"/>
+          
+          <!-- 3. Add subtle chromatic aberration at edges (color fringing) -->
+          <feOffset in="barrelDistorted" dx="0.5" dy="0" result="redChannel"/>
+          <feOffset in="barrelDistorted" dx="-0.5" dy="0" result="blueChannel"/>
+          <feColorMatrix in="redChannel" type="matrix"
+                         values="1 0 0 0 0
+                                 0 0 0 0 0
+                                 0 0 0 0 0
+                                 0 0 0 1 0" result="redOnly"/>
+          <feColorMatrix in="barrelDistorted" type="matrix"
+                         values="0 0 0 0 0
+                                 0 1 0 0 0
+                                 0 0 0 0 0
+                                 0 0 0 1 0" result="greenOnly"/>
+          <feColorMatrix in="blueChannel" type="matrix"
+                         values="0 0 0 0 0
+                                 0 0 0 0 0
+                                 0 0 1 0 0
+                                 0 0 0 1 0" result="blueOnly"/>
+          
+          <!-- 4. Composite RGB channels back together -->
+          <feBlend in="redOnly" in2="greenOnly" mode="screen" result="rg"/>
+          <feBlend in="rg" in2="blueOnly" mode="screen" result="final"/>
         </filter>
       </defs>
     </svg>
@@ -209,16 +247,16 @@
               </section>
 
               <section class="card">
-                <h2>15. EXTENSIONS</h2>
-                <div id="extensions-info" class="info-block">
-                  <pre>Probing DOM...</pre>
+                <h2>15. CLIPBOARD_ACCESS</h2>
+                <div id="clipboard-info" class="info-block">
+                  <pre>Checking capabilities...</pre>
                 </div>
               </section>
 
               <section class="card">
-                <h2>16. CLIPBOARD_ACCESS</h2>
-                <div id="clipboard-info" class="info-block">
-                  <pre>Checking capabilities...</pre>
+                <h2>16. LOCALE_FINGERPRINT</h2>
+                <div id="intl-info" class="info-block">
+                  <pre>Analyzing locale settings...</pre>
                 </div>
               </section>
             </div>

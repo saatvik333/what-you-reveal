@@ -18,11 +18,12 @@ import { collectPermissionsData } from './modules/permissions.js';
 import { detectBot } from './modules/integrity.js';
 import { collectClientHints } from './modules/client_hints.js';
 import { collectMediaDevices } from './modules/media_devices.js';
-import { detectExtensions } from './modules/extensions.js';
 import { collectClipboardData } from './modules/clipboard.js';
 import { runBootSequence } from './modules/boot.js';
 import { detectPrivacyMode } from './modules/privacy.js';
 import { downloadReport } from './modules/report.js';
+import { collectIntlData } from './modules/intl.js';
+import { initTheme, cycleTheme } from './modules/theme.js';
 
 // Global Data Store for Report
 window.collectedData = {};
@@ -41,17 +42,18 @@ async function runTask(elementId, taskFn, dataKey) {
         renderToElement(elementId, data);
     } catch (e) {
         console.error(`Module failed for ${elementId}:`, e);
-        renderToElement(elementId, { Error: "Failed to load data" });
+        renderToElement(elementId, { Error: 'Failed to load data' });
     }
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // 0. Setup UI Controls
+    // 0. Initialize Theme System
+    initTheme();
+    
+    // Setup UI Controls
     const themeBtn = document.getElementById('theme-toggle');
     if (themeBtn) {
-        themeBtn.addEventListener('click', () => {
-            document.body.classList.toggle('amber-mode');
-        });
+        themeBtn.addEventListener('click', cycleTheme);
     }
 
     const downloadBtn = document.getElementById('download-report');
@@ -84,8 +86,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         runTask('integrity-info', detectBot, 'System Integrity'),
         runTask('hints-info', collectClientHints, 'Client Hints'),
         runTask('media-devices-info', collectMediaDevices, 'Media Devices'),
-        runTask('extensions-info', detectExtensions, 'Extensions'),
-        runTask('clipboard-info', collectClipboardData, 'Clipboard')
+        runTask('clipboard-info', collectClipboardData, 'Clipboard'),
+        runTask('intl-info', collectIntlData, 'Internationalization')
     ];
 
     // Network & Server Data (Dependent chain)
@@ -95,7 +97,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const serverData = await fetchServerInfo();
             
             if (!serverData) {
-                throw new Error("No server data");
+                throw new Error('No server data');
             }
 
             // Render Device Info (Parsed from server UA)
@@ -115,10 +117,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 headersInfoEl.innerHTML = formatHeaders(serverData.headers);
             }
         } catch (e) {
-            console.error("Server/Network module failed:", e);
-            document.getElementById('network-info').innerText = "Failed to load server info.";
-            document.getElementById('device-info').innerText = "Failed to load device info.";
-            document.getElementById('headers-info').innerText = "Failed to load headers.";
+            console.error('Server/Network module failed:', e);
+            document.getElementById('network-info').innerText = 'Failed to load server info.';
+            document.getElementById('device-info').innerText = 'Failed to load device info.';
+            document.getElementById('headers-info').innerText = 'Failed to load headers.';
         }
     })();
 
@@ -134,6 +136,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Optional: Log completion
     Promise.allSettled(tasks).then(() => {
         const logLine = document.getElementById('log-line');
-        if (logLine) logLine.textContent = "System Analysis Complete. Waiting for user input...";
+        if (logLine) logLine.textContent = 'System Analysis Complete. Waiting for user input...';
     });
 });

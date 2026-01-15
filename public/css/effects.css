@@ -123,9 +123,9 @@
     animation: turnOn 3s ease-in-out forwards;
 }
 
-/* 3. Scanline Overlay */
+/* 3. Scanline Overlay - Physics-Based CRT Effect */
 .crt-screen::before {
-    content: ' ';
+    content: '';
     display: block;
     position: absolute;
     top: 0;
@@ -135,23 +135,69 @@
     width: 100%;
     height: 100%;
 
-    /* Thicker lines for realistic low-res CRT feel */
+    /*
+     * PHYSICS-BASED SCANLINE SIMULATION:
+     * Real CRT scanlines are created by an electron beam exciting phosphor dots.
+     * Each horizontal pass creates:
+     * 1. A bright phosphor emission line (gaussian-like intensity profile)
+     * 2. A dark gap where the beam doesn't hit (between scanlines)
+     * 3. Slight bloom/glow from phosphor persistence
+     * 
+     * We simulate this with a multi-stop gradient for each scanline:
+     * - Bright center core (peak phosphor emission)
+     * - Gradual falloff (phosphor energy decay)
+     * - Dark gap (unexcited phosphor)
+     */
     background:
-        linear-gradient(to bottom, rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.4) 50%),
-        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+        /* Primary Scanline Pattern - Phosphor emission simulation */
+        repeating-linear-gradient(
+            to bottom,
+            /* Dark gap between scanlines (un-excited phosphor) */ rgba(0, 0, 0, 0.35) 0%,
+            rgba(0, 0, 0, 0.35) 25%,
+            /* Phosphor glow falloff (soft edge) */ rgba(0, 0, 0, 0.15) 30%,
+            /* Bright scanline core (peak emission) */ rgba(0, 0, 0, 0) 40%,
+            rgba(0, 0, 0, 0) 60%,
+            /* Phosphor glow falloff (soft edge) */ rgba(0, 0, 0, 0.15) 70%,
+            /* Dark gap for next scanline */ rgba(0, 0, 0, 0.35) 75%,
+            rgba(0, 0, 0, 0.35) 100%
+        ),
+        /* Aperture Grille Pattern - RGB phosphor columns (vertical stripes) */
+        repeating-linear-gradient(
+                90deg,
+                rgba(255, 0, 0, 0.04) 0px,
+                rgba(255, 0, 0, 0.04) 1px,
+                rgba(0, 255, 0, 0.03) 1px,
+                rgba(0, 255, 0, 0.03) 2px,
+                rgba(0, 0, 255, 0.04) 2px,
+                rgba(0, 0, 255, 0.04) 3px,
+                rgba(0, 0, 0, 0.08) 3px,
+                rgba(0, 0, 0, 0.08) 4px
+            ),
+        /* Subtle phosphor brightness variation (interlacing simulation) */
+        repeating-linear-gradient(
+                to bottom,
+                rgba(255, 255, 255, 0.008) 0%,
+                rgba(255, 255, 255, 0.008) 50%,
+                rgba(0, 0, 0, 0.008) 50%,
+                rgba(0, 0, 0, 0.008) 100%
+            );
 
-    /* 4px size = 2px line, 2px gap (Visible scanlines) */
+    /* Scanline size: 0.25rem (4px) maintained as requested */
     background-size:
         100% 0.25rem,
-        0.375rem 100%;
+        /* Scanlines - 4px per line cycle */ 4px 100%,
+        /* Aperture grille - 4px RGB triplet */ 100% 0.5rem; /* Interlacing - double scanline height */
 
-    z-index: 10; /* Above content */
+    z-index: 10;
     pointer-events: none;
+
+    /* Performance: GPU compositing */
+    will-change: opacity;
 }
 
-/* 4. Vignette & Static Noise */
+/* 4. Vignette & Static Noise - Physics-Based CRT Brightness Falloff */
 .crt-screen::after {
-    content: ' ';
+    content: '';
     display: block;
     position: absolute;
     top: 0;
@@ -159,48 +205,84 @@
     bottom: 0;
     right: 0;
 
-    /* darker vignette + noise */
+    /*
+     * PHYSICS-BASED BRIGHTNESS FALLOFF:
+     * Real CRT screens have reduced brightness at edges due to:
+     * 1. Beam travel distance - electrons lose energy traveling to screen edges
+     * 2. Angle of incidence - beam hits edge phosphors at oblique angle
+     * 3. Magnetic deflection limits - harder to steer beam to corners
+     * 4. Glass thickness variation - thicker at edges absorbs more light
+     * 
+     * We simulate this with multiple layered gradients:
+     * - Elliptical vignette (screens are wider than tall)
+     * - Corner darkening (worst case for beam travel)
+     * - Soft falloff curve (not linear, follows inverse square law approximation)
+     */
     background:
+        /* Primary vignette - elliptical to match screen aspect ratio */
         radial-gradient(
-            circle,
-            rgba(0, 0, 0, 0) 50%,
-            rgba(0, 0, 0, 0.4) 80%,
-            rgba(0, 0, 0, 0.9) 100%
+            ellipse 80% 70% at 50% 50%,
+            rgba(0, 0, 0, 0) 0%,
+            rgba(0, 0, 0, 0) 40%,
+            rgba(0, 0, 0, 0.08) 55%,
+            rgba(0, 0, 0, 0.2) 65%,
+            rgba(0, 0, 0, 0.4) 75%,
+            rgba(0, 0, 0, 0.65) 85%,
+            rgba(0, 0, 0, 0.85) 95%,
+            rgba(0, 0, 0, 0.95) 100%
         ),
-        url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)" opacity="0.3"/%3E%3C/svg%3E');
+        /* Corner darkening - extra falloff in corners (beam travel is longest) */
+        radial-gradient(
+                ellipse 120% 120% at 50% 50%,
+                rgba(0, 0, 0, 0) 0%,
+                rgba(0, 0, 0, 0) 60%,
+                rgba(0, 0, 0, 0.15) 80%,
+                rgba(0, 0, 0, 0.3) 100%
+            ),
+        /* Phosphor screen texture (static noise) */
+        url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)" opacity="0.25"/%3E%3C/svg%3E');
 
     background-size:
         100% 100%,
+        100% 100%,
         12.5rem 12.5rem;
-    z-index: 9; /* Below scanlines, above content */
+    z-index: 9;
     pointer-events: none;
 
     animation: noise 0.2s infinite;
+
+    /* Performance optimization */
+    will-change: background-position;
 }
 
 @keyframes noise {
     0% {
         background-position:
             0 0,
+            0 0,
             0 0;
     }
     10% {
         background-position:
+            0 0,
             0 0,
             -0.625rem -0.625rem;
     }
     20% {
         background-position:
             0 0,
+            0 0,
             0.9375rem 0.3125rem;
     }
     30% {
         background-position:
             0 0,
+            0 0,
             -0.3125rem 1.5625rem;
     }
     100% {
         background-position:
+            0 0,
             0 0,
             0.625rem 0;
     }

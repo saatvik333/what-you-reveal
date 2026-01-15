@@ -22,9 +22,9 @@ async function runPingTest() {
             return avg.toFixed(2) + ' ms';
         }
     } catch (e) {
-        return "Failed";
+        return 'Failed';
     }
-    return "Unknown";
+    return 'Unknown';
 }
 
 /**
@@ -36,7 +36,7 @@ export async function fetchServerInfo() {
         const response = await fetch('/api/info');
         return await response.json();
     } catch (e) {
-        console.error("Error fetching /api/info", e);
+        console.error('Error fetching /api/info', e);
         return null;
     }
 }
@@ -101,7 +101,7 @@ export async function collectNetworkData(serverData, elementId) {
                         }
                     }
                 };
-            } catch(e) {}
+            } catch(e) { /* ignore */ }
     // GeoIP & Security Check
     networkData['VPN/Proxy Detected'] = 'Checking...';
     networkData['Cloud/Datacenter IP'] = 'Checking...';
@@ -163,7 +163,7 @@ export async function collectNetworkData(serverData, elementId) {
                              };
                          }
                     }
-                } catch(e) {}
+                } catch(e) { /* ignore */ }
             } else {
                 networkData['Geolocation'] = `API Error: ${geoData.message || 'Unknown'}`;
                 networkData['VPN/Proxy Detected'] = 'Unknown (API Error)';
@@ -196,7 +196,7 @@ export async function collectNetworkData(serverData, elementId) {
     networkData['Local Time'] = new Date().toString();
     try {
         networkData['Intl Timezone'] = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    } catch(e) {}
+    } catch(e) { /* ignore */ }
 
     return networkData;
 }

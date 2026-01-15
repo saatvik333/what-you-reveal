@@ -1,6 +1,6 @@
 :root {
     /* =========================================
-     1. Design Tokens: Colors (Phosphor Palette)
+     1. Design Tokens: Colors (Default CRT Theme)
      ========================================= */
     --phosphor-primary: #33ff33; /* Classic Green */
     --phosphor-amber: #ffbb00; /* Amber Alternative */
@@ -12,27 +12,29 @@
     --dim-color: rgba(51, 255, 51, 0.5);
     --border-color: var(--dim-color);
     --alert-color: #ff3333;
+    --accent-color: #33ff33;
+    --accent-secondary: #00ff88;
 
     /* =========================================
      2. Fluid Typography (Clamp)
-     Viewport range: 320px - 1440px
+     Viewport range: 320px -> 1440px
      ========================================= */
     --font-stack: 'VT323', 'Courier Prime', monospace;
 
-    /* fs-sm: 12px -> 16px */
-    --fs-sm: clamp(0.75rem, 0.7rem + 0.27vw, 1rem);
+    /* fs-sm: 14px -> 18px */
+    --fs-sm: clamp(0.875rem, 0.8rem + 0.36vw, 1.125rem);
 
-    /* fs-base: 14px -> 18px */
-    --fs-base: clamp(0.875rem, 0.8rem + 0.25vw, 1.125rem);
+    /* fs-base: 18px -> 22px */
+    --fs-base: clamp(1.125rem, 1.05rem + 0.36vw, 1.375rem);
 
-    /* fs-md: 16px -> 22px */
-    --fs-md: clamp(1rem, 0.92rem + 0.36vw, 1.375rem);
+    /* fs-md: 20px -> 26px */
+    --fs-md: clamp(1.25rem, 1.15rem + 0.54vw, 1.625rem);
 
-    /* fs-lg: 20px -> 32px */
-    --fs-lg: clamp(1.25rem, 1.15rem + 0.75vw, 2rem);
+    /* fs-lg: 24px -> 36px */
+    --fs-lg: clamp(1.5rem, 1.4rem + 0.8vw, 2.25rem);
 
-    /* fs-xl: 28px -> 48px */
-    --fs-xl: clamp(1.75rem, 1.5rem + 1.5vw, 3rem);
+    /* fs-xl: 32px -> 56px */
+    --fs-xl: clamp(2rem, 1.75rem + 1.8vw, 3.5rem);
 
     /* =========================================
      3. Fluid Spacing (Clamp)
@@ -64,12 +66,155 @@
     --scanline-opacity: 0.15;
     --vignette-opacity: 0.3;
     --flicker-strength: 0.02;
+
+    /* Card styling */
+    --card-bg: rgba(0, 0, 0, 0.8);
+    --card-border: var(--border-color);
+    --card-header-bg: var(--dim-color);
 }
 
-/* Theme Override: Amber Mode */
-body.amber-mode {
-    --text-color: var(--phosphor-amber);
-    --text-shadow-color: rgba(255, 187, 0, 0.6);
-    --dim-color: rgba(255, 187, 0, 0.5);
-    --border-color: var(--dim-color);
+/* =========================================
+   THEME 1: CYBERPUNK
+   Neon colors, electric feel, Blade Runner vibes
+   ========================================= */
+body.theme-cyberpunk {
+    --bg-color: #0a0012;
+    --screen-bg: #05000a;
+
+    --text-color: #00ffff;
+    --text-shadow-color: rgba(0, 255, 255, 0.7);
+    --dim-color: rgba(0, 255, 255, 0.4);
+    --border-color: rgba(255, 0, 255, 0.5);
+    --alert-color: #ff0066;
+    --accent-color: #ff00ff;
+    --accent-secondary: #00ffff;
+
+    --text-glow:
+        0 0 2px var(--text-shadow-color), 0 0 5px var(--text-shadow-color),
+        0 0 15px rgba(255, 0, 255, 0.4), 0 0 30px rgba(255, 0, 255, 0.2);
+
+    --card-bg: rgba(20, 0, 40, 0.85);
+    --card-border: linear-gradient(135deg, #ff00ff 0%, #00ffff 100%);
+    --card-header-bg: linear-gradient(90deg, rgba(255, 0, 255, 0.2), transparent);
+}
+
+/* =========================================
+   THEME 2: SECURITY HUD
+   Professional SOC dashboard, blues and reds
+   ========================================= */
+body.theme-security {
+    --bg-color: #0a0f1a;
+    --screen-bg: #060a12;
+
+    --text-color: #4da6ff;
+    --text-shadow-color: rgba(77, 166, 255, 0.5);
+    --dim-color: rgba(77, 166, 255, 0.4);
+    --border-color: rgba(77, 166, 255, 0.3);
+    --alert-color: #ff4444;
+    --accent-color: #00c8ff;
+    --accent-secondary: #00ff88;
+
+    --text-glow: 0 0 2px var(--text-shadow-color), 0 0 8px var(--text-shadow-color);
+
+    --card-bg: rgba(10, 20, 35, 0.9);
+    --card-border: rgba(77, 166, 255, 0.3);
+    --card-header-bg: linear-gradient(90deg, rgba(0, 200, 255, 0.15), transparent);
+
+    /* Reduce CRT effects for cleaner look */
+    --scanline-opacity: 0.08;
+    --flicker-strength: 0;
+}
+
+/* =========================================
+   THEME 4: MR. ROBOT
+   Gritty, minimal, muted greens, realistic terminal
+   ========================================= */
+body.theme-mrrobot {
+    --bg-color: #0c0c0c;
+    --screen-bg: #080808;
+
+    --text-color: #e0e0e0;
+    --text-shadow-color: rgba(255, 255, 255, 0.2);
+    --dim-color: rgba(255, 255, 255, 0.4);
+    --border-color: rgba(255, 255, 255, 0.1);
+    --alert-color: #ff3333;
+    --accent-color: #ff3333;
+    --accent-secondary: #cc0000;
+
+    --text-glow: 0 0 1px var(--text-shadow-color);
+
+    --card-bg: rgba(10, 10, 10, 0.95);
+    --card-border: rgba(255, 255, 255, 0.1);
+    --card-header-bg: rgba(255, 51, 51, 0.1);
+
+    --scanline-opacity: 0.1;
+    --flicker-strength: 0.01;
+}
+
+/* =========================================
+   Theme-specific enhancements
+   ========================================= */
+
+/* Cyberpunk: Add grid pattern to background */
+body.theme-cyberpunk .crt-screen {
+    background-image:
+        linear-gradient(rgba(255, 0, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 0, 255, 0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+    background-color: var(--screen-bg);
+}
+
+/* Security: Clean, no extra effects */
+body.theme-security .crt-screen::before {
+    opacity: 0.5;
+}
+
+/* Mr. Robot: Grittier, more noise */
+body.theme-mrrobot .crt-screen::after {
+    opacity: 0.8;
+}
+
+/* Card border gradients for themes that use them */
+body.theme-cyberpunk .card {
+    border: none;
+    background: var(--card-bg);
+    position: relative;
+}
+
+/* Heading accents */
+
+/* Button styling per theme */
+.control-btn {
+    transition: all 0.2s ease;
+}
+
+body.theme-cyberpunk .control-btn:hover {
+    box-shadow:
+        0 0 20px var(--accent-color),
+        0 0 40px var(--accent-secondary);
+}
+
+body.theme-security .control-btn:hover {
+    background: rgba(77, 166, 255, 0.2);
+}
+
+body.theme-mrrobot .control-btn:hover {
+    background: rgba(168, 181, 160, 0.1);
+    text-decoration: underline;
+}
+
+/* =========================================
+   Card header color fixes for themes
+   ========================================= */
+
+/* Themes with transparent/gradient headers need visible text */
+
+body.theme-security .card h2 {
+    color: var(--text-color);
+    background: linear-gradient(90deg, rgba(0, 200, 255, 0.2), transparent);
+}
+
+body.theme-mrrobot .card h2 {
+    color: var(--text-color);
+    background: var(--card-header-bg);
 }

@@ -20,8 +20,14 @@ body {
 
     height: 100vh;
     overflow-x: hidden;
-    text-shadow: 0 0 2px var(--dim-color);
+    text-shadow: var(--text-glow);
     line-height: 1.5;
+
+    /* Smooth theme transitions */
+    transition:
+        background-color 0.4s ease,
+        color 0.3s ease,
+        text-shadow 0.3s ease;
 }
 
 .container {
