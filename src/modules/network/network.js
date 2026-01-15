@@ -62,12 +62,6 @@ export function parseDeviceInfo(serverData) {
 }
 
 /**
- * Collects comprehensive network and GeoIP data
- * @param {Object} serverData - Server response data
- * @param {string} elementId - Element ID to render to (for real-time updates)
- * @returns {Promise<Object>} Network data object
- */
-/**
  * Collects local network data (Ping, WebRTC) immediately
  * @param {Function} onUpdate - Callback when data changes (data) => void
  * @returns {Promise<Object>} Final local network data
@@ -85,8 +79,16 @@ export async function collectLocalNetworkData(onUpdate) {
   
   localData['Latency'] = await runPingTest();
   notify();
+  
+  // 2. Time Info (Instant)
+  localData['Local Timezone Offset'] = new Date().getTimezoneOffset() / -60 + ' hours';
+  localData['Local Time'] = new Date().toString();
+  try {
+    localData['Intl Timezone'] = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch (e) { /* ignore */ }
+  notify();
 
-  // 2. WebRTC Leak (Slower)
+  // 3. WebRTC Leak (Slower)
   try {
     const rtcCandidates = new Set();
     const rtcPeer = new RTCPeerConnection({ iceServers: [] });
@@ -142,9 +144,17 @@ export async function collectGeoIPData(serverData) {
 
       if (geoData.status === 'success') {
         geoDataOut['ISP'] = geoData.isp;
-        geoDataOut['Location'] = `${geoData.city}, ${geoData.country} (${geoData.countryCode})`;
+        geoDataOut['Organization'] = geoData.org;
+        geoDataOut['AS'] = geoData.as;
+        
+        geoDataOut['Country'] = geoData.country;
+        geoDataOut['Country Code'] = geoData.countryCode;
+        geoDataOut['Region'] = geoData.regionName;
+        geoDataOut['City'] = geoData.city;
+        geoDataOut['Zip'] = geoData.zip;
         geoDataOut['Timezone'] = geoData.timezone;
         geoDataOut['Coordinates'] = `${geoData.lat}, ${geoData.lon}`;
+        geoDataOut['Mobile Connection'] = geoData.mobile ? 'Yes' : 'No';
 
         // Security Checks
         const vpnKeywords = ['VPN', 'Proxy', 'Unblocker', 'Tor', 'Relay'];
@@ -164,6 +174,21 @@ export async function collectGeoIPData(serverData) {
 
         geoDataOut['VPN/Proxy'] = isVPN ? { value: 'YES', warning: true } : 'No';
         geoDataOut['Datacenter'] = isCloud ? { value: 'YES', warning: true } : 'No';
+
+        // Timezone Consistency Check
+        try {
+          const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+          if (browserTz && geoData.timezone) {
+            if (browserTz === geoData.timezone) {
+              geoDataOut['Timezone Check'] = 'Consistent';
+            } else {
+              geoDataOut['Timezone Check'] = {
+                value: `Mismatch (Browser: ${browserTz} vs IP: ${geoData.timezone})`,
+                warning: true,
+              };
+            }
+          }
+        } catch (e) { /* ignore */ }
 
       } else {
         if (geoData.message === 'reserved range') {
