@@ -6,46 +6,48 @@
 
 /**
  * Gets browser-specific privacy settings recommendations
+ * Note: We cannot detect the actual privacy setting level (Standard/Strict),
+ * so these are always shown as general best practices
  * @param {Object} browserInfo - Browser detection info
  * @returns {Object} Browser-specific suggestions
  */
 function getBrowserPrivacySettings(browserInfo) {
   const settings = {
     firefox: {
-      action: 'Enable Firefox Enhanced Tracking Protection (Strict)',
-      description: 'Settings → Privacy & Security → Enhanced Tracking Protection → Strict',
-      impact: 'HIGH',
-      reason: 'Firefox has built-in tracking protection that blocks trackers, fingerprinters, and cryptominers',
+      action: 'Check Firefox Enhanced Tracking Protection',
+      description: 'Settings → Privacy & Security → set to "Strict" for maximum protection',
+      impact: 'MEDIUM',
+      reason: 'We cannot detect your current ETP level - verify it\'s set to Strict',
     },
     chrome: {
-      action: 'Enable Chrome Enhanced Safe Browsing',
-      description: 'Settings → Privacy → Safe Browsing → Enhanced protection. Also disable 3rd party cookies.',
+      action: 'Check Chrome Privacy Settings',
+      description: 'Settings → Privacy → Enable "Enhanced protection" and block 3rd party cookies',
       impact: 'MEDIUM',
-      reason: 'Enhanced protection provides real-time security and blocks dangerous downloads',
+      reason: 'We cannot detect your current settings - verify they\'re optimized',
     },
     safari: {
-      action: 'Enable Safari Intelligent Tracking Prevention',
-      description: 'Preferences → Privacy → Prevent cross-site tracking & Hide IP address',
-      impact: 'HIGH',
-      reason: 'Safari blocks known trackers and hides your IP from them',
+      action: 'Check Safari Privacy Settings',
+      description: 'Preferences → Privacy → Enable "Prevent cross-site tracking" & "Hide IP address"',
+      impact: 'MEDIUM',
+      reason: 'We cannot detect your current settings - verify they\'re enabled',
     },
     edge: {
-      action: 'Enable Edge Strict Tracking Prevention',
-      description: 'Settings → Privacy → Tracking prevention → Strict',
-      impact: 'HIGH',
-      reason: 'Blocks most trackers from all sites and may cause some sites to not work properly',
+      action: 'Check Edge Tracking Prevention',
+      description: 'Settings → Privacy → set Tracking prevention to "Strict"',
+      impact: 'MEDIUM',
+      reason: 'We cannot detect your current level - verify it\'s set to Strict',
     },
     brave: {
-      action: 'Already using Brave!',
-      description: 'Consider enabling "Aggressive" fingerprinting protection in Shields settings',
+      action: 'Brave Shields Active',
+      description: 'Consider enabling "Aggressive" fingerprinting protection in Shields',
       impact: 'INFO',
-      reason: 'Brave has excellent privacy defaults',
+      reason: 'Brave has excellent privacy defaults - you\'re well protected',
     },
     opera: {
       action: 'Enable Opera\'s Built-in VPN',
-      description: 'Settings → Features → Enable VPN',
+      description: 'Settings → Features → Enable VPN for basic IP masking',
       impact: 'MEDIUM',
-      reason: 'Opera has a free built-in VPN for basic privacy',
+      reason: 'Opera has a free built-in VPN',
     },
   };
 
@@ -103,13 +105,7 @@ export function generatePersonalizedSuggestions(context) {
     });
   }
 
-  // 2. Browser-specific privacy settings (most actionable!)
-  if (!isBrave && normalizedScore < 70) {
-    const browserSettings = getBrowserPrivacySettings(browserInfo);
-    suggestions.push(browserSettings);
-  }
-
-  // 3. Privacy extensions if not detected
+  // 2. Privacy extensions if not detected - this is the most impactful
   if (!hasPrivacyExtensions) {
     suggestions.push({
       action: 'Install a Content Blocker',
@@ -119,37 +115,33 @@ export function generatePersonalizedSuggestions(context) {
     });
   }
 
-  // 4. Global Privacy Control (GPC) - legal opt-out in some jurisdictions
+  // 3. Browser-specific privacy settings (we can't detect levels, so suggest checking)
+  if (!isBrave) {
+    const browserSettings = getBrowserPrivacySettings(browserInfo);
+    suggestions.push(browserSettings);
+  }
+
+  // 4. Global Privacy Control (GPC) - detectable
   if (!hasGPC) {
     suggestions.push({
       action: 'Enable Global Privacy Control (GPC)',
       impact: 'MEDIUM',
-      description: 'Legal opt-out signal for California, Colorado, Connecticut residents',
-      reason: 'GPC tells websites not to sell/share your personal data',
+      description: 'Legal opt-out signal recognized in California, Colorado, Connecticut',
+      reason: 'GPC signal not detected - websites may sell/share your data',
     });
   }
 
-  // 5. VPN recommendation (but don't push specific products)
-  if (!isVPNDetected && normalizedScore < 50) {
+  // 5. VPN recommendation (only if low score)
+  if (!isVPNDetected && normalizedScore < 40) {
     suggestions.push({
       action: 'Consider Using a VPN',
-      impact: 'MEDIUM',
+      impact: 'LOW',
       description: 'Hides your IP from websites and encrypts traffic from your ISP',
       reason: 'Your real IP address is visible to websites you visit',
     });
   }
 
-  // 6. DNS over HTTPS
-  if (normalizedScore < 60) {
-    suggestions.push({
-      action: 'Enable DNS over HTTPS (DoH)',
-      impact: 'LOW',
-      description: `${browserInfo.browser === 'firefox' ? 'Settings → Privacy → DNS over HTTPS → Max Protection' : 'Use Cloudflare 1.1.1.1 or Google DNS with DoH'}`,
-      reason: 'Encrypts DNS queries so your ISP can\'t see which sites you visit',
-    });
-  }
-
-  // If still no suggestions (shouldn't happen), add a generic one
+  // If no suggestions, the user is doing well
   if (suggestions.length === 0) {
     suggestions.push({
       action: 'Your privacy setup looks good!',

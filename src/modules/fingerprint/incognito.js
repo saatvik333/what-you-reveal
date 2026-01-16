@@ -385,14 +385,16 @@ export async function testStorageQuota() {
 }
 
 export async function testStoragePersist() {
-  if (!navigator.storage?.persist) {
+  // Use persisted() instead of persist() to avoid triggering permission popup
+  if (!navigator.storage?.persisted) {
     return { triggered: false, available: false, supported: false };
   }
   try {
-    await navigator.storage.persist();
-    return { triggered: false, available: true, supported: true };
+    // Just check if storage is persisted, don't request it
+    const isPersisted = await navigator.storage.persisted();
+    return { triggered: false, available: true, supported: true, isPersisted };
   } catch (e) {
-    return { triggered: true, available: false, supported: true, reason: 'Storage persist blocked' };
+    return { triggered: true, available: false, supported: true, reason: 'Storage API blocked' };
   }
 }
 
