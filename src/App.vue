@@ -12,6 +12,10 @@ import { collectMediaCodecs } from "./modules/system/media_codecs";
 import { collectClientHints } from "./modules/system/client_hints";
 import { collectIntlData } from "./modules/fingerprint/intl";
 import { detectBot } from "./modules/fingerprint/integrity";
+import { collectNetworkData } from "./modules/network/network";
+import { collectNavigatorData } from "./modules/system/navigator";
+import { collectFontData } from "./modules/fingerprint/fonts";
+import { collectWebGLData } from "./modules/fingerprint/webgl";
 
 const clipboardData = ref(null);
 const hardwareData = ref(null);
@@ -22,6 +26,10 @@ const mediaCodecData = ref(null);
 const clientHintsData = ref(null);
 const intlData = ref(null);
 const integrityData = ref(null);
+const networkData = ref(null);
+const navigatorData = ref(null);
+const fontData = ref(null);
+const webglData = ref(null);
 
 onMounted(async () => {
   clipboardData.value = await collectClipboardData();
@@ -33,6 +41,14 @@ onMounted(async () => {
   clientHintsData.value = await collectClientHints();
   intlData.value = await collectIntlData();
   integrityData.value = detectBot();
+  navigatorData.value = await collectNavigatorData();
+  fontData.value = await collectFontData();
+  webglData.value = await collectWebGLData();
+  
+  // Start network collection (accepts callback for updates)
+  networkData.value = await collectNetworkData((newData) => {
+      networkData.value = newData;
+  });
 });
 </script>
 
@@ -46,7 +62,8 @@ onMounted(async () => {
       </TerminalCard>
 
       <TerminalCard title="1. NETWORK_INFO">
-        <pre>Initializing scan...</pre>
+        <TerminalDataGrid v-if="networkData" :data="networkData" />
+        <pre v-else>Scanning network environment...</pre>
       </TerminalCard>
 
       <TerminalCard title="2. DEVICE_CORE">
@@ -90,7 +107,18 @@ onMounted(async () => {
       </TerminalCard>
 
       <TerminalCard title="10. NAVIGATOR_VARS">
-        <pre>Reading headers...</pre>
+        <TerminalDataGrid v-if="navigatorData" :data="navigatorData" />
+        <pre v-else>Reading headers...</pre>
+      </TerminalCard>
+
+      <TerminalCard title="11. FONTS_FINGERPRINT">
+        <TerminalDataGrid v-if="fontData" :data="fontData" />
+        <pre v-else>Scanning font library...</pre>
+      </TerminalCard>
+
+      <TerminalCard title="12. WEBGL_RENDERER">
+        <TerminalDataGrid v-if="webglData" :data="webglData" />
+        <pre v-else>Initializing WebGL context...</pre>
       </TerminalCard>
 
     </main>
