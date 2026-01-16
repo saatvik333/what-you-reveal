@@ -1,13 +1,12 @@
 /**
- * Digital fingerprinting module
- * Enhanced with WebGL canvas, emoji rendering, and improved audio fingerprint
+ * Digital Identity & Fingerprinting Module
+ * Aggregates Canvas, Audio, Emoji, and Voice vectors into a Composite ID
  */
 
-import { cyrb53 } from './crypto.js';
+import { cyrb53 } from '../../utils/crypto';
 
 /**
- * Generates a standard canvas fingerprint with text and shapes
- * @returns {string} Canvas data URL
+ * Generates a standard canvas fingerprint with text, emojis, and shapes
  */
 function getCanvasFingerprint() {
   const canvas = document.createElement('canvas');
@@ -56,9 +55,7 @@ function getCanvasFingerprint() {
 }
 
 /**
- * Generates a WebGL-accelerated canvas fingerprint
- * Uses GPU acceleration which varies per device
- * @returns {string} WebGL canvas data URL or error
+ * Generates a WebGL-accelerated canvas fingerprint (toDataURL variation)
  */
 function getWebGLCanvasFingerprint() {
   try {
@@ -67,9 +64,7 @@ function getWebGLCanvasFingerprint() {
     canvas.height = 64;
     const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
 
-    if (!gl) {
-      return 'Not Supported';
-    }
+    if (!gl) return 'Not Supported';
 
     // Draw gradient pattern using WebGL
     gl.clearColor(0.3, 0.5, 0.7, 1.0);
@@ -84,7 +79,6 @@ function getWebGLCanvasFingerprint() {
 
 /**
  * Tests emoji rendering variations across platforms
- * @returns {string} Hash of emoji rendering
  */
 function getEmojiFingerprint() {
   const canvas = document.createElement('canvas');
@@ -110,9 +104,7 @@ function getEmojiFingerprint() {
 }
 
 /**
- * Generates an enhanced audio fingerprint
- * Uses multiple oscillator types and compressor settings
- * @returns {Promise<string>} Audio fingerprint value
+ * Generates an enhanced audio fingerprint using OfflineAudioContext
  */
 async function getAudioFingerprint() {
   try {
@@ -121,14 +113,14 @@ async function getAudioFingerprint() {
       return 'Not Supported';
     }
 
-    const context = new AudioContext(1, 5000, 44100);
+    const context = new AudioContext(1, 44100, 44100);
 
     // Oscillator
     const oscillator = context.createOscillator();
     oscillator.type = 'triangle';
     oscillator.frequency.value = 10000;
 
-    // Compressor with specific settings
+    // Compressor with specific settings (hardware dependent)
     const compressor = context.createDynamicsCompressor();
     compressor.threshold.value = -50;
     compressor.knee.value = 40;
@@ -136,7 +128,7 @@ async function getAudioFingerprint() {
     compressor.attack.value = 0;
     compressor.release.value = 0.25;
 
-    // Analyser node for more fingerprint data
+    // Analyser node
     const analyser = context.createAnalyser();
     analyser.fftSize = 256;
 
@@ -163,8 +155,6 @@ async function getAudioFingerprint() {
 
 /**
  * Gets speech synthesis voices fingerprint
- * Available voices vary significantly per OS/browser
- * @returns {Promise<Object>} Voice fingerprint data
  */
 async function getSpeechVoicesFingerprint() {
   return new Promise((resolve) => {
@@ -193,27 +183,29 @@ async function getSpeechVoicesFingerprint() {
       });
     };
 
-    // Some browsers fire an event when voices are loaded
+    // Browsers often load voices asynchronously
     if (speechSynthesis.onvoiceschanged !== undefined) {
       speechSynthesis.onvoiceschanged = getVoices;
     }
 
     getVoices();
 
-    // Timeout fallback
+    // Timeout fallback (some browsers don't have voices or fail to load)
     setTimeout(() => {
-      resolve({ available: true, count: 0, hash: 'Timeout' });
+      resolve({ available: true, count: 0, hash: 'Timeout/None' });
     }, 1000);
   });
 }
 
 /**
  * Collects digital fingerprint data
- * @returns {Promise<Object>} Fingerprint data object
  */
 export async function collectFingerprintData() {
   const canvasFP = getCanvasFingerprint();
-  const webglCanvasFP = getWebGLCanvasFingerprint();
+  
+  // Note: This is different from the WebGL Module. This checks toDataURL composition.
+  const webglCanvasFP = getWebGLCanvasFingerprint(); 
+  
   const emojiFP = getEmojiFingerprint();
   const audioFP = await getAudioFingerprint();
   const voicesFP = await getSpeechVoicesFingerprint();
@@ -234,18 +226,21 @@ export async function collectFingerprintData() {
   const deviceHash = cyrb53(fingerprintComponents).toString(16);
 
   return {
-    'Canvas Hash': cyrb53(canvasFP).toString(16),
-    'Canvas Visual': {
-      element: `<img src="${canvasFP}" style="border: 1px solid var(--primary); max-width: 280px; max-height: 60px; vertical-align: bottom;" alt="Canvas Fingerprint" />`,
-      warning: true,
-    },
-    'WebGL Canvas Hash': cyrb53(webglCanvasFP).toString(16),
-    'Emoji Render Hash': { value: cyrb53(emojiFP).toString(16), warning: true },
-    'Audio Hash': cyrb53(audioFP).toString(16),
-    'Speech Voices': voicesFP.available ? `${voicesFP.count} voices` : 'Not Supported',
-    'Speech Voices Hash': voicesFP.hash,
-    'Sample Voices': voicesFP.sample || 'N/A',
     'Composite Device ID': { value: deviceHash.toUpperCase(), warning: true },
-    'Trackability Estimate': { value: 'Very High (Multi-Vector Fingerprint)', warning: true },
+    'Trackability Estimate': { value: 'Very High (Multi-Vector)', warning: true },
+    
+    'Canvas Hash': { value: cyrb53(canvasFP).toString(16) },
+    'Canvas Visual': {
+      // Inline image for visual verification
+      value: 'Rendered below',
+      element: `<img src="${canvasFP}" style="border: 1px solid var(--color-text); margin-top: 5px; max-width: 100%; height: auto; image-rendering: pixelated;" alt="Canvas Fingerprint" />`,
+    },
+    
+    'WebGL Canvas Hash': { value: cyrb53(webglCanvasFP).toString(16) },
+    'Emoji Render Hash': { value: cyrb53(emojiFP).toString(16) },
+    'Audio Hash': { value: cyrb53(audioFP).toString(16) },
+    
+    'Speech Voices': { value: voicesFP.available ? `${voicesFP.count} voices` : 'Not Supported' },
+    'Sample Voice': { value: voicesFP.available ? voicesFP.sample : 'N/A' }
   };
 }

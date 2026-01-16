@@ -19,7 +19,10 @@ function getGPUInfo() {
       return { 'GPU Context': 'Not Available' };
     }
 
-    gpuData['WebGL Version'] = gl instanceof WebGL2RenderingContext ? '2.0' : '1.0';
+    gpuData['WebGL Version'] = {
+        value: gl instanceof WebGL2RenderingContext ? '2.0' : '1.0',
+        url: 'https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API'
+    };
 
     const ext = gl.getExtension('WEBGL_debug_renderer_info');
     if (ext) {
@@ -234,15 +237,25 @@ export async function collectHardwareData() {
   Object.assign(hardwareData, deviceClass);
 
   // Core hardware
-  hardwareData['CPU Cores (Logical)'] = navigator.hardwareConcurrency || 'Unknown';
-  hardwareData['Device Memory'] = 'deviceMemory' in navigator 
-    ? navigator.deviceMemory + ' GB (Bucketed)' 
-    : 'Not Exposed';
-  hardwareData['Touch Points'] = navigator.maxTouchPoints;
+  hardwareData['CPU Cores (Logical)'] = {
+      value: navigator.hardwareConcurrency || 'Unknown',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/API/Navigator/hardwareConcurrency'
+  };
+  hardwareData['Device Memory'] = {
+      value: 'deviceMemory' in navigator ? navigator.deviceMemory + ' GB (Bucketed)' : 'Not Exposed',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/API/Navigator/deviceMemory'
+  };
+  hardwareData['Touch Points'] = {
+      value: navigator.maxTouchPoints,
+      url: 'https://developer.mozilla.org/en-US/docs/Web/API/Navigator/maxTouchPoints'
+  };
   hardwareData['Touch Support'] = 'ontouchstart' in window ? 'Yes' : 'No';
   
   // Pointer Events (more detailed than just touch)
-  hardwareData['Pointer Events'] = 'PointerEvent' in window ? 'Supported' : 'Not Supported';
+  hardwareData['Pointer Events'] = {
+      value: 'PointerEvent' in window ? 'Supported' : 'Not Supported',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/API/Pointer_events'
+  };
   hardwareData['Primary Pointer'] = window.matchMedia('(pointer: fine)').matches 
     ? 'Fine (Mouse/Trackpad)' 
     : window.matchMedia('(pointer: coarse)').matches 
@@ -258,30 +271,43 @@ export async function collectHardwareData() {
   if (typeof navigator.getBattery === 'function') {
     try {
       const battery = await navigator.getBattery();
-      hardwareData['Battery Level'] = (battery.level * 100).toFixed(0) + '%';
-      hardwareData['Charging'] = battery.charging ? 'Yes' : 'No';
-      hardwareData['Charging Time'] =
-        battery.chargingTime === Infinity ? 'N/A' : (battery.chargingTime / 60).toFixed(0) + ' min';
-      hardwareData['Discharging Time'] =
-        battery.dischargingTime === Infinity
-          ? 'N/A'
-          : (battery.dischargingTime / 60).toFixed(0) + ' min';
+      const batteryUrl = 'https://developer.mozilla.org/en-US/docs/Web/API/Battery_Status_API';
+      hardwareData['Battery Level'] = { value: (battery.level * 100).toFixed(0) + '%', url: batteryUrl };
+      hardwareData['Charging'] = { value: battery.charging ? 'Yes' : 'No', url: batteryUrl };
+      hardwareData['Charging Time'] = {
+        value: battery.chargingTime === Infinity ? 'N/A' : (battery.chargingTime / 60).toFixed(0) + ' min',
+        url: batteryUrl
+      };
+      hardwareData['Discharging Time'] = {
+        value: battery.dischargingTime === Infinity ? 'N/A' : (battery.dischargingTime / 60).toFixed(0) + ' min',
+        url: batteryUrl
+      };
     } catch (e) {
       hardwareData['Battery Status'] = 'Blocked / Not Accessible';
     }
   } else {
-    hardwareData['Battery API'] = 'Not Supported (Firefox/Safari)';
+    hardwareData['Battery API'] = {
+        value: 'Not Supported (Firefox/Safari)',
+        url: 'https://developer.mozilla.org/en-US/docs/Web/API/Battery_Status_API'
+    };
   }
 
   // Performance Memory (Chrome only)
   try {
     if (performance && performance.memory) {
-      hardwareData['JS Heap Size Limit'] =
-        (performance.memory.jsHeapSizeLimit / 1048576).toFixed(0) + ' MB';
-      hardwareData['Total JS Heap Size'] =
-        (performance.memory.totalJSHeapSize / 1048576).toFixed(0) + ' MB';
-      hardwareData['Used JS Heap Size'] =
-        (performance.memory.usedJSHeapSize / 1048576).toFixed(0) + ' MB';
+      const memUrl = 'https://developer.mozilla.org/en-US/docs/Web/API/Performance/memory';
+      hardwareData['JS Heap Size Limit'] = {
+        value: (performance.memory.jsHeapSizeLimit / 1048576).toFixed(0) + ' MB',
+        url: memUrl
+      };
+      hardwareData['Total JS Heap Size'] = {
+        value: (performance.memory.totalJSHeapSize / 1048576).toFixed(0) + ' MB',
+        url: memUrl
+      };
+      hardwareData['Used JS Heap Size'] = {
+        value: (performance.memory.usedJSHeapSize / 1048576).toFixed(0) + ' MB',
+        url: memUrl
+      };
     }
   } catch (e) {
     /* ignore */
@@ -291,8 +317,15 @@ export async function collectHardwareData() {
   if (navigator.storage && navigator.storage.estimate) {
     try {
       const estimate = await navigator.storage.estimate();
-      hardwareData['Storage Quota'] = (estimate.quota / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
-      hardwareData['Storage Usage'] = (estimate.usage / 1048576).toFixed(2) + ' MB';
+      const storageUrl = 'https://developer.mozilla.org/en-US/docs/Web/API/StorageManager/estimate';
+      hardwareData['Storage Quota'] = {
+          value: (estimate.quota / (1024 * 1024 * 1024)).toFixed(2) + ' GB',
+          url: storageUrl
+      };
+      hardwareData['Storage Usage'] = {
+          value: (estimate.usage / 1048576).toFixed(2) + ' MB',
+          url: storageUrl
+      };
     } catch (e) {
       hardwareData['Storage Info'] = 'Access Denied';
     }
@@ -300,7 +333,10 @@ export async function collectHardwareData() {
 
   // Gamepad API
   const gamepadInfo = getGamepadInfo();
-  hardwareData['Gamepad API'] = gamepadInfo.supported ? 'Supported' : 'Not Supported';
+  hardwareData['Gamepad API'] = {
+      value: gamepadInfo.supported ? 'Supported' : 'Not Supported',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/API/Gamepad_API'
+  };
   if (gamepadInfo.count > 0) {
     hardwareData['Connected Gamepads'] = gamepadInfo.count;
     hardwareData['Gamepad IDs'] = gamepadInfo.devices.map((d) => d.id).join(', ');
@@ -308,34 +344,54 @@ export async function collectHardwareData() {
 
   // Bluetooth
   const btStatus = await getBluetoothStatus();
-  hardwareData['Bluetooth API'] = btStatus.supported ? 'Supported' : 'Not Supported';
+  hardwareData['Bluetooth API'] = {
+      value: btStatus.supported ? 'Supported' : 'Not Supported',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/API/Web_Bluetooth_API'
+  };
   if (btStatus.supported && btStatus.available !== undefined) {
     hardwareData['Bluetooth Available'] = btStatus.available ? 'Yes' : 'No';
   }
 
   // USB (previously paired devices only)
   const usbStatus = await getUSBStatus();
-  hardwareData['WebUSB API'] = usbStatus.supported ? 'Supported' : 'Not Supported';
+  hardwareData['WebUSB API'] = {
+      value: usbStatus.supported ? 'Supported' : 'Not Supported',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/API/USB'
+  };
   if (usbStatus.supported && usbStatus.pairedDevices !== undefined) {
     hardwareData['Paired USB Devices'] = usbStatus.pairedDevices;
   }
 
   // Device Orientation/Motion sensors
-  hardwareData['Device Orientation API'] =
-    'DeviceOrientationEvent' in window ? 'Supported' : 'Not Supported';
-  hardwareData['Device Motion API'] = 'DeviceMotionEvent' in window ? 'Supported' : 'Not Supported';
+  hardwareData['Device Orientation API'] = {
+    value: 'DeviceOrientationEvent' in window ? 'Supported' : 'Not Supported',
+    url: 'https://developer.mozilla.org/en-US/docs/Web/API/Device_orientation_events'
+  };
+  hardwareData['Device Motion API'] = {
+      value: 'DeviceMotionEvent' in window ? 'Supported' : 'Not Supported',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/API/DeviceMotionEvent'
+  };
 
   // Vibration API
-  hardwareData['Vibration API'] = 'vibrate' in navigator ? 'Supported' : 'Not Supported';
+  hardwareData['Vibration API'] = {
+      value: 'vibrate' in navigator ? 'Supported' : 'Not Supported',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/API/Navigator/vibrate'
+  };
 
   // Wake Lock API
-  hardwareData['Wake Lock API'] = 'wakeLock' in navigator ? 'Supported' : 'Not Supported';
+  hardwareData['Wake Lock API'] = {
+      value: 'wakeLock' in navigator ? 'Supported' : 'Not Supported',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/API/Screen_Wake_Lock_API'
+  };
 
   // Web HID API (Connected HID devices)
   if (navigator.hid) {
     try {
       const hidDevices = await navigator.hid.getDevices();
-      hardwareData['Web HID API'] = 'Supported';
+      hardwareData['Web HID API'] = {
+          value: 'Supported',
+          url: 'https://developer.mozilla.org/en-US/docs/Web/API/WebHID_API'
+      };
       hardwareData['Connected HID Devices'] = hidDevices.length;
       if (hidDevices.length > 0) {
         hardwareData['HID Device IDs'] = hidDevices
@@ -353,7 +409,10 @@ export async function collectHardwareData() {
   if (navigator.serial) {
     try {
       const ports = await navigator.serial.getPorts();
-      hardwareData['Web Serial API'] = 'Supported';
+      hardwareData['Web Serial API'] = {
+          value: 'Supported',
+          url: 'https://developer.mozilla.org/en-US/docs/Web/API/Web_Serial_API'
+      };
       hardwareData['Paired Serial Ports'] = ports.length;
     } catch (e) {
       hardwareData['Web Serial API'] = 'Blocked/Error';
@@ -364,17 +423,21 @@ export async function collectHardwareData() {
 
   // Compute Pressure API (Chrome 125+)
   if ('PressureObserver' in window) {
-    hardwareData['Compute Pressure API'] = 'Supported';
+    hardwareData['Compute Pressure API'] = {
+        value: 'Supported',
+        url: 'https://developer.mozilla.org/en-US/docs/Web/API/Compute_Pressure_API'
+    };
     // Note: Actual monitoring requires observer setup; we just detect capability here
   } else {
     hardwareData['Compute Pressure API'] = 'Not Supported';
   }
 
   // Generic Sensors (Accelerometer, Gyroscope - may require permissions)
-  hardwareData['Accelerometer API'] = 'Accelerometer' in window ? 'Supported' : 'Not Supported';
-  hardwareData['Gyroscope API'] = 'Gyroscope' in window ? 'Supported' : 'Not Supported';
-  hardwareData['Magnetometer API'] = 'Magnetometer' in window ? 'Supported' : 'Not Supported';
-  hardwareData['Ambient Light Sensor'] = 'AmbientLightSensor' in window ? 'Supported' : 'Not Supported';
+  const sensorUrl = 'https://developer.mozilla.org/en-US/docs/Web/API/Sensor_APIs';
+  hardwareData['Accelerometer API'] = { value: 'Accelerometer' in window ? 'Supported' : 'Not Supported', url: sensorUrl };
+  hardwareData['Gyroscope API'] = { value: 'Gyroscope' in window ? 'Supported' : 'Not Supported', url: sensorUrl };
+  hardwareData['Magnetometer API'] = { value: 'Magnetometer' in window ? 'Supported' : 'Not Supported', url: sensorUrl };
+  hardwareData['Ambient Light Sensor'] = { value: 'AmbientLightSensor' in window ? 'Supported' : 'Not Supported', url: sensorUrl };
 
   return hardwareData;
 }

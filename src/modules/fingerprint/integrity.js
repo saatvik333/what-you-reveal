@@ -6,6 +6,8 @@
 export function detectBot() {
   const findings = [];
   let score = 0;
+  const webDriverUrl = 'https://developer.mozilla.org/en-US/docs/Web/API/Navigator/webdriver';
+  const uaUrl = 'https://developer.mozilla.org/en-US/docs/Web/API/Navigator/userAgent';
 
   // 1. Check for WebDriver
   if (navigator.webdriver) {
@@ -34,13 +36,7 @@ export function detectBot() {
     }
   }
 
-  // 5. Check capabilities
-  if (navigator.plugins.length === 0 && navigator.languages.length === 0) {
-    findings.push('No plugins or languages detected ( Suspicious)');
-    score += 30;
-  }
-
-  // 6. Check for Selenium-specific attributes
+  // 5. Check for Selenium-specific attributes
   const seleniumAttrs = [
     'cdc_adoQpoasnfa76pfcZLmcfl_Array',
     '__webdriver_evaluate',
@@ -63,7 +59,7 @@ export function detectBot() {
     }
   }
 
-  // 7. Puppeteer Detection
+  // 6. Puppeteer Detection
   const puppeteerSignatures = [
     '_phantom',
     '__nightmare',
@@ -78,13 +74,13 @@ export function detectBot() {
     }
   }
 
-  // 8. CDP (Chrome DevTools Protocol) detection
+  // 7. CDP (Chrome DevTools Protocol) detection
   if (window.cdc_adoQpoasnfa76pfcZLmcfl_Promise) {
     findings.push('CDP (Puppeteer/Playwright) detected');
     score += 100;
   }
 
-  // 9. Check for automation-related prototype modifications
+  // 8. Check for automation-related prototype modifications
   try {
     const descriptors = Object.getOwnPropertyDescriptor(navigator, 'webdriver');
     if (descriptors && descriptors.get && descriptors.get.toString().includes('native code') === false) {
@@ -93,14 +89,14 @@ export function detectBot() {
     }
   } catch (e) { /* ignore */ }
 
-  // 10. Playwright Signature (navigator.webdriver is often undefined in Playwright)
+  // 9. Playwright Signature (navigator.webdriver is often undefined in Playwright)
   if (navigator.webdriver === undefined && /Chrome/.test(navigator.userAgent)) {
     // In real Chrome, webdriver should be false, not undefined
     findings.push('Possible Playwright (webdriver is undefined in Chrome)');
     score += 30;
   }
 
-  // 11. Check for eval masking (common in automation)
+  // 10. Check for eval masking (common in automation)
   const evalStr = eval.toString();
   if (!evalStr.includes('native code')) {
     findings.push('eval() has been modified');
@@ -116,26 +112,50 @@ export function detectBot() {
   }
 
   const data = {
-    Status: score > 0 ? { value: status, warning: score >= 50 } : status,
-    'Automation Score':
-      score > 0 ? { value: score + '/100', warning: score > 50 } : '0/100 (Clean)',
-    // Explicitly show what we checked to prove it's not fake
-    'Navigator.webdriver': navigator.webdriver ? { value: 'TRUE', warning: true } : 'False',
-    'Headless Chrome': /HeadlessChrome/.test(navigator.userAgent)
-      ? { value: 'DETECTED', warning: true }
-      : 'False',
-    'Selenium Attributes': 'None Found',
-    'Puppeteer/Playwright': findings.some(f => f.includes('Puppeteer') || f.includes('CDP') || f.includes('Playwright'))
-      ? { value: 'DETECTED', warning: true }
-      : 'Not Detected',
-    'Plugins Length': navigator.plugins.length,
-    Languages: navigator.languages.length,
+    'Integrity Status': { 
+        value: status, 
+        warning: score >= 50,
+        url: webDriverUrl
+    },
+    'Automation Score': {
+        value: score > 0 ? score + '/100' : '0/100 (Clean)',
+        warning: score > 50,
+        url: webDriverUrl
+    },
+    
+    // Explicit checks
+    'Navigator.webdriver': { 
+        value: navigator.webdriver ? 'TRUE' : 'False', 
+        warning: !!navigator.webdriver,
+        url: webDriverUrl 
+    },
+    'Headless Chrome': { 
+        value: /HeadlessChrome/.test(navigator.userAgent) ? 'DETECTED' : 'False', 
+        warning: /HeadlessChrome/.test(navigator.userAgent),
+        url: uaUrl
+    },
+    'Selenium Attributes': {
+        value: 'None Found',
+        url: 'https://developer.mozilla.org/en-US/docs/Web/API/Document/documentElement'
+    },
+    'Puppeteer/Playwright': {
+        value: findings.some(f => f.includes('Puppeteer') || f.includes('CDP') || f.includes('Playwright')) ? 'DETECTED' : 'Not Detected',
+        warning: findings.some(f => f.includes('Puppeteer') || f.includes('CDP') || f.includes('Playwright')),
+        url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Browser_detection_using_the_user_agent'
+    },
+    'Languages': { 
+        value: navigator.languages.length, 
+        url: 'https://developer.mozilla.org/en-US/docs/Web/API/Navigator/languages' 
+    },
   };
 
   if (findings.length > 0) {
-    data['Flags'] = { value: findings.join(', '), warning: true };
+    data['Flags Raised'] = { 
+        value: findings.join(', '), 
+        warning: true,
+        url: webDriverUrl
+    };
   }
 
   return data;
 }
-

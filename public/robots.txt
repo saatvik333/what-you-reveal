@@ -1,3 +1,11 @@
+# What You Reveal - Robots.txt
+# Browser Fingerprint & Privacy Analysis Tool
+
 User-agent: *
 Allow: /
+
+# Sitemap location
 Sitemap: https://what-you-reveal.vercel.app/sitemap.xml
+
+# Crawl delay (optional, for rate limiting)
+Crawl-delay: 1

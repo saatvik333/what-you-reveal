@@ -1,40 +1,27 @@
 {
-  "name": "what-you-reveal",
-  "version": "3.3.0",
-  "description": "A browser fingerprinting demonstration showing what information your browser exposes",
-  "main": "server/server.js",
+  "name": "what-you-reveal-v2",
+  "private": true,
+  "version": "0.3.2",
+  "type": "module",
   "scripts": {
-    "start": "node server/server.js",
-    "dev": "concurrently \"vite\" \"node --watch server/server.js\"",
+    "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint .",
-    "format": "prettier --write ."
+    "lint": "eslint src --ext .js,.vue",
+    "lint:fix": "eslint src --ext .js,.vue --fix"
+  },
+  "dependencies": {
+    "detectincognitojs": "^1.6.2",
+    "ua-parser-js": "^2.0.8",
+    "vue": "^3.5.24"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.2",
-    "concurrently": "^9.2.1",
-    "eslint": "^8.56.0",
-    "globals": "^17.0.0",
-    "prettier": "^3.2.4",
-    "vite": "^7.3.1"
+    "@vitejs/plugin-vue": "^6.0.3",
+    "eslint": "^9.39.2",
+    "eslint-plugin-vue": "^10.7.0",
+    "vite": "npm:rolldown-vite@7.2.5"
   },
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "keywords": [
-    "fingerprinting",
-    "privacy",
-    "browser",
-    "security"
-  ],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "dependencies": {
-    "compression": "^1.8.1",
-    "express": "^5.1.0",
-    "request-ip": "^3.3.0",
-    "ua-parser-js": "^2.0.6"
+  "overrides": {
+    "vite": "npm:rolldown-vite@7.2.5"
   }
 }

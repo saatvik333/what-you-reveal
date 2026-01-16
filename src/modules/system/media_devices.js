@@ -4,8 +4,10 @@
  */
 
 export async function collectMediaDevices() {
+  const mediaDevicesUrl = 'https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/enumerateDevices';
+
   if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
-    return { 'Media Devices API': 'Not Supported' };
+    return { 'Media Devices API': { value: 'Not Supported', url: 'https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices' } };
   }
 
   try {
@@ -33,21 +35,33 @@ export async function collectMediaDevices() {
     });
 
     const data = {
-      Microphones: counts['audioinput'],
-      'Speakers/Headphones': counts['audiooutput'],
-      Cameras: counts['videoinput'],
-      'Total Devices': devices.length,
+      Microphones: { 
+          value: counts['audioinput'], 
+          url: 'https://developer.mozilla.org/en-US/docs/Web/API/MediaDeviceInfo/kind' 
+      },
+      'Speakers/Headphones': { 
+          value: counts['audiooutput'], 
+          url: 'https://developer.mozilla.org/en-US/docs/Web/API/MediaDeviceInfo/kind' 
+      },
+      Cameras: { 
+          value: counts['videoinput'], 
+          url: 'https://developer.mozilla.org/en-US/docs/Web/API/MediaDeviceInfo/kind' 
+      },
+      'Total Devices': {
+          value: devices.length,
+          url: mediaDevicesUrl
+      },
     };
 
     // If we have labels (permission granted), show them
     if (labels.length > 0) {
-      data['Device Labels'] = { value: labels.join('\n'), warning: false };
+      data['Device Labels'] = { value: labels.join('\n'), warning: false, url: 'https://developer.mozilla.org/en-US/docs/Web/API/MediaDeviceInfo/label' };
     } else {
-      data['Device Labels'] = 'Hidden (Permission required)';
+      data['Device Labels'] = { value: 'Hidden (Permission required)', warning: true, url: 'https://developer.mozilla.org/en-US/docs/Web/API/MediaDeviceInfo/label' };
     }
 
     return data;
   } catch (e) {
-    return { Error: 'Failed to enumerate devices' };
+    return { Error: { value: 'Failed to enumerate devices', warning: true } };
   }
 }

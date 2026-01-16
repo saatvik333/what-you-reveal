@@ -1,230 +1,160 @@
 /**
- * WebGL information collection module
- * Enhanced with WebGL2, shader precision, and render fingerprinting
+ * WebGL Render Engine Fingerprinting Module
+ * Captures GPU details, Render Hash, and WebGPU support
  */
 
-import { cyrb53 } from './crypto.js';
+import { cyrb53 } from '../../utils/crypto';
 
 /**
- * Gets shader precision format for a given shader type and precision
- * @param {WebGLRenderingContext} gl - WebGL context
- * @param {number} shaderType - VERTEX_SHADER or FRAGMENT_SHADER
- * @param {number} precisionType - HIGH_FLOAT, MEDIUM_FLOAT, etc.
- * @returns {string} Precision format string
- */
-function getShaderPrecision(gl, shaderType, precisionType) {
-  try {
-    const format = gl.getShaderPrecisionFormat(shaderType, precisionType);
-    if (format) {
-      return `${format.rangeMin},${format.rangeMax},${format.precision}`;
-    }
-  } catch (e) {
-    /* ignore */
-  }
-  return 'N/A';
-}
-
-/**
- * Generates a WebGL render fingerprint by drawing a 3D scene
- * @param {WebGLRenderingContext} gl - WebGL context
- * @param {HTMLCanvasElement} canvas - Canvas element
- * @returns {string} Hash of rendered pixels
+ * Generates a unique hash by rendering a 2D scene
  */
 function getWebGLRenderFingerprint(gl, canvas) {
   try {
-    // Set viewport
-    gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.clearColor(0.2, 0.4, 0.6, 1.0); 
+      gl.clear(gl.COLOR_BUFFER_BIT);
 
-    // Clear with a specific color
-    gl.clearColor(0.2, 0.4, 0.6, 1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
+      // Shaders
+      const vsSource = `
+          attribute vec2 position;
+          varying vec2 vPos;
+          void main() {
+              vPos = position;
+              gl_Position = vec4(position, 0.0, 1.0);
+          }
+      `;
+      const fsSource = `
+          precision mediump float;
+          varying vec2 vPos;
+          void main() {
+              gl_FragColor = vec4(
+                  sin(vPos.x * 10.0) * 0.5 + 0.5,
+                  cos(vPos.y * 10.0) * 0.5 + 0.5,
+                  sin(vPos.x * vPos.y * 5.0) * 0.5 + 0.5,
+                  1.0
+              );
+          }
+      `;
 
-    // Create shaders
-    const vertexShaderSource = `
-            attribute vec2 position;
-            varying vec2 vPos;
-            void main() {
-                vPos = position;
-                gl_Position = vec4(position, 0.0, 1.0);
-            }
-        `;
+      const vs = gl.createShader(gl.VERTEX_SHADER);
+      gl.shaderSource(vs, vsSource);
+      gl.compileShader(vs);
 
-    const fragmentShaderSource = `
-            precision mediump float;
-            varying vec2 vPos;
-            void main() {
-                gl_FragColor = vec4(
-                    sin(vPos.x * 10.0) * 0.5 + 0.5,
-                    cos(vPos.y * 10.0) * 0.5 + 0.5,
-                    sin(vPos.x * vPos.y * 5.0) * 0.5 + 0.5,
-                    1.0
-                );
-            }
-        `;
+      const fs = gl.createShader(gl.FRAGMENT_SHADER);
+      gl.shaderSource(fs, fsSource);
+      gl.compileShader(fs);
 
-    // Compile vertex shader
-    const vertexShader = gl.createShader(gl.VERTEX_SHADER);
-    gl.shaderSource(vertexShader, vertexShaderSource);
-    gl.compileShader(vertexShader);
+      const prog = gl.createProgram();
+      gl.attachShader(prog, vs);
+      gl.attachShader(prog, fs);
+      gl.linkProgram(prog);
+      gl.useProgram(prog);
 
-    // Compile fragment shader
-    const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
-    gl.shaderSource(fragmentShader, fragmentShaderSource);
-    gl.compileShader(fragmentShader);
+      // Triangle
+      const vertices = new Float32Array([-0.8, -0.8, 0.8, -0.8, 0.0, 0.8]);
+      const buffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
 
-    // Create program
-    const program = gl.createProgram();
-    gl.attachShader(program, vertexShader);
-    gl.attachShader(program, fragmentShader);
-    gl.linkProgram(program);
-    gl.useProgram(program);
+      const posLoc = gl.getAttribLocation(prog, 'position');
+      gl.enableVertexAttribArray(posLoc);
+      gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
 
-    // Create triangle vertices
-    const vertices = new Float32Array([-0.8, -0.8, 0.8, -0.8, 0.0, 0.8]);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
 
-    // Create buffer
-    const buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+      // Hash
+      const pixels = new Uint8Array(canvas.width * canvas.height * 4);
+      gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+      
+      // Clean
+      gl.deleteBuffer(buffer);
+      gl.deleteProgram(prog);
+      gl.deleteShader(vs);
+      gl.deleteShader(fs);
 
-    // Set up attribute
-    const positionLocation = gl.getAttribLocation(program, 'position');
-    gl.enableVertexAttribArray(positionLocation);
-    gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
-
-    // Draw
-    gl.drawArrays(gl.TRIANGLES, 0, 3);
-
-    // Read pixels and hash
-    const pixels = new Uint8Array(canvas.width * canvas.height * 4);
-    gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-
-    // Clean up
-    gl.deleteShader(vertexShader);
-    gl.deleteShader(fragmentShader);
-    gl.deleteProgram(program);
-    gl.deleteBuffer(buffer);
-
-    // Hash the pixel data
-    return cyrb53(pixels.toString()).toString(16);
-  } catch (e) {
-    return 'Error';
+      return cyrb53(pixels.toString()).toString(16).toUpperCase();
+  } catch(e) {
+      return 'Error';
   }
 }
 
-/**
- * Collects WebGL capabilities and GPU information
- * @returns {Object} WebGL data object
- */
+function getShaderPrecision(gl, shaderType, precisionType) {
+    try {
+        const format = gl.getShaderPrecisionFormat(shaderType, precisionType);
+        return format ? `${format.rangeMin},${format.rangeMax},${format.precision}` : 'N/A';
+    } catch(e) { return 'N/A'; }
+}
+
 export async function collectWebGLData() {
   const canvas = document.createElement('canvas');
-  canvas.width = 64;
-  canvas.height = 64;
-
-  const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-  const gl2 = canvas.getContext('webgl2');
-
-  const webglData = {};
+  canvas.width = 64; 
+  canvas.height = 64; // Small canvas for fingerprinting speed
+  
+  const gl = canvas.getContext('webgl2') || canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+  const data = {};
 
   if (gl) {
-    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+      const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+      const isWebGL2 = typeof WebGL2RenderingContext !== 'undefined' && gl instanceof WebGL2RenderingContext;
 
-    // Basic Info
-    webglData['WebGL Supported'] = 'Yes';
-    webglData['WebGL2 Supported'] = gl2 ? 'Yes' : 'No';
-    webglData['Vendor'] = debugInfo ? gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) : 'Unknown';
-    webglData['Renderer'] = debugInfo
-      ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
-      : 'Unknown';
-    webglData['Shading Language Version'] = gl.getParameter(gl.SHADING_LANGUAGE_VERSION);
-    webglData['Version'] = gl.getParameter(gl.VERSION);
+      // 1. Core Info
+      data['WebGL Version'] = {
+          value: gl.getParameter(gl.VERSION),
+          url: 'https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/getParameter'
+      };
+      
+      data['Shading Language'] = {
+          value: gl.getParameter(gl.SHADING_LANGUAGE_VERSION),
+          url: 'https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API'
+      };
 
-    // Texture Limits
-    webglData['Max Texture Size'] = gl.getParameter(gl.MAX_TEXTURE_SIZE);
-    webglData['Max Cube Map Texture Size'] = gl.getParameter(gl.MAX_CUBE_MAP_TEXTURE_SIZE);
-    webglData['Max Renderbuffer Size'] = gl.getParameter(gl.MAX_RENDERBUFFER_SIZE);
-    webglData['Max Viewport Dims'] = gl.getParameter(gl.MAX_VIEWPORT_DIMS).join(' x ');
-    webglData['Max Vertex Attribs'] = gl.getParameter(gl.MAX_VERTEX_ATTRIBS);
-    webglData['Max Varying Vectors'] = gl.getParameter(gl.MAX_VARYING_VECTORS);
-    webglData['Max Vertex Uniform Vectors'] = gl.getParameter(gl.MAX_VERTEX_UNIFORM_VECTORS);
-    webglData['Max Fragment Uniform Vectors'] = gl.getParameter(gl.MAX_FRAGMENT_UNIFORM_VECTORS);
-    webglData['Max Vertex Texture Image Units'] = gl.getParameter(
-      gl.MAX_VERTEX_TEXTURE_IMAGE_UNITS,
-    );
-    webglData['Max Texture Image Units'] = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS);
-    webglData['Max Combined Texture Image Units'] = gl.getParameter(
-      gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS,
-    );
+      data['Renderer Vendor'] = {
+          value: debugInfo ? gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) : 'Unknown',
+          url: 'https://developer.mozilla.org/en-US/docs/Web/API/WEBGL_debug_renderer_info'
+      };
+      
+      data['Renderer Model'] = {
+          value: debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : 'Unknown',
+          url: 'https://developer.mozilla.org/en-US/docs/Web/API/WEBGL_debug_renderer_info'
+      };
 
-    // Shader Precision (Fingerprinting gold - varies per GPU)
-    webglData['Vertex High Float Precision'] = getShaderPrecision(
-      gl,
-      gl.VERTEX_SHADER,
-      gl.HIGH_FLOAT,
-    );
-    webglData['Vertex Medium Float Precision'] = getShaderPrecision(
-      gl,
-      gl.VERTEX_SHADER,
-      gl.MEDIUM_FLOAT,
-    );
-    webglData['Fragment High Float Precision'] = getShaderPrecision(
-      gl,
-      gl.FRAGMENT_SHADER,
-      gl.HIGH_FLOAT,
-    );
-    webglData['Fragment Medium Float Precision'] = getShaderPrecision(
-      gl,
-      gl.FRAGMENT_SHADER,
-      gl.MEDIUM_FLOAT,
-    );
+      // 2. Render Fingerprint
+      data['Render Hash (64x64)'] = {
+          value: getWebGLRenderFingerprint(gl, canvas),
+          warning: true, // Unique
+          url: 'https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/readPixels'
+      };
 
-    // Antialiasing
-    webglData['Antialias'] = gl.getContextAttributes()?.antialias ? 'Yes' : 'No';
+      // 3. Limits
+      data['Max Texture Size'] = { value: gl.getParameter(gl.MAX_TEXTURE_SIZE) };
+      data['Max Viewport'] = { value: gl.getParameter(gl.MAX_VIEWPORT_DIMS).join('x') };
+      data['Antialiasing'] = { value: gl.getContextAttributes().antialias ? 'Supported' : 'No' };
+      
+      // 4. Extensions
+      const extensions = gl.getSupportedExtensions() || [];
+      data['Supported Extensions'] = {
+          value: extensions.length + ' extensions detected',
+          url: 'https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/getSupportedExtensions'
+      };
 
-    // Render Fingerprint (Most unique - actual GPU rendering differences)
-    webglData['Render Fingerprint'] = {
-      value: getWebGLRenderFingerprint(gl, canvas).toUpperCase(),
-      warning: true,
-    };
-
-    // Extensions
-    const extensions = gl.getSupportedExtensions() || [];
-    webglData['Supported Extensions'] = extensions.length + ' extensions';
-    webglData['Extensions List'] = extensions.join(', ');
-
-    // WebGL2 specific parameters
-    if (gl2) {
-      webglData['WebGL2 Max 3D Texture Size'] = gl2.getParameter(gl2.MAX_3D_TEXTURE_SIZE);
-      webglData['WebGL2 Max Array Texture Layers'] = gl2.getParameter(gl2.MAX_ARRAY_TEXTURE_LAYERS);
-      webglData['WebGL2 Max Draw Buffers'] = gl2.getParameter(gl2.MAX_DRAW_BUFFERS);
-      webglData['WebGL2 Max Color Attachments'] = gl2.getParameter(gl2.MAX_COLOR_ATTACHMENTS);
-      webglData['WebGL2 Max Samples'] = gl2.getParameter(gl2.MAX_SAMPLES);
-    }
-
-    // WebGPU Detection (next-gen GPU API)
-    if ('gpu' in navigator) {
-      webglData['WebGPU API'] = 'Supported';
-      try {
-        const adapter = await navigator.gpu.requestAdapter();
-        if (adapter) {
-          const info = await adapter.requestAdapterInfo();
-          webglData['WebGPU Vendor'] = info.vendor || 'Unknown';
-          webglData['WebGPU Architecture'] = info.architecture || 'Unknown';
-          webglData['WebGPU Device'] = info.device || 'Unknown';
-          webglData['WebGPU Description'] = info.description || 'Unknown';
-        } else {
-          webglData['WebGPU Adapter'] = 'Not Available';
-        }
-      } catch (e) {
-        webglData['WebGPU'] = 'Blocked/Error';
+      // 5. WebGPU (Next Gen)
+      if ('gpu' in navigator) {
+          try {
+              const adapter = await navigator.gpu.requestAdapter();
+              const info = adapter ? await adapter.requestAdapterInfo() : null;
+              data['WebGPU Support'] = {
+                  value: 'Supported' + (info ? ` (${info.device})` : ''),
+                  url: 'https://developer.mozilla.org/en-US/docs/Web/API/WebGPU_API'
+              };
+          } catch(e) {
+              data['WebGPU Support'] = { value: 'Supported (Blocked)', warning: true };
+          }
+      } else {
+          data['WebGPU Support'] = { value: 'Not Supported' };
       }
-    } else {
-      webglData['WebGPU API'] = 'Not Supported';
-    }
+
   } else {
-    webglData['WebGL'] = 'Not Supported';
+      data['WebGL Support'] = { value: 'Not Supported' };
   }
 
-  return webglData;
+  return data;
 }
-

@@ -9,37 +9,79 @@
  */
 export async function collectScreenData() {
   const dpr = window.devicePixelRatio || 1;
+  const screenUrl = 'https://developer.mozilla.org/en-US/docs/Web/API/Screen';
+  const windowUrl = 'https://developer.mozilla.org/en-US/docs/Web/API/Window';
 
   const screenData = {
     // Screen Dimensions
-    'Screen Width (CSS)': screen.width + 'px',
-    'Screen Height (CSS)': screen.height + 'px',
+    'Screen Width (CSS)': { 
+        value: screen.width + 'px', 
+        url: 'https://developer.mozilla.org/en-US/docs/Web/API/Screen/width' 
+    },
+    'Screen Height (CSS)': { 
+        value: screen.height + 'px', 
+        url: 'https://developer.mozilla.org/en-US/docs/Web/API/Screen/height' 
+    },
     'Physical Width (Est.)': Math.round(screen.width * dpr) + 'px',
     'Physical Height (Est.)': Math.round(screen.height * dpr) + 'px',
-    'Available Width': screen.availWidth + 'px',
-    'Available Height': screen.availHeight + 'px',
-    'Device Pixel Ratio': dpr,
+    'Available Width': { 
+        value: screen.availWidth + 'px', 
+        url: 'https://developer.mozilla.org/en-US/docs/Web/API/Screen/availWidth' 
+    },
+    'Available Height': { 
+        value: screen.availHeight + 'px', 
+        url: 'https://developer.mozilla.org/en-US/docs/Web/API/Screen/availHeight' 
+    },
+    'Device Pixel Ratio': { 
+        value: dpr, 
+        url: 'https://developer.mozilla.org/en-US/docs/Web/API/Window/devicePixelRatio' 
+    },
 
     // Window Dimensions
-    'Window Inner Size': window.innerWidth + ' x ' + window.innerHeight + 'px',
-    'Window Outer Size': window.outerWidth + ' x ' + window.outerHeight + 'px',
+    'Window Inner Size': { 
+        value: window.innerWidth + ' x ' + window.innerHeight + 'px', 
+        url: 'https://developer.mozilla.org/en-US/docs/Web/API/Window/innerWidth' 
+    },
+    'Window Outer Size': { 
+        value: window.outerWidth + ' x ' + window.outerHeight + 'px', 
+        url: 'https://developer.mozilla.org/en-US/docs/Web/API/Window/outerWidth' 
+    },
 
     // Color Information
-    'Color Depth': screen.colorDepth + ' bits',
-    'Pixel Depth': screen.pixelDepth + ' bits',
+    'Color Depth': { 
+        value: screen.colorDepth + ' bits', 
+        url: 'https://developer.mozilla.org/en-US/docs/Web/API/Screen/colorDepth' 
+    },
+    'Pixel Depth': { 
+        value: screen.pixelDepth + ' bits', 
+        url: 'https://developer.mozilla.org/en-US/docs/Web/API/Screen/pixelDepth' 
+    },
   };
 
   // Screen Orientation
   if (screen.orientation) {
-    screenData['Orientation Type'] = screen.orientation.type;
-    screenData['Orientation Angle'] = screen.orientation.angle + '°';
+    screenData['Orientation Type'] = {
+        value: screen.orientation.type,
+        url: 'https://developer.mozilla.org/en-US/docs/Web/API/ScreenOrientation/type'
+    };
+    screenData['Orientation Angle'] = {
+        value: screen.orientation.angle + '°',
+        url: 'https://developer.mozilla.org/en-US/docs/Web/API/ScreenOrientation/angle'
+    };
   }
 
   // Multi-monitor detection
   if ('isExtended' in screen) {
-    screenData['Multi-Monitor'] = screen.isExtended
-      ? { value: 'Yes (Extended Display)', warning: true }
-      : 'No';
+    screenData['Multi-Monitor'] = {
+        value: screen.isExtended ? { value: 'Yes (Extended Display)', warning: true } : 'No',
+        url: 'https://developer.mozilla.org/en-US/docs/Web/API/Screen/isExtended'
+    };
+    // Normalize if it's an object with warning
+    if (typeof screenData['Multi-Monitor'].value === 'object') {
+        // screenData['Multi-Monitor'] needs to be { value: '...', warning: true, url: '...' }
+        const inner = screenData['Multi-Monitor'].value;
+        screenData['Multi-Monitor'] = { ...inner, url: 'https://developer.mozilla.org/en-US/docs/Web/API/Screen/isExtended' };
+    }
   }
 
   // Taskbar position inference
@@ -47,20 +89,18 @@ export async function collectScreenData() {
   const availLeft = screen.availLeft || 0;
   const heightDiff = screen.height - screen.availHeight;
   const widthDiff = screen.width - screen.availWidth;
+  let taskbarPos = 'None/Hidden';
 
   if (availTop > 0) {
-    screenData['Taskbar Position'] = 'Top (~' + availTop + 'px)';
+    taskbarPos = 'Top (~' + availTop + 'px)';
   } else if (heightDiff > 0 && availTop === 0) {
-    screenData['Taskbar Position'] = 'Bottom (~' + heightDiff + 'px)';
+    taskbarPos = 'Bottom (~' + heightDiff + 'px)';
   } else if (availLeft > 0) {
-    screenData['Taskbar Position'] = 'Left (~' + availLeft + 'px)';
+    taskbarPos = 'Left (~' + availLeft + 'px)';
   } else if (widthDiff > 0) {
-    screenData['Taskbar Position'] = 'Right (~' + widthDiff + 'px)';
-  } else {
-    screenData['Taskbar Position'] = 'None/Hidden';
+    taskbarPos = 'Right (~' + widthDiff + 'px)';
   }
-
-
+  screenData['Taskbar Position'] = taskbarPos;
 
   // Media Query Checks - Display Capabilities
   const displayQueries = {
@@ -69,20 +109,22 @@ export async function collectScreenData() {
     'sRGB Gamut': window.matchMedia('(color-gamut: srgb)').matches,
     'Rec2020 Gamut': window.matchMedia('(color-gamut: rec2020)').matches,
   };
+  
+  const mediaQueryUrl = 'https://developer.mozilla.org/en-US/docs/Web/CSS/@media';
 
   // Report HDR/Color capabilities
   if (displayQueries['HDR Display']) {
-    screenData['HDR Support'] = { value: 'Yes', warning: true };
+    screenData['HDR Support'] = { value: 'Yes', warning: true, url: 'https://developer.mozilla.org/en-US/docs/Web/CSS/@media/dynamic-range' };
   } else {
-    screenData['HDR Support'] = 'No';
+    screenData['HDR Support'] = { value: 'No', url: 'https://developer.mozilla.org/en-US/docs/Web/CSS/@media/dynamic-range' };
   }
 
   if (displayQueries['Wide Color Gamut']) {
-    screenData['Color Gamut'] = 'P3 (Wide)';
+    screenData['Color Gamut'] = { value: 'P3 (Wide)', url: 'https://developer.mozilla.org/en-US/docs/Web/CSS/@media/color-gamut' };
   } else if (displayQueries['Rec2020 Gamut']) {
-    screenData['Color Gamut'] = 'Rec2020';
+    screenData['Color Gamut'] = { value: 'Rec2020', url: 'https://developer.mozilla.org/en-US/docs/Web/CSS/@media/color-gamut' };
   } else {
-    screenData['Color Gamut'] = 'sRGB';
+    screenData['Color Gamut'] = { value: 'sRGB', url: 'https://developer.mozilla.org/en-US/docs/Web/CSS/@media/color-gamut' };
   }
 
   // Media Query Checks - User Preferences
@@ -97,18 +139,27 @@ export async function collectScreenData() {
   };
 
   // Color Scheme
+  let colorScheme = 'No Preference';
   if (preferenceQueries['Dark Mode']) {
-    screenData['Preferred Color Scheme'] = 'Dark';
+    colorScheme = 'Dark';
   } else if (preferenceQueries['Light Mode']) {
-    screenData['Preferred Color Scheme'] = 'Light';
-  } else {
-    screenData['Preferred Color Scheme'] = 'No Preference';
+    colorScheme = 'Light';
   }
+  screenData['Preferred Color Scheme'] = { value: colorScheme, url: 'https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-color-scheme' };
 
   // Accessibility preferences
-  screenData['Reduced Motion'] = preferenceQueries['Reduced Motion'] ? 'Yes' : 'No';
-  screenData['High Contrast Mode'] = preferenceQueries['High Contrast'] ? 'Yes' : 'No';
-  screenData['Forced Colors'] = preferenceQueries['Forced Colors'] ? 'Yes' : 'No';
+  screenData['Reduced Motion'] = { 
+      value: preferenceQueries['Reduced Motion'] ? 'Yes' : 'No', 
+      url: 'https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion' 
+  };
+  screenData['High Contrast Mode'] = { 
+      value: preferenceQueries['High Contrast'] ? 'Yes' : 'No', 
+      url: 'https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-contrast' 
+  };
+  screenData['Forced Colors'] = { 
+      value: preferenceQueries['Forced Colors'] ? 'Yes' : 'No', 
+      url: 'https://developer.mozilla.org/en-US/docs/Web/CSS/@media/forced-colors' 
+  };
 
   // Pointer/Input detection
   const pointerQueries = {
@@ -118,47 +169,57 @@ export async function collectScreenData() {
     'No Hover': window.matchMedia('(hover: none)').matches,
   };
 
+  let primaryPointer = 'None';
   if (pointerQueries['Fine Pointer']) {
-    screenData['Primary Pointer'] = 'Fine (Mouse/Trackpad)';
+    primaryPointer = 'Fine (Mouse/Trackpad)';
   } else if (pointerQueries['Coarse Pointer']) {
-    screenData['Primary Pointer'] = 'Coarse (Touch/Stylus)';
-  } else {
-    screenData['Primary Pointer'] = 'None';
+    primaryPointer = 'Coarse (Touch/Stylus)';
   }
+  screenData['Primary Pointer'] = { value: primaryPointer, url: 'https://developer.mozilla.org/en-US/docs/Web/CSS/@media/pointer' };
 
-  screenData['Hover Support'] = pointerQueries['Hover Capable'] ? 'Yes' : 'No';
+  screenData['Hover Support'] = { 
+      value: pointerQueries['Hover Capable'] ? 'Yes' : 'No', 
+      url: 'https://developer.mozilla.org/en-US/docs/Web/CSS/@media/hover' 
+  };
 
   // Current Orientation
+  let currentOrientation = 'Landscape';
   if (window.matchMedia('(orientation: portrait)').matches) {
-    screenData['Current Orientation'] = 'Portrait';
-  } else {
-    screenData['Current Orientation'] = 'Landscape';
+    currentOrientation = 'Portrait';
   }
+  screenData['Current Orientation'] = { value: currentOrientation, url: 'https://developer.mozilla.org/en-US/docs/Web/CSS/@media/orientation' };
 
   // Display Mode (PWA detection)
   const displayModes = ['fullscreen', 'standalone', 'minimal-ui', 'browser'];
   for (const mode of displayModes) {
     if (window.matchMedia(`(display-mode: ${mode})`).matches) {
-      screenData['Display Mode'] = mode.charAt(0).toUpperCase() + mode.slice(1);
+      screenData['Display Mode'] = { 
+          value: mode.charAt(0).toUpperCase() + mode.slice(1), 
+          url: 'https://developer.mozilla.org/en-US/docs/Web/CSS/@media/display-mode' 
+      };
       break;
     }
   }
 
   // Window Management API (Multi-Screen Details)
   if ('getScreenDetails' in window) {
-    screenData['Window Management API'] = 'Supported';
+    const wmUrl = 'https://developer.mozilla.org/en-US/docs/Web/API/Window_Management_API';
+    screenData['Window Management API'] = { value: 'Supported', url: wmUrl };
     // Note: Actual enumeration requires user gesture and permission
     // We can check if permission is already granted
     try {
       if (navigator.permissions) {
         const perm = await navigator.permissions.query({ name: 'window-management' });
-        screenData['Window Management Permission'] = perm.state;
+        screenData['Window Management Permission'] = { value: perm.state, url: wmUrl };
       }
     } catch (e) {
       // Permission query might fail on some browsers
     }
   } else {
-    screenData['Window Management API'] = 'Not Supported';
+    screenData['Window Management API'] = { 
+        value: 'Not Supported', 
+        url: 'https://developer.mozilla.org/en-US/docs/Web/API/Window_Management_API' 
+    };
   }
 
   return screenData;
