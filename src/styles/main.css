@@ -408,3 +408,219 @@ body::after {
     max-width: 100px;
   }
 }
+
+/* ============================================
+   INTERACTIVE ENHANCEMENT ROWS
+   ============================================ */
+.data-row.interactive-row {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.data-row.interactive-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.data-row.interactive-row .interactive-value {
+  color: var(--fg);
+  text-decoration: underline;
+  text-decoration-style: dotted;
+}
+
+.blink-arrow {
+  animation: blink 1s step-end infinite;
+  margin-left: 0.5ch;
+}
+
+/* ============================================
+   TERMINAL POPUP OVERLAY
+   ============================================ */
+.terminal-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s ease;
+}
+
+.terminal-popup-overlay.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.terminal-popup {
+  background: var(--bg);
+  border: 1px solid var(--fg);
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  animation: popupSlideIn 0.2s ease;
+}
+
+@keyframes popupSlideIn {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.terminal-popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-bottom: 1px solid var(--border);
+}
+
+.popup-title {
+  color: var(--fg);
+  font-size: var(--font-size-sm);
+  letter-spacing: 0.1em;
+}
+
+.popup-close {
+  background: transparent;
+  border: none;
+  color: var(--fg-dim);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  transition: color 0.15s ease;
+}
+
+.popup-close:hover {
+  color: var(--fg);
+}
+
+.terminal-popup-content {
+  padding: var(--spacing-sm);
+  overflow-y: auto;
+  flex: 1;
+}
+
+.popup-intro {
+  color: var(--fg-dim);
+  margin-bottom: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+}
+
+.enhancement-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.enhancement-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs);
+  border: 1px solid var(--border);
+  transition: border-color 0.15s ease;
+}
+
+.enhancement-item:hover {
+  border-color: var(--fg-dim);
+}
+
+.enhancement-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.enhancement-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.enhancement-action {
+  color: var(--fg);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.enhancement-desc {
+  color: var(--fg-dim);
+  font-size: var(--font-size-sm);
+  margin-top: 0.15rem;
+}
+
+.enhancement-reason {
+  color: var(--fg-muted);
+  font-size: 10px;
+  font-style: italic;
+  margin-top: 0.25rem;
+  padding-left: 0.5rem;
+  border-left: 1px solid var(--border);
+}
+
+.impact-badge {
+  font-size: 9px;
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  letter-spacing: 0.05em;
+}
+
+.impact-badge.impact-high {
+  color: var(--fg);
+  border-color: var(--fg);
+}
+
+.impact-badge.impact-medium {
+  color: var(--fg-dim);
+  border-color: var(--fg-dim);
+}
+
+.impact-badge.impact-low {
+  color: var(--fg-muted);
+  border-color: var(--fg-muted);
+}
+
+.impact-badge.impact-info {
+  color: var(--fg);
+  border-color: var(--fg);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.popup-footer {
+  color: var(--fg-muted);
+  font-size: var(--font-size-sm);
+  margin-top: var(--spacing-sm);
+  padding-top: var(--spacing-xs);
+  border-top: 1px solid var(--border);
+}
+
+/* Responsive popup */
+@media (max-width: 600px) {
+  .terminal-popup {
+    max-width: 100%;
+    width: 95%;
+    max-height: 85vh;
+  }
+
+  .enhancement-item {
+    flex-wrap: wrap;
+  }
+
+  .impact-badge {
+    margin-left: auto;
+  }
+}

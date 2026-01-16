@@ -3,11 +3,6 @@
  */
 
 /**
- * Creates ASCII-style table output with filtering for unknown/unsupported values
- * @param {Object} data - Key-value pairs to display
- * @returns {string} HTML string with formatted table
- */
-/**
  * Escapes HTML special characters to prevent XSS
  * @param {string} str
  * @returns {string}
@@ -24,6 +19,93 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+/**
+ * Creates and shows the enhancement suggestions popup
+ * @param {Array} suggestions - Array of suggestion objects
+ */
+function showEnhancementPopup(suggestions) {
+  // Remove existing popup if any
+  const existing = document.querySelector('.terminal-popup-overlay');
+  if (existing) {existing.remove();}
+
+  // Create overlay
+  const overlay = document.createElement('div');
+  overlay.className = 'terminal-popup-overlay';
+  
+  // Create popup
+  const popup = document.createElement('div');
+  popup.className = 'terminal-popup';
+  
+  // Header
+  const header = document.createElement('div');
+  header.className = 'terminal-popup-header';
+  header.innerHTML = `
+    <span class="popup-title">> PRIVACY_ENHANCEMENTS</span>
+    <button class="popup-close" aria-label="Close">[X]</button>
+  `;
+  
+  // Content
+  const content = document.createElement('div');
+  content.className = 'terminal-popup-content';
+  
+  let contentHTML = '<div class="popup-intro">Personalized recommendations based on your current setup:</div>';
+  contentHTML += '<div class="enhancement-list">';
+  
+  for (const suggestion of suggestions) {
+    const impactClass = `impact-${suggestion.impact.toLowerCase()}`;
+    const reasonHTML = suggestion.reason ? `<div class="enhancement-reason">${escapeHtml(suggestion.reason)}</div>` : '';
+    contentHTML += `
+      <div class="enhancement-item">
+        <span class="enhancement-icon">${suggestion.icon}</span>
+        <div class="enhancement-details">
+          <div class="enhancement-action">${escapeHtml(suggestion.action)}</div>
+          <div class="enhancement-desc">${escapeHtml(suggestion.description)}</div>
+          ${reasonHTML}
+        </div>
+        <span class="impact-badge ${impactClass}">${suggestion.impact}</span>
+      </div>
+    `;
+  }
+  
+  contentHTML += '</div>';
+  contentHTML += '<div class="popup-footer">> Press ESC or click outside to close</div>';
+  content.innerHTML = contentHTML;
+  
+  popup.appendChild(header);
+  popup.appendChild(content);
+  overlay.appendChild(popup);
+  document.body.appendChild(overlay);
+  
+  // Animate in
+  requestAnimationFrame(() => {
+    overlay.classList.add('visible');
+  });
+  
+  // Close handlers
+  const closePopup = () => {
+    overlay.classList.remove('visible');
+    setTimeout(() => overlay.remove(), 200);
+  };
+  
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {closePopup();}
+  });
+  
+  header.querySelector('.popup-close').addEventListener('click', closePopup);
+  
+  document.addEventListener('keydown', function escHandler(e) {
+    if (e.key === 'Escape') {
+      closePopup();
+      document.removeEventListener('keydown', escHandler);
+    }
+  });
+}
+
+/**
+ * Creates ASCII-style table output with filtering for unknown/unsupported values
+ * @param {Object} data - Key-value pairs to display
+ * @returns {string} HTML string with formatted table
+ */
 export function createTable(data) {
   let output = '';
   // Filter keys first
@@ -53,17 +135,24 @@ export function createTable(data) {
     let displayValue = value;
     let warning = false;
     let isElement = false;
+    let isInteractive = false;
+    let suggestions = null;
 
-    // Check if value is an object containing 'value' and 'warning' properties (for our alerts)
+    // Check if value is an object containing special properties
     if (typeof value === 'object' && value !== null) {
-      if ('value' in value) {
+      if (value.interactive && value.suggestions) {
+        // Interactive enhancement suggestions
+        isInteractive = true;
+        displayValue = value.value;
+        suggestions = value.suggestions;
+      } else if ('value' in value) {
         displayValue = value.value;
         if (value.warning) {
           warning = true;
         }
       } else if ('element' in value) {
         // Special case for DOM elements (Image/Canvas)
-        displayValue = value.element; // Should be an HTML string or processed later
+        displayValue = value.element;
         isElement = true;
         if (value.warning) {
           warning = true;
@@ -73,30 +162,64 @@ export function createTable(data) {
       }
     }
 
-    // Semantic HTML Structure: Row -> Key + Dots + Value
     // Escape values for display and attributes
-    const safeValue = isElement ? '[Complex Data]' : String(displayValue).replace(/"/g, '&quot;'); // For data-copy attribute
     const escapedKey = escapeHtml(key);
-    const escapedValue = isElement ? displayValue : escapeHtml(String(displayValue)); // Don't escape HTML elements we intend to render
+    
+    if (isInteractive) {
+      // Create interactive link with data attribute for suggestions
+      const suggestionsData = encodeURIComponent(JSON.stringify(suggestions));
+      output += `<div class="data-row interactive-row" role="button" tabindex="0" aria-label="Click to see enhancement suggestions" data-suggestions="${suggestionsData}">`;
+      output += `<span class="data-key">${escapedKey}</span>`;
+      output += `<span class="data-value interactive-value">${escapeHtml(String(displayValue))} <span class="blink-arrow">▶</span></span>`;
+      output += '</div>';
+    } else {
+      const safeValue = isElement ? '[Complex Data]' : String(displayValue).replace(/"/g, '&quot;');
+      const escapedValue = isElement ? displayValue : escapeHtml(String(displayValue));
 
-    output += `<div class="data-row${warning ? ' warning' : ''}${!isElement ? ' copyable' : ''}${isElement ? ' has-element' : ''}" ${!isElement ? `role="button" tabindex="0" aria-label="Copy ${escapedKey}: ${safeValue}" data-copy="${safeValue}"` : ''}>`;
-    output += `<span class="data-key">${escapedKey}</span>`;
-    output += `<span class="data-value">${escapedValue}</span>`;
-    output += '</div>';
+      output += `<div class="data-row${warning ? ' warning' : ''}${!isElement ? ' copyable' : ''}${isElement ? ' has-element' : ''}" ${!isElement ? `role="button" tabindex="0" aria-label="Copy ${escapedKey}: ${safeValue}" data-copy="${safeValue}"` : ''}>`;
+      output += `<span class="data-key">${escapedKey}</span>`;
+      output += `<span class="data-value">${escapedValue}</span>`;
+      output += '</div>';
+    }
   }
   output += '</div>';
   return output;
 }
 
-// Global Event Delegation for Copy Functionality
+
+// Global Event Delegation for Copy and Interactive Functionality
 if (typeof document !== 'undefined') {
   document.addEventListener('click', handleCopyClick);
+  document.addEventListener('click', handleInteractiveClick);
   document.addEventListener('keydown', (e) => {
     if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('.copyable')) {
       e.preventDefault();
       handleCopyClick(e);
     }
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('.interactive-row')) {
+      e.preventDefault();
+      handleInteractiveClick(e);
+    }
   });
+}
+
+/**
+ * Handles interactive row clicks for enhancement popup
+ * @param {Event} e
+ */
+function handleInteractiveClick(e) {
+  const row = e.target.closest('.interactive-row');
+  if (!row) {return;}
+
+  const suggestionsData = row.getAttribute('data-suggestions');
+  if (suggestionsData) {
+    try {
+      const suggestions = JSON.parse(decodeURIComponent(suggestionsData));
+      showEnhancementPopup(suggestions);
+    } catch (err) {
+      console.error('Failed to parse suggestions:', err);
+    }
+  }
 }
 
 /**
