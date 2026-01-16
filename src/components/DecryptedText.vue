@@ -45,8 +45,8 @@ const props = defineProps({
   },
   animateOn: {
     type: String,
-    default: 'hover', // 'view' | 'hover' | 'both'
-    validator: (value) => ['view', 'hover', 'both'].includes(value)
+    default: 'hover', // 'view' | 'hover' | 'both' | 'manual'
+    validator: (value) => ['view', 'hover', 'both', 'manual'].includes(value)
   }
 })
 
@@ -213,6 +213,10 @@ const hoverProps = computed(() => {
     : {}
 })
 
+defineExpose({
+  startScramble,
+  stopScramble
+})
 </script>
 
 <template>

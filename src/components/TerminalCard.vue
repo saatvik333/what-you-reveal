@@ -1,4 +1,5 @@
 <script setup>
+import { ref } from 'vue'
 import DecryptedText from './DecryptedText.vue'
 
 defineProps({
@@ -8,18 +9,33 @@ defineProps({
   },
   id: {
     type: String,
-    default: "",
   },
 });
+
+const textRef = ref(null)
+
+function onMouseEnter() {
+  if (textRef.value) textRef.value.startScramble()
+}
+
+function onMouseLeave() {
+  if (textRef.value) textRef.value.stopScramble()
+}
 </script>
 
 <template>
-  <section class="card terminal-card" :id="id">
+  <section 
+    class="card terminal-card" 
+    :id="id"
+    @mouseenter="onMouseEnter"
+    @mouseleave="onMouseLeave"
+  >
     <h2 class="terminal-title">
       <span class="prefix">&gt; </span>
       <DecryptedText 
+        ref="textRef"
         :text="title" 
-        animate-on="hover" 
+        animate-on="manual" 
         :speed="60" 
         sequential
         reveal-direction="start"

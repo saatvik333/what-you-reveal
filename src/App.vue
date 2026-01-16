@@ -39,26 +39,27 @@ const privacyData = ref(null);
 const showPrivacyTips = ref(false);
 const showScorePhilosophy = ref(false);
 
-onMounted(async () => {
-  clipboardData.value = await collectClipboardData();
-  hardwareData.value = await collectHardwareData();
-  screenData.value = await collectScreenData();
-  permissionsData.value = await collectPermissionsData();
-  mediaDeviceData.value = await collectMediaDevices();
-  mediaCodecData.value = await collectMediaCodecs();
-  clientHintsData.value = await collectClientHints();
-  intlData.value = await collectIntlData();
-  integrityData.value = detectBot();
-  navigatorData.value = await collectNavigatorData();
-  fontData.value = await collectFontData();
-  webglData.value = await collectWebGLData();
-  identityData.value = await collectFingerprintData();
-  privacyData.value = await collectTorData();
+onMounted(() => {
+  // Execute all checks in parallel to prevent blocking
+  collectClipboardData().then(d => clipboardData.value = d);
+  collectHardwareData().then(d => hardwareData.value = d);
+  collectScreenData().then(d => screenData.value = d);
+  collectPermissionsData().then(d => permissionsData.value = d);
+  collectMediaDevices().then(d => mediaDeviceData.value = d);
+  collectMediaCodecs().then(d => mediaCodecData.value = d);
+  collectClientHints().then(d => clientHintsData.value = d);
+  collectIntlData().then(d => intlData.value = d);
+  integrityData.value = detectBot(); // Sync
+  collectNavigatorData().then(d => navigatorData.value = d);
+  collectFontData().then(d => fontData.value = d);
+  collectWebGLData().then(d => webglData.value = d);
+  collectFingerprintData().then(d => identityData.value = d);
+  collectTorData().then(d => privacyData.value = d);
   
   // Start network collection (accepts callback for updates)
-  networkData.value = await collectNetworkData((newData) => {
+  collectNetworkData((newData) => {
       networkData.value = newData;
-  });
+  }).then(d => networkData.value = d);
 });
 
 function handlePrivacyAction(actionName) {
