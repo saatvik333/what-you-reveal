@@ -9,6 +9,9 @@ import { collectScreenData } from "./modules/system/screen";
 import { collectPermissionsData } from "./modules/system/permissions";
 import { collectMediaDevices } from "./modules/system/media_devices";
 import { collectMediaCodecs } from "./modules/system/media_codecs";
+import { collectClientHints } from "./modules/system/client_hints";
+import { collectIntlData } from "./modules/fingerprint/intl";
+import { detectBot } from "./modules/fingerprint/integrity";
 
 const clipboardData = ref(null);
 const hardwareData = ref(null);
@@ -16,6 +19,9 @@ const screenData = ref(null);
 const permissionsData = ref(null);
 const mediaDeviceData = ref(null);
 const mediaCodecData = ref(null);
+const clientHintsData = ref(null);
+const intlData = ref(null);
+const integrityData = ref(null);
 
 onMounted(async () => {
   clipboardData.value = await collectClipboardData();
@@ -24,6 +30,9 @@ onMounted(async () => {
   permissionsData.value = await collectPermissionsData();
   mediaDeviceData.value = await collectMediaDevices();
   mediaCodecData.value = await collectMediaCodecs();
+  clientHintsData.value = await collectClientHints();
+  intlData.value = await collectIntlData();
+  integrityData.value = detectBot();
 });
 </script>
 
@@ -62,22 +71,28 @@ onMounted(async () => {
 
       <TerminalCard title="6. MEDIA_CODECS">
         <TerminalDataGrid v-if="mediaCodecData" :data="mediaCodecData" />
-        <pre v-else>Checking codevs...</pre>
+        <pre v-else>Checking codecs...</pre>
       </TerminalCard>
 
-      <TerminalCard title="7. NAVIGATOR_VARS">
+      <TerminalCard title="7. CLIENT_HINTS">
+        <TerminalDataGrid v-if="clientHintsData" :data="clientHintsData" />
+        <pre v-else>Analyzing User Agent Data...</pre>
+      </TerminalCard>
+
+      <TerminalCard title="8. INTL_FINGERPRINT">
+        <TerminalDataGrid v-if="intlData" :data="intlData" />
+        <pre v-else>Calculating locale fingerprint...</pre>
+      </TerminalCard>
+
+      <TerminalCard title="9. INTEGRITY_CHECK">
+        <TerminalDataGrid v-if="integrityData" :data="integrityData" />
+        <pre v-else>Scanning environment...</pre>
+      </TerminalCard>
+
+      <TerminalCard title="10. NAVIGATOR_VARS">
         <pre>Reading headers...</pre>
       </TerminalCard>
 
-      <TerminalCard title="4. SCREEN_BUFFER">
-        <pre>Measuring viewport...</pre>
-      </TerminalCard>
-
-
-      <TerminalCard title="5. CLIPBOARD_ACCESS">
-        <TerminalDataGrid v-if="clipboardData" :data="clipboardData" />
-        <pre v-else>Checking permissions...</pre>
-      </TerminalCard>
     </main>
 
     <footer>
