@@ -60,25 +60,29 @@ function close() {
             <div class="section">
               <h4>Bonuses (Active Protections)</h4>
               <table>
-                <tr><td>Ad Blocker Active</td><td>+15</td></tr>
-                <tr><td>WebRTC Protected</td><td>+15</td></tr>
-                <tr><td>Global Privacy Control</td><td>+10</td></tr>
-                <tr><td>Storage Partitioned</td><td>+10</td></tr>
-                <tr><td>VPN/Proxy Detected</td><td>+10</td></tr>
-                <tr><td>Tor Network</td><td>+10</td></tr>
-                <tr><td>Private Browsing</td><td>+5</td></tr>
-                <tr><td>Do Not Track</td><td>+5</td></tr>
-                <tr><td>Brave Shields</td><td>+5</td></tr>
+                <tbody>
+                  <tr><td>Ad Blocker Active</td><td>+15</td></tr>
+                  <tr><td>WebRTC Protected</td><td>+15</td></tr>
+                  <tr><td>Global Privacy Control</td><td>+10</td></tr>
+                  <tr><td>Storage Partitioned</td><td>+10</td></tr>
+                  <tr><td>VPN/Proxy Detected</td><td>+10</td></tr>
+                  <tr><td>Tor Network</td><td>+10</td></tr>
+                  <tr><td>Private Browsing</td><td>+5</td></tr>
+                  <tr><td>Do Not Track</td><td>+5</td></tr>
+                  <tr><td>Brave Shields</td><td>+5</td></tr>
+                </tbody>
               </table>
             </div>
             
             <div class="section">
               <h4>Penalties (Privacy Risks)</h4>
               <table>
-                <tr><td>WebRTC Leaking IP</td><td>-15</td></tr>
-                <tr><td>WebDriver Detected</td><td>-10</td></tr>
-                <tr><td>GPC Explicitly Disabled</td><td>-5</td></tr>
-                <tr><td>DNT Explicitly Disabled</td><td>-5</td></tr>
+                <tbody>
+                  <tr><td>WebRTC Leaking IP</td><td>-15</td></tr>
+                  <tr><td>WebDriver Detected</td><td>-10</td></tr>
+                  <tr><td>GPC Explicitly Disabled</td><td>-5</td></tr>
+                  <tr><td>DNT Explicitly Disabled</td><td>-5</td></tr>
+                </tbody>
               </table>
             </div>
             
