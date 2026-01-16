@@ -1,0 +1,6 @@
+/* Minimal reset or empty */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
