@@ -5,13 +5,25 @@ import TerminalCard from "./components/TerminalCard.vue";
 import TerminalDataGrid from "./components/TerminalDataGrid.vue";
 import { collectClipboardData } from "./modules/system/clipboard";
 import { collectHardwareData } from "./modules/system/hardware";
+import { collectScreenData } from "./modules/system/screen";
+import { collectPermissionsData } from "./modules/system/permissions";
+import { collectMediaDevices } from "./modules/system/media_devices";
+import { collectMediaCodecs } from "./modules/system/media_codecs";
 
 const clipboardData = ref(null);
 const hardwareData = ref(null);
+const screenData = ref(null);
+const permissionsData = ref(null);
+const mediaDeviceData = ref(null);
+const mediaCodecData = ref(null);
 
 onMounted(async () => {
   clipboardData.value = await collectClipboardData();
   hardwareData.value = await collectHardwareData();
+  screenData.value = await collectScreenData();
+  permissionsData.value = await collectPermissionsData();
+  mediaDeviceData.value = await collectMediaDevices();
+  mediaCodecData.value = await collectMediaCodecs();
 });
 </script>
 
@@ -33,7 +45,27 @@ onMounted(async () => {
         <pre v-else>Scanning hardware...</pre>
       </TerminalCard>
 
-      <TerminalCard title="3. NAVIGATOR_VARS">
+      <TerminalCard title="3. SCREEN_INFO">
+        <TerminalDataGrid v-if="screenData" :data="screenData" />
+        <pre v-else>Analyzing display...</pre>
+      </TerminalCard>
+
+      <TerminalCard title="4. PERMISSIONS_CHECK">
+        <TerminalDataGrid v-if="permissionsData" :data="permissionsData" />
+        <pre v-else>Querying permissions...</pre>
+      </TerminalCard>
+
+      <TerminalCard title="5. MEDIA_DEVICES">
+        <TerminalDataGrid v-if="mediaDeviceData" :data="mediaDeviceData" />
+        <pre v-else>Enumerating devices...</pre>
+      </TerminalCard>
+
+      <TerminalCard title="6. MEDIA_CODECS">
+        <TerminalDataGrid v-if="mediaCodecData" :data="mediaCodecData" />
+        <pre v-else>Checking codevs...</pre>
+      </TerminalCard>
+
+      <TerminalCard title="7. NAVIGATOR_VARS">
         <pre>Reading headers...</pre>
       </TerminalCard>
 
