@@ -7,8 +7,6 @@ const apiRoutes = require('./routes/api');
 
 const compression = require('compression');
 
-// ... (imports)
-
 const app = express();
 const port = process.env.PORT || 3000;
 

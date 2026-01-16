@@ -79,7 +79,7 @@ async function testFileSystem() {
         () => {
           // Error = likely incognito
           resolve({ supported: true, available: false, likelyIncognito: true });
-        }
+        },
       );
 
       // Timeout
@@ -277,5 +277,41 @@ export async function detectPrivacyMode() {
     result['Brave Browser'] = 'Detected';
   }
 
+  // 11. Storage Access API (Third-party cookie partitioning)
+  if ('hasStorageAccess' in document) {
+    try {
+      const hasAccess = await document.hasStorageAccess();
+      result['Storage Access API'] = 'Supported';
+      result['Has Storage Access'] = hasAccess ? 'Yes' : 'No (Partitioned)';
+    } catch (e) {
+      result['Storage Access API'] = 'Error';
+    }
+  } else {
+    result['Storage Access API'] = 'Not Supported';
+  }
+
+  // 12. Topics API (Privacy Sandbox)
+  if ('browsingTopics' in document) {
+    result['Topics API (Privacy Sandbox)'] = 'Supported';
+  } else {
+    result['Topics API'] = 'Not Available';
+  }
+
+  // 13. Attribution Reporting API
+  if ('attributionReporting' in window) {
+    result['Attribution Reporting API'] = 'Supported';
+  }
+
+  // 14. Shared Storage API (Privacy Sandbox)
+  if ('sharedStorage' in window) {
+    result['Shared Storage API'] = 'Supported';
+  }
+
+  // 15. Fenced Frames (Privacy Sandbox)
+  if (typeof HTMLFencedFrameElement !== 'undefined') {
+    result['Fenced Frames API'] = 'Supported';
+  }
+
   return result;
 }
+

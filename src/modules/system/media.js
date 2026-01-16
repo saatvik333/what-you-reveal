@@ -7,7 +7,7 @@
  * Checks support for media types
  * @returns {Object} Media codec support data
  */
-export function collectMediaData() {
+export async function collectMediaData() {
   const audio = document.createElement('audio');
   const video = document.createElement('video');
 
@@ -64,6 +64,37 @@ export function collectMediaData() {
 
     supported['MediaRecorder Types'] = recorderSupport || 'None';
   }
+
+  // Encrypted Media Extensions (EME) - DRM Detection
+  if (navigator.requestMediaKeySystemAccess) {
+    supported['EME (DRM) API'] = 'Supported';
+    
+    // Check for common DRM systems
+    const drmSystems = [
+      { name: 'Widevine', keySystem: 'com.widevine.alpha' },
+      { name: 'PlayReady', keySystem: 'com.microsoft.playready' },
+      { name: 'FairPlay', keySystem: 'com.apple.fps.1_0' },
+      { name: 'ClearKey', keySystem: 'org.w3.clearkey' },
+    ];
+
+    for (const drm of drmSystems) {
+      try {
+        await navigator.requestMediaKeySystemAccess(drm.keySystem, [
+          { initDataTypes: ['cenc'], videoCapabilities: [{ contentType: 'video/mp4; codecs="avc1.42E01E"' }] },
+        ]);
+        supported[`DRM: ${drm.name}`] = 'Supported';
+      } catch (e) {
+        supported[`DRM: ${drm.name}`] = 'Not Supported';
+      }
+    }
+  } else {
+    supported['EME (DRM) API'] = 'Not Supported';
+  }
+
+  // WebCodecs API (Hardware video decoding)
+  supported['WebCodecs (VideoDecoder)'] = 'VideoDecoder' in window ? 'Supported' : 'Not Supported';
+  supported['WebCodecs (AudioDecoder)'] = 'AudioDecoder' in window ? 'Supported' : 'Not Supported';
+  supported['WebCodecs (VideoEncoder)'] = 'VideoEncoder' in window ? 'Supported' : 'Not Supported';
 
   return supported;
 }

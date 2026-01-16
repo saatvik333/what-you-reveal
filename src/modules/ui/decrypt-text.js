@@ -69,7 +69,7 @@ class DecryptedText {
           }
         });
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
 
     observer.observe(this.element);

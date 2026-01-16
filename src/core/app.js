@@ -115,7 +115,7 @@ async function collectNetworkChain() {
   const serverTask = (async () => {
     try {
       const serverData = await fetchServerInfo();
-      if (!serverData) throw new Error('No server data');
+      if (!serverData) {throw new Error('No server data');}
 
       // 2a. Render Device Info & Headers immediately
       const deviceData = parseDeviceInfo(serverData);

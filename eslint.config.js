@@ -2,6 +2,9 @@ const globals = require('globals');
 const js = require('@eslint/js');
 
 module.exports = [
+  {
+    ignores: ['dist/', 'node_modules/', 'coverage/'],
+  },
   js.configs.recommended,
   {
     files: ['**/*.js'],
@@ -12,6 +15,7 @@ module.exports = [
         ...globals.browser,
         ...globals.node,
         ...globals.es2021,
+        __APP_VERSION__: 'readonly',
       },
     },
     rules: {

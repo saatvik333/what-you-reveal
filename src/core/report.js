@@ -13,15 +13,7 @@ const CONFIG = {
   width: 70, // Max width for ASCII tables
 };
 
-/**
- * Escapes characters for safe text file output (mostly cosmetic)
- * @param {string} str
- * @returns {string}
- */
-function sanitize(str) {
-  if (typeof str !== 'string') return String(str);
-  return str.replace(/[\u0000-\u001F\u007F-\u009F]/g, ''); // Remove non-printable control chars
-}
+
 
 /**
  * Centers text within a defined width
@@ -31,7 +23,7 @@ function sanitize(str) {
  */
 function center(text, width = CONFIG.width) {
   const len = text.length;
-  if (len >= width) return text;
+  if (len >= width) {return text;}
   const padding = Math.floor((width - len) / 2);
   return ' '.repeat(padding) + text;
 }
@@ -52,7 +44,7 @@ function line(char = '=') {
  * @param {Array} results - Accumulator for threats found
  */
 function scanForThreats(obj, context, results) {
-  if (!obj || typeof obj !== 'object') return;
+  if (!obj || typeof obj !== 'object') {return;}
 
   // Check if current object is a warning object
   if (obj.warning === true && obj.value) {
@@ -65,7 +57,7 @@ function scanForThreats(obj, context, results) {
 
   // Recursive scan
   for (const [key, value] of Object.entries(obj)) {
-    if (key === 'warning' || key === 'value') continue; // Skip internal keys
+    if (key === 'warning' || key === 'value') {continue;} // Skip internal keys
     const nextContext = context ? `${context} > ${key}` : key;
     scanForThreats(value, nextContext, results);
   }
@@ -80,7 +72,7 @@ function formatSection(data) {
   let output = '';
   // Find max key length for alignment
   const keys = Object.keys(data);
-  if (keys.length === 0) return '  [No Data]\n';
+  if (keys.length === 0) {return '  [No Data]\n';}
 
   const maxKeyLen = Math.min(30, Math.max(...keys.map((k) => k.length)));
 
@@ -94,7 +86,7 @@ function formatSection(data) {
         displayVal = '[Visual Evidence - Excluded from Text Report]';
       } else if ('value' in val) {
         displayVal = val.value;
-        if (val.warning) isWarning = true;
+        if (val.warning) {isWarning = true;}
       } else {
         // Fallback for nested objects that aren't warning containers
         displayVal = JSON.stringify(val);
@@ -140,7 +132,7 @@ browser to any website you visit.
   const threats = [];
   scanForThreats(data, '', threats);
 
-  report += `[ THREAT INTELLIGENCE ]\n`;
+  report += '[ THREAT INTELLIGENCE ]\n';
   if (threats.length > 0) {
     report += `\n⚠  CRITICAL EXPOSURES DETECTED: ${threats.length}\n\n`;
     threats.forEach((t, idx) => {
@@ -149,7 +141,7 @@ browser to any website you visit.
       report += `   risk   : ${t.severity}\n\n`;
     });
   } else {
-    report += `\n✔  No high-risk vectors detected.\n   (Note: Zero risk is impossible on the modern web)\n\n`;
+    report += '\n✔  No high-risk vectors detected.\n   (Note: Zero risk is impossible on the modern web)\n\n';
   }
 
   // 3. DETAILED MODULE BREAKDOWN
@@ -158,13 +150,13 @@ browser to any website you visit.
   const sections = Object.keys(data).sort(); // Sort so headers/network don't jump around
   
   if (sections.length === 0) {
-    report += `[ERROR] No data collected. Did the analysis finish?\n`;
+    report += '[ERROR] No data collected. Did the analysis finish?\n';
   }
 
   sections.forEach((section) => {
     report += `[ ${section.toUpperCase()} ]\n${line('-')}\n`;
     report += formatSection(data[section]);
-    report += `\n`;
+    report += '\n';
   });
 
   // 4. FOOTER

@@ -21,6 +21,16 @@ export async function collectPermissionsData() {
     'clipboard-write',
     'persistent-storage',
     'midi',
+    // Modern additions
+    'screen-wake-lock',
+    'window-management',
+    'accelerometer',
+    'gyroscope',
+    'magnetometer',
+    'ambient-light-sensor',
+    'background-sync',
+    'background-fetch',
+    'push',
   ];
 
   const permData = {};

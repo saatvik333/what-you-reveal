@@ -63,6 +63,50 @@ export function detectBot() {
     }
   }
 
+  // 7. Puppeteer Detection
+  const puppeteerSignatures = [
+    '_phantom',
+    '__nightmare',
+    '_selenium',
+    'callPhantom',
+    '_Selenium_IDE_Recorder',
+  ];
+  for (const sig of puppeteerSignatures) {
+    if (window[sig]) {
+      findings.push(`Puppeteer/Phantom signature: ${sig}`);
+      score += 80;
+    }
+  }
+
+  // 8. CDP (Chrome DevTools Protocol) detection
+  if (window.cdc_adoQpoasnfa76pfcZLmcfl_Promise) {
+    findings.push('CDP (Puppeteer/Playwright) detected');
+    score += 100;
+  }
+
+  // 9. Check for automation-related prototype modifications
+  try {
+    const descriptors = Object.getOwnPropertyDescriptor(navigator, 'webdriver');
+    if (descriptors && descriptors.get && descriptors.get.toString().includes('native code') === false) {
+      findings.push('navigator.webdriver getter is modified');
+      score += 50;
+    }
+  } catch (e) { /* ignore */ }
+
+  // 10. Playwright Signature (navigator.webdriver is often undefined in Playwright)
+  if (navigator.webdriver === undefined && /Chrome/.test(navigator.userAgent)) {
+    // In real Chrome, webdriver should be false, not undefined
+    findings.push('Possible Playwright (webdriver is undefined in Chrome)');
+    score += 30;
+  }
+
+  // 11. Check for eval masking (common in automation)
+  const evalStr = eval.toString();
+  if (!evalStr.includes('native code')) {
+    findings.push('eval() has been modified');
+    score += 40;
+  }
+
   // Result
   let status = 'Likely Human';
   if (score >= 100) {
@@ -81,6 +125,9 @@ export function detectBot() {
       ? { value: 'DETECTED', warning: true }
       : 'False',
     'Selenium Attributes': 'None Found',
+    'Puppeteer/Playwright': findings.some(f => f.includes('Puppeteer') || f.includes('CDP') || f.includes('Playwright'))
+      ? { value: 'DETECTED', warning: true }
+      : 'Not Detected',
     'Plugins Length': navigator.plugins.length,
     Languages: navigator.languages.length,
   };
@@ -91,3 +138,4 @@ export function detectBot() {
 
   return data;
 }
+

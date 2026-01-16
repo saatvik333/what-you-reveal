@@ -1,31 +1,48 @@
 /**
  * Network information collection module
+ * Enhanced with connection quality, DNS leak detection, and threat intelligence
  */
 
-import { createTable } from '../../core/utils.js';
+
 
 /**
- * Runs a ping test to measure latency
- * @returns {Promise<string>} Average latency string
+ * Runs a ping test to measure latency with jitter calculation
+ * @returns {Promise<Object>} Latency metrics
  */
 async function runPingTest() {
   try {
     const pings = [];
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 5; i++) {
       const start = performance.now();
-      await fetch('/api/ping');
+      await fetch('/api/ping', { cache: 'no-store' });
       const end = performance.now();
       pings.push(end - start);
     }
+    
     if (pings.length > 0) {
       const avg = pings.reduce((a, b) => a + b) / pings.length;
-      return avg.toFixed(2) + ' ms';
+      const min = Math.min(...pings);
+      const max = Math.max(...pings);
+      // Jitter = average deviation from mean
+      const jitter = pings.reduce((acc, p) => acc + Math.abs(p - avg), 0) / pings.length;
+      
+      return {
+        avg: avg.toFixed(2),
+        min: min.toFixed(2),
+        max: max.toFixed(2),
+        jitter: jitter.toFixed(2),
+        samples: pings.length,
+      };
     }
   } catch (e) {
-    return 'Failed';
+    return { avg: 'Failed', error: e.message };
   }
-  return 'Unknown';
+  return { avg: 'Unknown' };
 }
+
+
+
+
 
 /**
  * Fetches server-side detected information
@@ -33,7 +50,7 @@ async function runPingTest() {
  */
 export async function fetchServerInfo() {
   try {
-    const response = await fetch('/api/info');
+    const response = await fetch('/api/info', { cache: 'no-store' });
     return await response.json();
   } catch (e) {
     console.error('Error fetching /api/info', e);
@@ -42,161 +59,263 @@ export async function fetchServerInfo() {
 }
 
 /**
- * Parses device info from server response
+ * Parses device info from server response with enhanced detection
  * @param {Object} serverData - Server response data
  * @returns {Object} Parsed device data
  */
 export function parseDeviceInfo(serverData) {
-  return {
-    'OS Name': serverData.uaResult.os.name || 'Unknown',
-    'OS Version': serverData.uaResult.os.version || 'Unknown',
-    'Browser Name': serverData.uaResult.browser.name || 'Unknown',
-    'Browser Version': serverData.uaResult.browser.version || 'Unknown',
-    'Device Vendor': serverData.uaResult.device.vendor || 'Unknown',
-    'Device Model': serverData.uaResult.device.model || 'Unknown',
-    'Device Type': serverData.uaResult.device.type || 'Desktop/Laptop',
-    'CPU Architecture': serverData.uaResult.cpu.architecture || 'Unknown',
-    'Engine Name': serverData.uaResult.engine.name || 'Unknown',
-    'Engine Version': serverData.uaResult.engine.version || 'Unknown',
+  const ua = serverData.uaResult;
+  
+  const deviceData = {
+    'OS Name': ua.os.name || 'Unknown',
+    'OS Version': ua.os.version || 'Unknown',
+    'Browser Name': ua.browser.name || 'Unknown',
+    'Browser Version': ua.browser.version || 'Unknown',
+    'Device Vendor': ua.device.vendor || 'Unknown',
+    'Device Model': ua.device.model || 'Unknown',
+    'Device Type': ua.device.type || 'Desktop/Laptop',
+    'CPU Architecture': ua.cpu.architecture || 'Unknown',
+    'Engine Name': ua.engine.name || 'Unknown',
+    'Engine Version': ua.engine.version || 'Unknown',
   };
+  
+  // Enhanced Browser Detection
+  const browserName = ua.browser.name?.toLowerCase() || '';
+  if (browserName.includes('chrome') && !browserName.includes('edge')) {
+    deviceData['Browser Family'] = 'Chromium';
+  } else if (browserName.includes('firefox')) {
+    deviceData['Browser Family'] = 'Gecko';
+  } else if (browserName.includes('safari')) {
+    deviceData['Browser Family'] = 'WebKit';
+  } else if (browserName.includes('edge')) {
+    deviceData['Browser Family'] = 'Chromium (Edge)';
+  }
+
+  return deviceData;
 }
 
 /**
- * Collects local network data (Ping, WebRTC) immediately
- * @param {Function} onUpdate - Callback when data changes (data) => void
+ * Collects local network data (Ping, WebRTC) with enhanced metrics
+ * @param {Function} onUpdate - Callback when data changes
  * @returns {Promise<Object>} Final local network data
  */
 export async function collectLocalNetworkData(onUpdate) {
   const localData = {};
   
   const notify = () => {
-    if (typeof onUpdate === 'function') onUpdate({ ...localData });
+    if (typeof onUpdate === 'function') {onUpdate({ ...localData });}
   };
 
-  // 1. Latency (Fastest)
-  localData['Latency'] = 'Pinging...';
+  // 1. Enhanced Latency Test
+  const pingResult = await runPingTest();
+  if (pingResult.avg !== 'Failed' && pingResult.avg !== 'Unknown') {
+    localData['Latency (Avg)'] = pingResult.avg + ' ms';
+    localData['Latency (Min/Max)'] = `${pingResult.min} / ${pingResult.max} ms`;
+    localData['Jitter'] = pingResult.jitter + ' ms';
+  } else {
+    localData['Latency'] = pingResult.error || 'Failed';
+  }
   notify();
   
-  localData['Latency'] = await runPingTest();
-  notify();
-  
-  // 2. Time Info (Instant)
-  localData['Local Timezone Offset'] = new Date().getTimezoneOffset() / -60 + ' hours';
-  localData['Local Time'] = new Date().toString();
+  // 2. Time Info
+  const now = new Date();
+  localData['Local Timezone Offset'] = now.getTimezoneOffset() / -60 + ' hours';
+  localData['Local Time'] = now.toLocaleString();
+  localData['UTC Time'] = now.toUTCString();
   try {
     localData['Intl Timezone'] = Intl.DateTimeFormat().resolvedOptions().timeZone;
   } catch (e) { /* ignore */ }
   notify();
 
-  // 3. WebRTC Leak (Slower)
+  // 3. Network Information API (if available)
+  if (navigator.connection) {
+    const conn = navigator.connection;
+    localData['Effective Type'] = conn.effectiveType?.toUpperCase() || 'Unknown';
+    localData['Downlink'] = (conn.downlink || 0) + ' Mbps';
+    localData['RTT (Network API)'] = (conn.rtt || 0) + ' ms';
+    localData['Save Data'] = conn.saveData ? 'Enabled' : 'Disabled';
+  }
+  notify();
+
+  // 4. WebRTC Local IP Detection
   try {
     const rtcCandidates = new Set();
     const rtcPeer = new RTCPeerConnection({ iceServers: [] });
     rtcPeer.createDataChannel('');
     rtcPeer.createOffer().then((offer) => rtcPeer.setLocalDescription(offer));
     
-    // Set a timeout for WebRTC as it can hang
-    const rtcTimeout = new Promise(resolve => setTimeout(resolve, 1500));
-    
     const rtcPromise = new Promise(resolve => {
-        rtcPeer.onicecandidate = (event) => {
-        if (event && event.candidate && event.candidate.candidate) {
-            const ipMatch = event.candidate.candidate.match(
-            /([0-9]{1,3}(\.[0-9]{1,3}){3}|[a-f0-9]{1,4}(:[a-f0-9]{1,4}){7}|[a-f0-9-]+\.local)/
-            );
-            if (ipMatch) {
-                const detectedIp = ipMatch[1];
-                rtcCandidates.add(detectedIp.endsWith('.local') ? `${detectedIp} (mDNS)` : detectedIp);
-                localData['Local IP'] = Array.from(rtcCandidates).join(', ');
-                notify();
+      rtcPeer.onicecandidate = (event) => {
+        if (event?.candidate?.candidate) {
+          const ipMatch = event.candidate.candidate.match(
+            /([0-9]{1,3}(\.[0-9]{1,3}){3}|[a-f0-9]{1,4}(:[a-f0-9]{1,4}){7}|[a-f0-9-]+\.local)/,
+          );
+          if (ipMatch) {
+            const detectedIp = ipMatch[1];
+            const isMdns = detectedIp.endsWith('.local');
+            rtcCandidates.add(isMdns ? `${detectedIp} (mDNS)` : detectedIp);
+            
+            // Classify IP type
+            if (!isMdns) {
+              const parts = detectedIp.split('.');
+              if (parts[0] === '192' && parts[1] === '168') {
+                localData['Local Network Type'] = 'Private (192.168.x.x)';
+              } else if (parts[0] === '10') {
+                localData['Local Network Type'] = 'Private (10.x.x.x)';
+              } else if (parts[0] === '172' && parseInt(parts[1]) >= 16 && parseInt(parts[1]) <= 31) {
+                localData['Local Network Type'] = 'Private (172.16-31.x.x)';
+              }
             }
+            
+            localData['Local IP (WebRTC)'] = { 
+              value: Array.from(rtcCandidates).join(', '),
+              warning: !isMdns, // Real IPs are a privacy concern
+            };
+            notify();
+          }
         }
-        };
-        // Resolve after some time regardless of finding candidates
-        setTimeout(resolve, 1000);
+      };
+      setTimeout(() => {
+        rtcPeer.close();
+        resolve();
+      }, 1500);
     });
     
-    await Promise.race([rtcPromise, rtcTimeout]);
+    await rtcPromise;
     
-  } catch (e) { /* ignore */ }
+    // If no candidates found, WebRTC is likely blocked
+    if (rtcCandidates.size === 0) {
+      localData['Local IP (WebRTC)'] = 'Blocked / Not Available';
+      localData['WebRTC Privacy'] = 'Protected';
+    }
+    
+  } catch (e) {
+    localData['Local IP (WebRTC)'] = 'Error: ' + e.message;
+  }
   
   return localData;
 }
 
 /**
- * Collects Server-side GeoIP data
+ * Collects Server-side GeoIP data with enhanced threat detection
  * @param {Object} serverData - Pre-fetched server data
  * @returns {Promise<Object>} GeoIP data
  */
 export async function collectGeoIPData(serverData) {
-   const geoDataOut = {
-        'Public IP': serverData.ip
-   };
+  const geoDataOut = {
+    'Public IP': serverData.ip,
+  };
 
-   // GeoIP & Security Check
+  // Detect IP version
+  if (serverData.ip.includes(':')) {
+    geoDataOut['IP Version'] = 'IPv6';
+  } else {
+    geoDataOut['IP Version'] = 'IPv4';
+  }
+
+  // GeoIP & Security Check
   try {
     const fields =
-      'status,message,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,mobile,proxy,hosting,query';
+      'status,message,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,mobile,proxy,hosting,query,currency';
     const geoResponse = await fetch(`/api/geoip?ip=${serverData.ip}&fields=${fields}`);
 
     if (geoResponse.ok) {
       const geoData = await geoResponse.json();
 
       if (geoData.status === 'success') {
+        // Core Info
         geoDataOut['ISP'] = geoData.isp;
         geoDataOut['Organization'] = geoData.org;
-        geoDataOut['AS'] = geoData.as;
+        geoDataOut['AS Number'] = geoData.as;
         
+        // Location
         geoDataOut['Country'] = geoData.country;
         geoDataOut['Country Code'] = geoData.countryCode;
         geoDataOut['Region'] = geoData.regionName;
         geoDataOut['City'] = geoData.city;
-        geoDataOut['Zip'] = geoData.zip;
-        geoDataOut['Timezone'] = geoData.timezone;
+        geoDataOut['Postal Code'] = geoData.zip || 'N/A';
+        geoDataOut['Timezone (IP)'] = geoData.timezone;
         geoDataOut['Coordinates'] = `${geoData.lat}, ${geoData.lon}`;
+        
+        // Connection Type
         geoDataOut['Mobile Connection'] = geoData.mobile ? 'Yes' : 'No';
 
-        // Security Checks
-        const vpnKeywords = ['VPN', 'Proxy', 'Unblocker', 'Tor', 'Relay'];
-        const cloudKeywords = ['Cloudflare', 'Fastly', 'Akamai', 'AWS', 'Azure', 'DigitalOcean', 'Datacenter', 'Hosting'];
+        // Enhanced Security Checks with threat scoring
+        let threatScore = 0;
+        const threats = [];
 
+        // VPN/Proxy Detection
+        const vpnKeywords = ['VPN', 'Proxy', 'Unblocker', 'Tor', 'Relay', 'Private', 'Anonymous', 'Hide'];
+        const cloudKeywords = ['Cloudflare', 'Fastly', 'Akamai', 'AWS', 'Azure', 'Google Cloud', 
+                               'DigitalOcean', 'Linode', 'Vultr', 'OVH', 'Hetzner', 'Datacenter', 'Hosting'];
+        const torKeywords = ['Tor', 'Exit', 'Onion'];
+
+        const combinedStr = ((geoData.isp || '') + ' ' + (geoData.org || '') + ' ' + (geoData.as || '')).toLowerCase();
+
+        // Check for VPN/Proxy
         let isVPN = geoData.proxy;
+        if (!isVPN && vpnKeywords.some(k => combinedStr.includes(k.toLowerCase()))) {
+          isVPN = true;
+        }
+        if (isVPN) {
+          threatScore += 30;
+          threats.push('VPN/Proxy');
+        }
+        geoDataOut['VPN/Proxy Detected'] = isVPN ? { value: 'YES', warning: true } : 'No';
+
+        // Check for Datacenter/Hosting
         let isCloud = geoData.hosting;
-
-        if (!isVPN) {
-          const combinedStr = (geoData.isp + ' ' + geoData.org + ' ' + geoData.as).toLowerCase();
-          if (vpnKeywords.some((k) => combinedStr.includes(k.toLowerCase()))) isVPN = true;
+        if (!isCloud && cloudKeywords.some(k => combinedStr.includes(k.toLowerCase()))) {
+          isCloud = true;
         }
-        if (!isCloud) {
-            const combinedStr = (geoData.isp + ' ' + geoData.org + ' ' + geoData.as).toLowerCase();
-            if (cloudKeywords.some((k) => combinedStr.includes(k.toLowerCase()))) isCloud = true;
+        if (isCloud) {
+          threatScore += 20;
+          threats.push('Datacenter IP');
         }
+        geoDataOut['Datacenter IP'] = isCloud ? { value: 'YES', warning: true } : 'No';
 
-        geoDataOut['VPN/Proxy'] = isVPN ? { value: 'YES', warning: true } : 'No';
-        geoDataOut['Datacenter'] = isCloud ? { value: 'YES', warning: true } : 'No';
+        // Check for Tor
+        const isTor = torKeywords.some(k => combinedStr.includes(k.toLowerCase()));
+        if (isTor) {
+          threatScore += 50;
+          threats.push('Tor Network');
+          geoDataOut['Tor Network'] = { value: 'DETECTED', warning: true };
+        }
 
         // Timezone Consistency Check
         try {
           const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
           if (browserTz && geoData.timezone) {
-            if (browserTz === geoData.timezone) {
-              geoDataOut['Timezone Check'] = 'Consistent';
+            const tzMatch = browserTz === geoData.timezone;
+            if (tzMatch) {
+              geoDataOut['Timezone Consistency'] = '✓ Consistent';
             } else {
-              geoDataOut['Timezone Check'] = {
-                value: `Mismatch (Browser: ${browserTz} vs IP: ${geoData.timezone})`,
+              geoDataOut['Timezone Consistency'] = {
+                value: `✗ Mismatch (Browser: ${browserTz})`,
                 warning: true,
               };
+              threatScore += 15;
+              threats.push('Timezone Mismatch');
             }
           }
         } catch (e) { /* ignore */ }
+
+        // Threat Summary
+        if (threatScore > 0) {
+          geoDataOut['Threat Score'] = { value: `${threatScore}/100`, warning: threatScore >= 30 };
+          geoDataOut['Threats Detected'] = { value: threats.join(', '), warning: true };
+        } else {
+          geoDataOut['Threat Score'] = '0/100 (Clean)';
+        }
 
       } else {
         if (geoData.message === 'reserved range') {
           geoDataOut['Geolocation'] = 'Localhost / Private Network';
           geoDataOut['ISP'] = 'Local Network';
           geoDataOut['Location'] = 'Local Machine';
-          geoDataOut['VPN/Proxy'] = 'No (Local)';
-          geoDataOut['Datacenter'] = 'No (Local)';
+          geoDataOut['VPN/Proxy Detected'] = 'N/A (Local)';
+          geoDataOut['Datacenter IP'] = 'N/A (Local)';
+          geoDataOut['Privacy Note'] = 'Running on local/private network';
         } else {
           geoDataOut['Geolocation'] = `API Error: ${geoData.message || 'Unknown'}`;
         }
@@ -207,32 +326,25 @@ export async function collectGeoIPData(serverData) {
     console.warn('GeoIP error:', e);
   }
   
-  // Proxy Headers
+  // Proxy Headers Detection
   if (serverData.proxyHeaders && Object.keys(serverData.proxyHeaders).length > 0) {
-    geoDataOut['Proxy Headers'] = {
-      value: Object.keys(serverData.proxyHeaders).join(', '),
+    const headerList = Object.keys(serverData.proxyHeaders);
+    geoDataOut['Proxy Headers Detected'] = {
+      value: headerList.length + ' headers exposed',
       warning: true,
     };
+    geoDataOut['Exposed Headers'] = headerList.join(', ');
   }
 
   return geoDataOut;
 }
 
-/**
- * Legacy compatibility wrapper (if needed) or removed if fully refactored.
- * Keeping a merged version for valid return types in case of full chain.
- */
-export async function collectNetworkData(serverData, elementId) {
-    // This is now split. The App should call collectLocalNetworkData AND collectGeoIPData.
-    // We can leave this as a helper that does both sequentially if needed, but we want parallel.
-    // For now, let's return an empty object or deprecated warning if named same, 
-    // BUT since we are refactoring app.js too, we will change export names.
-}
+
 
 /**
- * Formats request headers as ASCII table
+ * Formats request headers as styled HTML
  * @param {Object} headers - Headers object
- * @returns {string} Formatted headers string
+ * @returns {string} Formatted headers HTML
  */
 export function formatHeaders(headers) {
   let headersOutput = '';
@@ -241,8 +353,18 @@ export function formatHeaders(headers) {
 
   for (const [key, value] of Object.entries(headers)) {
     const padding = ' '.repeat(maxHKeyLen - key.length + 4);
-    headersOutput += `${key}${padding}${value}\n`;
+    
+    // Highlight sensitive headers
+    const sensitiveHeaders = ['authorization', 'cookie', 'x-forwarded-for', 'x-real-ip', 'cf-connecting-ip'];
+    const isSensitive = sensitiveHeaders.some(h => key.toLowerCase().includes(h));
+    
+    if (isSensitive) {
+      headersOutput += `<span style="color:var(--primary)">${key}</span>${padding}${value}\n`;
+    } else {
+      headersOutput += `${key}${padding}${value}\n`;
+    }
   }
 
-  return '<pre>' + headersOutput + '</pre>';
+  return '<pre style="overflow-x:auto">' + headersOutput + '</pre>';
 }
+

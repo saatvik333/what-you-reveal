@@ -268,6 +268,8 @@ export async function collectFontData() {
   };
 }
 
+
+
 /**
  * Categorizes a font by its typical platform
  */

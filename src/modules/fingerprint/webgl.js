@@ -116,7 +116,7 @@ function getWebGLRenderFingerprint(gl, canvas) {
  * Collects WebGL capabilities and GPU information
  * @returns {Object} WebGL data object
  */
-export function collectWebGLData() {
+export async function collectWebGLData() {
   const canvas = document.createElement('canvas');
   canvas.width = 64;
   canvas.height = 64;
@@ -149,33 +149,33 @@ export function collectWebGLData() {
     webglData['Max Vertex Uniform Vectors'] = gl.getParameter(gl.MAX_VERTEX_UNIFORM_VECTORS);
     webglData['Max Fragment Uniform Vectors'] = gl.getParameter(gl.MAX_FRAGMENT_UNIFORM_VECTORS);
     webglData['Max Vertex Texture Image Units'] = gl.getParameter(
-      gl.MAX_VERTEX_TEXTURE_IMAGE_UNITS
+      gl.MAX_VERTEX_TEXTURE_IMAGE_UNITS,
     );
     webglData['Max Texture Image Units'] = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS);
     webglData['Max Combined Texture Image Units'] = gl.getParameter(
-      gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS
+      gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS,
     );
 
     // Shader Precision (Fingerprinting gold - varies per GPU)
     webglData['Vertex High Float Precision'] = getShaderPrecision(
       gl,
       gl.VERTEX_SHADER,
-      gl.HIGH_FLOAT
+      gl.HIGH_FLOAT,
     );
     webglData['Vertex Medium Float Precision'] = getShaderPrecision(
       gl,
       gl.VERTEX_SHADER,
-      gl.MEDIUM_FLOAT
+      gl.MEDIUM_FLOAT,
     );
     webglData['Fragment High Float Precision'] = getShaderPrecision(
       gl,
       gl.FRAGMENT_SHADER,
-      gl.HIGH_FLOAT
+      gl.HIGH_FLOAT,
     );
     webglData['Fragment Medium Float Precision'] = getShaderPrecision(
       gl,
       gl.FRAGMENT_SHADER,
-      gl.MEDIUM_FLOAT
+      gl.MEDIUM_FLOAT,
     );
 
     // Antialiasing
@@ -200,9 +200,31 @@ export function collectWebGLData() {
       webglData['WebGL2 Max Color Attachments'] = gl2.getParameter(gl2.MAX_COLOR_ATTACHMENTS);
       webglData['WebGL2 Max Samples'] = gl2.getParameter(gl2.MAX_SAMPLES);
     }
+
+    // WebGPU Detection (next-gen GPU API)
+    if ('gpu' in navigator) {
+      webglData['WebGPU API'] = 'Supported';
+      try {
+        const adapter = await navigator.gpu.requestAdapter();
+        if (adapter) {
+          const info = await adapter.requestAdapterInfo();
+          webglData['WebGPU Vendor'] = info.vendor || 'Unknown';
+          webglData['WebGPU Architecture'] = info.architecture || 'Unknown';
+          webglData['WebGPU Device'] = info.device || 'Unknown';
+          webglData['WebGPU Description'] = info.description || 'Unknown';
+        } else {
+          webglData['WebGPU Adapter'] = 'Not Available';
+        }
+      } catch (e) {
+        webglData['WebGPU'] = 'Blocked/Error';
+      }
+    } else {
+      webglData['WebGPU API'] = 'Not Supported';
+    }
   } else {
     webglData['WebGL'] = 'Not Supported';
   }
 
   return webglData;
 }
+

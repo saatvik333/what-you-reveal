@@ -7,7 +7,7 @@
  * Collects screen and display information
  * @returns {Object} Screen data object
  */
-export function collectScreenData() {
+export async function collectScreenData() {
   const dpr = window.devicePixelRatio || 1;
 
   const screenData = {
@@ -60,10 +60,7 @@ export function collectScreenData() {
     screenData['Taskbar Position'] = 'None/Hidden';
   }
 
-  // Touch Support
-  screenData['Touch Support'] =
-    'ontouchstart' in window || navigator.maxTouchPoints > 0 ? 'Yes' : 'No';
-  screenData['Max Touch Points'] = navigator.maxTouchPoints || 0;
+
 
   // Media Query Checks - Display Capabilities
   const displayQueries = {
@@ -145,6 +142,23 @@ export function collectScreenData() {
       screenData['Display Mode'] = mode.charAt(0).toUpperCase() + mode.slice(1);
       break;
     }
+  }
+
+  // Window Management API (Multi-Screen Details)
+  if ('getScreenDetails' in window) {
+    screenData['Window Management API'] = 'Supported';
+    // Note: Actual enumeration requires user gesture and permission
+    // We can check if permission is already granted
+    try {
+      if (navigator.permissions) {
+        const perm = await navigator.permissions.query({ name: 'window-management' });
+        screenData['Window Management Permission'] = perm.state;
+      }
+    } catch (e) {
+      // Permission query might fail on some browsers
+    }
+  } else {
+    screenData['Window Management API'] = 'Not Supported';
   }
 
   return screenData;

@@ -1,123 +1,150 @@
 /**
  * Browser/Navigator data collection module
- * Enhanced with additional APIs and speech synthesis fingerprint
+ * Enhanced with modern Web APIs (2024+)
  */
 
 /**
  * Collects comprehensive browser and navigator data
- * @returns {Object} Browser data object
+ * @returns {Promise<Object>} Browser data object
  */
-export function collectBrowserData() {
+export async function collectBrowserData() {
   const nav = navigator;
   const browserData = {};
 
-  // Core Navigator Properties
-  browserData['userAgent'] = nav.userAgent;
-  browserData['appVersion'] = nav.appVersion;
-  browserData['platform'] = nav.platform;
-  browserData['vendor'] = nav.vendor;
-  browserData['product'] = nav.product;
-  browserData['productSub'] = nav.productSub;
-  browserData['vendorSub'] = nav.vendorSub || 'N/A';
+  // ===== Core Navigator Properties =====
+  browserData['User Agent'] = nav.userAgent;
+  browserData['Platform'] = nav.platform;
+  browserData['Vendor'] = nav.vendor;
 
-  // Language
-  browserData['language'] = nav.language;
-  browserData['languages'] = nav.languages ? nav.languages.join(', ') : '';
+  // ===== User-Agent Client Hints (Modern UA) =====
+  if (nav.userAgentData) {
+    browserData['UA Brands'] = nav.userAgentData.brands
+      ?.map(b => `${b.brand} ${b.version}`)
+      .join(', ') || 'N/A';
+    browserData['UA Mobile'] = nav.userAgentData.mobile ? 'Yes' : 'No';
+    browserData['UA Platform'] = nav.userAgentData.platform || 'Unknown';
+    
+    // High Entropy Values (requires permission in some browsers)
+    try {
+      const hints = await nav.userAgentData.getHighEntropyValues([
+        'architecture', 'bitness', 'model', 'platformVersion', 'uaFullVersion', 'formFactor',
+      ]);
+      browserData['UA Full Version'] = hints.uaFullVersion || 'N/A';
+      browserData['UA Architecture'] = hints.architecture || 'Unknown';
+      browserData['UA Bitness'] = hints.bitness || 'Unknown';
+      browserData['UA Model'] = hints.model || 'N/A';
+      browserData['UA Platform Version'] = hints.platformVersion || 'Unknown';
+      browserData['UA Form Factor'] = hints.formFactor?.join(', ') || 'Unknown';
+    } catch (e) {
+      browserData['UA High Entropy'] = 'Blocked/Error';
+    }
+  } else {
+    browserData['User-Agent Client Hints'] = 'Not Supported';
+  }
 
-  // Features
-  browserData['cookieEnabled'] = nav.cookieEnabled;
-  browserData['onLine'] = nav.onLine;
-  browserData['doNotTrack'] = nav.doNotTrack || 'Not Set';
-  browserData['globalPrivacyControl'] = nav.globalPrivacyControl ? 'Enabled' : 'Not Set';
+  // ===== Language & Localization =====
+  browserData['Language'] = nav.language;
+  browserData['Languages'] = nav.languages ? nav.languages.join(', ') : '';
 
-  // Hardware hints
-  browserData['hardwareConcurrency'] = nav.hardwareConcurrency || 'Unknown';
-  browserData['deviceMemory'] = 'deviceMemory' in nav ? nav.deviceMemory + ' GB' : 'Not Exposed';
-  browserData['maxTouchPoints'] = nav.maxTouchPoints;
-  browserData['pdfViewerEnabled'] =
-    nav.pdfViewerEnabled !== undefined ? (nav.pdfViewerEnabled ? 'Yes' : 'No') : 'Unknown';
-
-  // WebDriver (automation detection)
-  browserData['webdriver'] = nav.webdriver
+  // ===== Privacy Signals =====
+  browserData['Cookies Enabled'] = nav.cookieEnabled ? 'Yes' : 'No';
+  browserData['Online Status'] = nav.onLine ? 'Online' : 'Offline';
+  browserData['Do Not Track'] = nav.doNotTrack === '1' ? 'Enabled' : 'Disabled';
+  browserData['Global Privacy Control'] = nav.globalPrivacyControl ? 'Enabled' : 'Not Set';
+  
+  // ===== Automation Detection =====
+  browserData['WebDriver'] = nav.webdriver
     ? { value: 'TRUE (Automation Detected)', warning: true }
     : 'False';
 
-  // Plugins
-  if (nav.plugins) {
-    const pluginsList = [];
-    for (let i = 0; i < nav.plugins.length; i++) {
-      pluginsList.push(nav.plugins[i].name);
-    }
-    browserData['Plugins Count'] = nav.plugins.length;
-    browserData['Plugins'] = pluginsList.length > 0 ? pluginsList.join(', ') : 'None/Hidden';
-  }
+  // ===== PDF Viewer =====
+  browserData['PDF Viewer'] = nav.pdfViewerEnabled !== undefined 
+    ? (nav.pdfViewerEnabled ? 'Built-in' : 'External/None') 
+    : 'Unknown';
 
-  // MimeTypes
-  if (nav.mimeTypes) {
-    browserData['MimeTypes Count'] = nav.mimeTypes.length;
-    if (nav.mimeTypes.length > 0 && nav.mimeTypes.length <= 20) {
-      const mimeList = [];
-      for (let i = 0; i < nav.mimeTypes.length; i++) {
-        mimeList.push(nav.mimeTypes[i].type);
-      }
-      browserData['MimeTypes'] = mimeList.join(', ');
-    } else if (nav.mimeTypes.length > 20) {
-      browserData['MimeTypes'] = `${nav.mimeTypes.length} types (too many to list)`;
-    }
-  }
+  // ===== Plugins & MimeTypes =====
+  browserData['Plugins Count'] = nav.plugins?.length || 0;
+  browserData['MimeTypes Count'] = nav.mimeTypes?.length || 0;
 
-  // Connection Information
+  // ===== Network Information API =====
   if (nav.connection) {
     browserData['Connection Type'] = nav.connection.effectiveType || 'Unknown';
-    browserData['Downlink'] = (nav.connection.downlink || 0) + ' Mbps';
-    browserData['RTT'] = (nav.connection.rtt || 0) + ' ms';
-    browserData['Save Data'] = nav.connection.saveData ? 'Yes' : 'No';
+    browserData['Downlink Speed'] = (nav.connection.downlink || 0) + ' Mbps';
+    browserData['Round Trip Time'] = (nav.connection.rtt || 0) + ' ms';
+    browserData['Save Data Mode'] = nav.connection.saveData ? 'Yes' : 'No';
+    browserData['Connection Metered'] = nav.connection.metered ? 'Yes' : 'No';
   } else {
     browserData['Network Info API'] = 'Not Supported';
   }
 
-  // Credentials API
+  // ===== Modern Web APIs - Feature Detection =====
+  
+  // Credential Management
   browserData['Credentials API'] = 'credentials' in nav ? 'Supported' : 'Not Supported';
-
-  // Geolocation API
-  browserData['Geolocation API'] = 'geolocation' in nav ? 'Supported' : 'Not Supported';
-
-  // Notification API
+  browserData['Web Authentication (WebAuthn)'] = 'PublicKeyCredential' in window ? 'Supported' : 'Not Supported';
+  
+  // File & Storage
+  browserData['File System Access API'] = 'showOpenFilePicker' in window ? 'Supported' : 'Not Supported';
+  browserData['Storage Manager API'] = 'storage' in nav ? 'Supported' : 'Not Supported';
+  browserData['File Handling API'] = 'launchQueue' in window ? 'Supported' : 'Not Supported';
+  
+  // Communication
+  browserData['Web Share API'] = 'share' in nav ? 'Supported' : 'Not Supported';
+  browserData['Web Transport API'] = 'WebTransport' in window ? 'Supported' : 'Not Supported';
+  browserData['WebSocket Streams'] = 'WebSocketStream' in window ? 'Supported' : 'Not Supported';
+  
+  // Media & Graphics
+  browserData['Media Session API'] = 'mediaSession' in nav ? 'Supported' : 'Not Supported';
+  browserData['Picture-in-Picture API'] = 'pictureInPictureEnabled' in document ? 'Supported' : 'Not Supported';
+  browserData['Document PiP API'] = 'documentPictureInPicture' in window ? 'Supported' : 'Not Supported';
+  browserData['View Transitions API'] = 'startViewTransition' in document ? 'Supported' : 'Not Supported';
+  
+  // Input & Interaction
+  browserData['Clipboard API'] = 'clipboard' in nav ? 'Supported' : 'Not Supported';
+  browserData['Web Locks API'] = 'locks' in nav ? 'Supported' : 'Not Supported';
+  browserData['EyeDropper API'] = 'EyeDropper' in window ? 'Supported' : 'Not Supported';
+  browserData['Ink API'] = 'ink' in nav ? 'Supported' : 'Not Supported';
+  browserData['Virtual Keyboard API'] = 'virtualKeyboard' in nav ? 'Supported' : 'Not Supported';
+  
+  // Navigation & History
+  browserData['Navigation API'] = 'navigation' in window ? 'Supported' : 'Not Supported';
+  browserData['URLPattern API'] = 'URLPattern' in window ? 'Supported' : 'Not Supported';
+  
+  // Presentation & Display
+  browserData['Presentation API'] = 'presentation' in nav ? 'Supported' : 'Not Supported';
+  browserData['WebXR API'] = 'xr' in nav ? 'Supported' : 'Not Supported';
+  browserData['Fullscreen API'] = 'fullscreenEnabled' in document ? 'Supported' : 'Not Supported';
+  
+  // PWA Features
+  browserData['Window Controls Overlay'] = 'windowControlsOverlay' in nav ? 'Supported' : 'Not Supported';
+  browserData['App Badging API'] = 'setAppBadge' in nav ? 'Supported' : 'Not Supported';
+  browserData['Launch Handler API'] = 'launchParams' in window ? 'Supported' : 'Not Supported';
+  
+  // Performance & Scheduling
+  browserData['Scheduling API'] = 'scheduling' in nav ? 'Supported' : 'Not Supported';
+  browserData['Priority Hints'] = 'fetchPriority' in HTMLImageElement.prototype ? 'Supported' : 'Not Supported';
+  browserData['Reporting API'] = 'ReportingObserver' in window ? 'Supported' : 'Not Supported';
+  
+  // Security
+  browserData['Trusted Types API'] = 'trustedTypes' in window ? 'Supported' : 'Not Supported';
+  browserData['Sanitizer API'] = 'Sanitizer' in window ? 'Supported' : 'Not Supported';
+  
+  // Notification
   if ('Notification' in window) {
     browserData['Notification Permission'] = Notification.permission;
   }
-
-  // Share API
-  browserData['Web Share API'] = 'share' in nav ? 'Supported' : 'Not Supported';
-  browserData['Share File Support'] = 'canShare' in nav ? 'Supported' : 'Not Supported';
-
-  // Clipboard API
-  browserData['Clipboard API'] = 'clipboard' in nav ? 'Supported' : 'Not Supported';
-
-  // Locks API
-  browserData['Web Locks API'] = 'locks' in nav ? 'Supported' : 'Not Supported';
-
-  // Media Session API
-  browserData['Media Session API'] = 'mediaSession' in nav ? 'Supported' : 'Not Supported';
-
-  // Presentation API
-  browserData['Presentation API'] = 'presentation' in nav ? 'Supported' : 'Not Supported';
-
-  // Scheduling API
-  browserData['Scheduling API'] = 'scheduling' in nav ? 'Supported' : 'Not Supported';
-
-  // Storage API
-  browserData['Storage Manager API'] = 'storage' in nav ? 'Supported' : 'Not Supported';
-
-  // Vibration API
-  browserData['Vibration API'] = 'vibrate' in nav ? 'Supported' : 'Not Supported';
-
-  // XR (WebXR)
-  browserData['WebXR API'] = 'xr' in nav ? 'Supported' : 'Not Supported';
-
-  // WindowControlsOverlay (PWA)
-  browserData['Window Controls Overlay'] =
-    'windowControlsOverlay' in nav ? 'Supported' : 'Not Supported';
+  browserData['Push API'] = 'PushManager' in window ? 'Supported' : 'Not Supported';
+  
+  // Workers
+  browserData['Service Worker'] = 'serviceWorker' in nav ? 'Supported' : 'Not Supported';
+  browserData['Shared Worker'] = 'SharedWorker' in window ? 'Supported' : 'Not Supported';
+  browserData['Worklets'] = 'Worklet' in window ? 'Supported' : 'Not Supported';
+  
+  // Experimental / Cutting Edge
+  browserData['Speculation Rules'] = 'supports' in HTMLScriptElement && HTMLScriptElement.supports('speculationrules') 
+    ? 'Supported' : 'Not Supported';
+  browserData['Compression Streams'] = 'CompressionStream' in window ? 'Supported' : 'Not Supported';
 
   return browserData;
 }
+
