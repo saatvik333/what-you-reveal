@@ -123,6 +123,8 @@ header {
   transition: all 0.15s ease;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  text-decoration: none;
+  display: inline-block;
 }
 
 .control-btn:hover {

@@ -56,7 +56,6 @@ function showEnhancementPopup(suggestions) {
     const reasonHTML = suggestion.reason ? `<div class="enhancement-reason">${escapeHtml(suggestion.reason)}</div>` : '';
     contentHTML += `
       <div class="enhancement-item">
-        <span class="enhancement-icon">${suggestion.icon}</span>
         <div class="enhancement-details">
           <div class="enhancement-action">${escapeHtml(suggestion.action)}</div>
           <div class="enhancement-desc">${escapeHtml(suggestion.description)}</div>
