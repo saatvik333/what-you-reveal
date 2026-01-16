@@ -325,13 +325,13 @@ async function detectWebRTCLeak() {
  */
 export async function detectVPNProxy() {
   try {
-    const fields = 'status,isp,org,as,hosting,proxy';
-    const response = await fetch(`http://ip-api.com/json/?fields=${fields}`);
+    // Switched to ipapi.co for HTTPS support
+    const response = await fetch('https://ipapi.co/json/');
     if (!response.ok) throw new Error('API Error');
     
     const geo = await response.json();
     
-    if (geo.status !== 'success') {
+    if (geo.error) {
       return { isVPN: false, error: true };
     }
 
@@ -341,21 +341,24 @@ export async function detectVPNProxy() {
       'Hosting', 'Cloud', 'Datacenter', 'Server', 'Dedicated',
       'DigitalOcean', 'Linode', 'Vultr', 'AWS', 'Amazon', 'Google Cloud',
       'Azure', 'Microsoft', 'Hetzner', 'OVH', 'Cloudflare', 'Akamai',
-      'Mullvad', 'NordVPN', 'ExpressVPN', 'Surfshark', 'ProtonVPN'
+      'Mullvad', 'NordVPN', 'ExpressVPN', 'Surfshark', 'ProtonVPN',
+      'Fly.io', 'Fastly'
     ];
     
-    const ispStr = ((geo.org || '') + ' ' + (geo.isp || '') + ' ' + (geo.as || '')).toUpperCase();
+    // ipapi.co returns 'org' and 'asn'
+    const ispStr = ((geo.org || '') + ' ' + (geo.asn || '')).toUpperCase();
     
-    const isDatacenter = geo.hosting === true;
-    const isProxy = geo.proxy === true;
     const isSuspiciousISP = vpnKeywords.some(k => ispStr.includes(k.toUpperCase()));
     
+    // Note: ipapi.co free plan doesn't provide explicit 'hosting' or 'proxy' fields
+    // We rely primarily on the ISP/ASN keyword matching here.
+    
     return {
-      isVPN: isDatacenter || isProxy || isSuspiciousISP,
-      isDatacenter,
-      isProxy,
+      isVPN: isSuspiciousISP,
+      isDatacenter: isSuspiciousISP, // Approximation
+      isProxy: isSuspiciousISP,      // Approximation
       isSuspiciousISP,
-      isp: geo.isp || geo.org || 'Unknown',
+      isp: geo.org || 'Unknown',
     };
   } catch (e) {
     return { isVPN: false, error: true };

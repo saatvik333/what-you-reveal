@@ -134,38 +134,39 @@ async function measureLatency(data, notify) {
 
 async function fetchGeoIPAndThreats(data, notify) {
     try {
-        data['GeoIP Analysis'] = { value: 'Fetching...', url: 'https://ip-api.com' };
+        data['GeoIP Analysis'] = { value: 'Fetching...', url: 'https://ipapi.co' };
         notify();
 
-        // Using ip-api.com as requested (Note: Free API is HTTP only, might trigger mixed content on HTTPS)
-        const fields = 'status,message,country,countryCode,regionName,city,district,zip,lat,lon,timezone,isp,org,as,mobile,query';
-        const response = await fetch(`http://ip-api.com/json/?fields=${fields}`);
-        if (!response.ok) throw new Error('API Error');
+        // Using ipapi.co for HTTPS support (ip-api.com free is HTTP only)
+        const response = await fetch('https://ipapi.co/json/');
+        if (!response.ok) throw new Error('API Error: ' + response.status);
         
         const geo = await response.json();
         
-        if (geo.status !== 'success') {
-            throw new Error(geo.message || 'GeoIP Lookup Failed');
+        if (geo.error) {
+            throw new Error(geo.reason || 'GeoIP Lookup Failed');
         }
 
         delete data['GeoIP Analysis'];
 
-        // Basic Info
-        data['Public IP'] = { value: geo.query, url: 'https://ip-api.com' };
-        data['ISP'] = { value: geo.isp || geo.org || 'Unknown', url: 'https://ip-api.com' };
-        data['AS Number'] = { value: geo.as || 'Unknown', url: 'https://ip-api.com' };
-        data['Location'] = { value: `${geo.district ? geo.district + ', ' : ''}${geo.city}, ${geo.regionName}, ${geo.country}`, url: 'https://www.openstreetmap.org/search?query=' + geo.city };
-        data['Coordinates'] = { value: `${geo.lat}, ${geo.lon}`, url: `https://www.openstreetmap.org/#map=13/${geo.lat}/${geo.lon}` };
-        data['Postal Code'] = { value: geo.zip || 'Unknown', url: 'https://ip-api.com' };
-        data['Cellular Connection'] = { value: geo.mobile ? 'Yes' : 'No', url: 'https://ip-api.com' };
+        // Basic Info - Mapped from ipapi.co
+        data['Public IP'] = { value: geo.ip, url: 'https://ipapi.co' };
+        data['ISP'] = { value: geo.org || 'Unknown', url: 'https://ipapi.co' };
+        data['AS Number'] = { value: geo.asn || 'Unknown', url: 'https://ipapi.co' };
+        data['Location'] = { 
+            value: `${geo.city}, ${geo.region}, ${geo.country_name}`, 
+            url: 'https://www.openstreetmap.org/search?query=' + encodeURIComponent(geo.city + ', ' + geo.country_name)
+        };
+        data['Coordinates'] = { value: `${geo.latitude}, ${geo.longitude}`, url: `https://www.openstreetmap.org/#map=13/${geo.latitude}/${geo.longitude}` };
+        data['Postal Code'] = { value: geo.postal || 'Unknown', url: 'https://ipapi.co' };
         
         // Threat Intelligence Logic
         let threatScore = 0;
         const threats = [];
         
         // 1. VPN/Proxy Keywords
-        const vpnKeywords = ['VPN', 'Proxy', 'Unblocker', 'Relay', 'Private', 'Haus', 'Hosting', 'Cloud', 'Datacenter', 'DigitalOcean', 'Linode', 'AWS', 'Google', 'Azure'];
-        const ispStr = ((geo.org || '') + ' ' + (geo.isp || '') + ' ' + (geo.as || '')).toUpperCase();
+        const vpnKeywords = ['VPN', 'Proxy', 'Unblocker', 'Relay', 'Private', 'Haus', 'Hosting', 'Cloud', 'Datacenter', 'DigitalOcean', 'Linode', 'AWS', 'Google', 'Azure', 'Hetzner', 'OVH'];
+        const ispStr = ((geo.org || '') + ' ' + (geo.asn || '')).toUpperCase();
         
         const isSuspiciousISP = vpnKeywords.some(k => ispStr.includes(k.toUpperCase()));
         if (isSuspiciousISP) {
@@ -191,12 +192,12 @@ async function fetchGeoIPAndThreats(data, notify) {
 
         // Result
         if (threatScore > 0) {
-            data['Threat Score'] = { value: `${threatScore}/100`, warning: threatScore >= 40, url: 'https://ip-api.com' };
-            data['Threats'] = { value: threats.join(', '), warning: true, url: 'https://ip-api.com' };
+            data['Threat Score'] = { value: `${threatScore}/100`, warning: threatScore >= 40, url: 'https://ipapi.co' };
+            data['Threats'] = { value: threats.join(', '), warning: true, url: 'https://ipapi.co' };
             data['Privacy Status'] = { value: 'Suspicious / VPN', warning: true };
         } else {
-            data['Threat Score'] = { value: '0/100 (Clean)', url: 'https://ip-api.com' };
-            data['Privacy Status'] = { value: 'Residential / Standard', url: 'https://ip-api.com' };
+            data['Threat Score'] = { value: '0/100 (Clean)', url: 'https://ipapi.co' };
+            data['Privacy Status'] = { value: 'Residential / Standard', url: 'https://ipapi.co' };
         }
         
         notify();
