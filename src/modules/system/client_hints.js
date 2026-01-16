@@ -7,9 +7,11 @@ export async function collectClientHints() {
   const clientHintsUrl = 'https://developer.mozilla.org/en-US/docs/Web/API/User-Agent_Client_Hints_API';
   
   if (!navigator.userAgentData) {
+    const legacyArch = navigator.platform || 'Unknown';
     return {
       'Client Hints API': { value: 'Not Supported (Firefox/Safari)', warning: true, url: clientHintsUrl },
       'User Agent': { value: navigator.userAgent, url: 'https://developer.mozilla.org/en-US/docs/Web/API/Navigator/userAgent' },
+      'CPU Architecture': { value: legacyArch + ' (Legacy)', url: 'https://developer.mozilla.org/en-US/docs/Web/API/Navigator/platform' },
       'Entropy Level': { value: 'Legacy Only', warning: true, url: clientHintsUrl },
     };
   }
@@ -52,10 +54,22 @@ export async function collectClientHints() {
     entropyScore += hints.platformVersion ? 15 : 0;
 
     // Architecture info
-    data['CPU Architecture'] = { value: hints.architecture || 'Unknown', url: uaDataUrl };
+    let arch = hints.architecture || (navigator.platform ? navigator.platform + ' (Legacy)' : 'Unknown');
+    
+    // Normalize to user preference (amd64)
+    const is64 = hints.bitness === '64' || (navigator.platform && navigator.platform.includes('64'));
+    
+    if (arch.toLowerCase().includes('x86') || arch === 'x86') {
+      arch = is64 ? 'amd64' : 'x86';
+    } else if (arch.toLowerCase().includes('amd64')) {
+      arch = 'amd64';
+    }
+
+    data['CPU Architecture'] = { value: arch, url: uaDataUrl };
     data['Bitness'] = { value: hints.bitness ? hints.bitness + '-bit' : 'Unknown', url: uaDataUrl };
     data['WoW64'] = { value: hints.wow64 ? 'Yes (32-bit on 64-bit)' : 'No', url: uaDataUrl };
     entropyScore += hints.architecture ? 10 : 0;
+    entropyScore += hints.bitness ? 5 : 0;
     entropyScore += hints.bitness ? 5 : 0;
 
     // Device info

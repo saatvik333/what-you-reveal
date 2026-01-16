@@ -3,6 +3,8 @@ import { ref, onMounted } from 'vue';
 import TheHeader from "./components/TheHeader.vue";
 import TerminalCard from "./components/TerminalCard.vue";
 import TerminalDataGrid from "./components/TerminalDataGrid.vue";
+import PrivacyTipsPopup from "./components/PrivacyTipsPopup.vue";
+import ScorePhilosophyPopup from "./components/ScorePhilosophyPopup.vue";
 import { collectClipboardData } from "./modules/system/clipboard";
 import { collectHardwareData } from "./modules/system/hardware";
 import { collectScreenData } from "./modules/system/screen";
@@ -16,6 +18,8 @@ import { collectNetworkData } from "./modules/network/network";
 import { collectNavigatorData } from "./modules/system/navigator";
 import { collectFontData } from "./modules/fingerprint/fonts";
 import { collectWebGLData } from "./modules/fingerprint/webgl";
+import { collectFingerprintData } from "./modules/fingerprint/identity";
+import { collectTorData } from "./modules/privacy/tor";
 
 const clipboardData = ref(null);
 const hardwareData = ref(null);
@@ -30,6 +34,10 @@ const networkData = ref(null);
 const navigatorData = ref(null);
 const fontData = ref(null);
 const webglData = ref(null);
+const identityData = ref(null);
+const privacyData = ref(null);
+const showPrivacyTips = ref(false);
+const showScorePhilosophy = ref(false);
 
 onMounted(async () => {
   clipboardData.value = await collectClipboardData();
@@ -44,21 +52,40 @@ onMounted(async () => {
   navigatorData.value = await collectNavigatorData();
   fontData.value = await collectFontData();
   webglData.value = await collectWebGLData();
+  identityData.value = await collectFingerprintData();
+  privacyData.value = await collectTorData();
   
   // Start network collection (accepts callback for updates)
   networkData.value = await collectNetworkData((newData) => {
       networkData.value = newData;
   });
 });
+
+function handlePrivacyAction(actionName) {
+  if (actionName === 'enhance') {
+    showPrivacyTips.value = true;
+  } else if (actionName === 'scoring') {
+    showScorePhilosophy.value = true;
+  }
+}
 </script>
 
 <template>
   <div class="container">
     <TheHeader />
+    
+    <PrivacyTipsPopup :isOpen="showPrivacyTips" @close="showPrivacyTips = false" />
+    <ScorePhilosophyPopup :isOpen="showScorePhilosophy" @close="showScorePhilosophy = false" />
 
     <main class="grid">
+      <!-- Privacy & Network -->
       <TerminalCard title="0. PRIVACY_MODE">
-        <pre>Analyzing storage...</pre>
+        <TerminalDataGrid 
+          v-if="privacyData" 
+          :data="privacyData" 
+          @action="handlePrivacyAction"
+        />
+        <pre v-else>Checking Tor network status...</pre>
       </TerminalCard>
 
       <TerminalCard title="1. NETWORK_INFO">
@@ -66,6 +93,7 @@ onMounted(async () => {
         <pre v-else>Scanning network environment...</pre>
       </TerminalCard>
 
+      <!-- Hardware & Display -->
       <TerminalCard title="2. DEVICE_CORE">
         <TerminalDataGrid v-if="hardwareData" :data="hardwareData" />
         <pre v-else>Scanning hardware...</pre>
@@ -76,49 +104,65 @@ onMounted(async () => {
         <pre v-else>Analyzing display...</pre>
       </TerminalCard>
 
-      <TerminalCard title="4. PERMISSIONS_CHECK">
-        <TerminalDataGrid v-if="permissionsData" :data="permissionsData" />
-        <pre v-else>Querying permissions...</pre>
-      </TerminalCard>
-
-      <TerminalCard title="5. MEDIA_DEVICES">
-        <TerminalDataGrid v-if="mediaDeviceData" :data="mediaDeviceData" />
-        <pre v-else>Enumerating devices...</pre>
-      </TerminalCard>
-
-      <TerminalCard title="6. MEDIA_CODECS">
-        <TerminalDataGrid v-if="mediaCodecData" :data="mediaCodecData" />
-        <pre v-else>Checking codecs...</pre>
-      </TerminalCard>
-
-      <TerminalCard title="7. CLIENT_HINTS">
+      <!-- Browser & User Agent -->
+      <TerminalCard title="4. CLIENT_HINTS">
         <TerminalDataGrid v-if="clientHintsData" :data="clientHintsData" />
         <pre v-else>Analyzing User Agent Data...</pre>
       </TerminalCard>
 
-      <TerminalCard title="8. INTL_FINGERPRINT">
-        <TerminalDataGrid v-if="intlData" :data="intlData" />
-        <pre v-else>Calculating locale fingerprint...</pre>
-      </TerminalCard>
-
-      <TerminalCard title="9. INTEGRITY_CHECK">
-        <TerminalDataGrid v-if="integrityData" :data="integrityData" />
-        <pre v-else>Scanning environment...</pre>
-      </TerminalCard>
-
-      <TerminalCard title="10. NAVIGATOR_VARS">
+      <TerminalCard title="5. NAVIGATOR_VARS">
         <TerminalDataGrid v-if="navigatorData" :data="navigatorData" />
         <pre v-else>Reading headers...</pre>
       </TerminalCard>
 
-      <TerminalCard title="11. FONTS_FINGERPRINT">
+      <!-- Fingerprinting -->
+      <TerminalCard title="6. INTL_FINGERPRINT">
+        <TerminalDataGrid v-if="intlData" :data="intlData" />
+        <pre v-else>Calculating locale fingerprint...</pre>
+      </TerminalCard>
+
+      <TerminalCard title="7. FONTS_FINGERPRINT">
         <TerminalDataGrid v-if="fontData" :data="fontData" />
         <pre v-else>Scanning font library...</pre>
       </TerminalCard>
 
-      <TerminalCard title="12. WEBGL_RENDERER">
+      <!-- Graphics & Identity -->
+      <TerminalCard title="8. WEBGL_RENDERER">
         <TerminalDataGrid v-if="webglData" :data="webglData" />
         <pre v-else>Initializing WebGL context...</pre>
+      </TerminalCard>
+
+      <TerminalCard title="9. DIGITAL_IDENTITY">
+        <TerminalDataGrid v-if="identityData" :data="identityData" />
+        <pre v-else>Generating digital fingerprint...</pre>
+      </TerminalCard>
+
+      <!-- Media -->
+      <TerminalCard title="10. MEDIA_DEVICES">
+        <TerminalDataGrid v-if="mediaDeviceData" :data="mediaDeviceData" />
+        <pre v-else>Enumerating devices...</pre>
+      </TerminalCard>
+
+      <TerminalCard title="11. MEDIA_CODECS">
+        <TerminalDataGrid v-if="mediaCodecData" :data="mediaCodecData" />
+        <pre v-else>Checking codecs...</pre>
+      </TerminalCard>
+
+      <!-- Access & Permissions -->
+      <TerminalCard title="12. PERMISSIONS_CHECK">
+        <TerminalDataGrid v-if="permissionsData" :data="permissionsData" />
+        <pre v-else>Querying permissions...</pre>
+      </TerminalCard>
+
+      <TerminalCard title="13. CLIPBOARD_ACCESS">
+        <TerminalDataGrid v-if="clipboardData" :data="clipboardData" />
+        <pre v-else>Checking clipboard permissions...</pre>
+      </TerminalCard>
+
+      <!-- Security -->
+      <TerminalCard title="14. INTEGRITY_CHECK">
+        <TerminalDataGrid v-if="integrityData" :data="integrityData" />
+        <pre v-else>Scanning environment...</pre>
       </TerminalCard>
 
     </main>
@@ -175,5 +219,27 @@ footer {
   50% {
     opacity: 0;
   }
+}
+
+.privacy-actions {
+  display: flex;
+  gap: 1ch;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  color: var(--fg-dim);
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+.action-btn:hover {
+  color: var(--fg);
 }
 </style>

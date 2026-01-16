@@ -2,19 +2,96 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>What You Reveal v2 | Privacy Analysis</title>
-    <!-- Fonts -->
+    
+    <!-- Primary Meta Tags -->
+    <title>What You Reveal | Browser Fingerprint & Privacy Analysis Tool</title>
+    <meta name="title" content="What You Reveal | Browser Fingerprint & Privacy Analysis Tool" />
+    <meta name="description" content="Discover what your browser reveals about you. Real-time browser fingerprinting analysis, privacy score, tracking detection, and comprehensive system information exposure. Free, open-source privacy tool." />
+    <meta name="keywords" content="browser fingerprint, privacy analysis, tracking detection, device fingerprint, canvas fingerprint, WebGL fingerprint, privacy score, browser security, online privacy, fingerprinting protection, what websites know about you" />
+    <meta name="author" content="saatvik333" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#00ff00" />
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/logo.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/logo.png" />
+    <link rel="shortcut icon" href="/logo.png" />
+    
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://what-you-reveal.vercel.app/" />
+    <meta property="og:title" content="What You Reveal | Browser Fingerprint & Privacy Analysis" />
+    <meta property="og:description" content="Discover what your browser reveals about you. Real-time fingerprinting analysis, privacy score, and tracking detection. See how websites track you." />
+    <meta property="og:image" content="/logo.png" />
+    <meta property="og:image:alt" content="What You Reveal - Browser Fingerprint Analysis Tool" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" content="What You Reveal" />
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://what-you-reveal.vercel.app/" />
+    <meta name="twitter:title" content="What You Reveal | Browser Fingerprint & Privacy Analysis" />
+    <meta name="twitter:description" content="Discover what your browser reveals about you. Real-time fingerprinting analysis, privacy score, and tracking detection." />
+    <meta name="twitter:image" content="/logo.png" />
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://what-you-reveal.vercel.app/" />
+    
+    <!-- Fonts - Preload critical fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=VT323&family=Courier+Prime:wght@400;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap"
       rel="stylesheet"
     />
+    
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "What You Reveal",
+      "description": "Browser fingerprint and privacy analysis tool that shows what information your browser exposes to websites.",
+      "url": "https://what-you-reveal.vercel.app/",
+      "applicationCategory": "SecurityApplication",
+      "operatingSystem": "Any",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "author": {
+        "@type": "Person",
+        "name": "saatvik333",
+        "url": "https://github.com/saatvik333"
+      },
+      "keywords": "browser fingerprint, privacy, tracking, security, fingerprinting"
+    }
+    </script>
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="/src/main.js" as="script" crossorigin />
   </head>
   <body>
-    <div id="app"></div>
+    <!-- Accessibility: skip to main content -->
+    <a href="#app" class="skip-link" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;">Skip to main content</a>
+    
+    <!-- App container -->
+    <div id="app" role="main" aria-label="Browser fingerprint analysis results"></div>
+    
+    <!-- Noscript fallback -->
+    <noscript>
+      <div style="padding:2rem;text-align:center;font-family:monospace;color:#00ff00;background:#000;">
+        <h1>What You Reveal</h1>
+        <p>JavaScript is required to analyze your browser fingerprint and privacy settings.</p>
+        <p>Please enable JavaScript to use this tool.</p>
+      </div>
+    </noscript>
+    
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

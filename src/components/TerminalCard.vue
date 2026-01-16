@@ -14,8 +14,8 @@ defineProps({
 </script>
 
 <template>
-  <section class="card" :id="id">
-    <h2>
+  <section class="card terminal-card" :id="id">
+    <h2 class="terminal-title">
       <span class="prefix">&gt; </span>
       <DecryptedText 
         :text="title" 

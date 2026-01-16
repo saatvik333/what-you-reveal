@@ -1,23 +1,99 @@
-<script setup></script>
+<script setup>
+import { inject } from 'vue';
+import packageJson from '../../package.json';
+
+// Inject collected data from parent (will be provided by App.vue)
+const collectedData = inject('collectedData', null);
+
+// Get version from package.json
+const version = packageJson.version;
+
+function downloadLog() {
+  // Gather all data from the page
+  const data = {};
+  
+  // Get all data grids from the DOM
+  const cards = document.querySelectorAll('.terminal-card');
+  cards.forEach(card => {
+    const titleEl = card.querySelector('.terminal-title');
+    const title = titleEl ? titleEl.textContent.trim() : 'Unknown';
+    
+    const rows = card.querySelectorAll('.data-row');
+    const cardData = {};
+    
+    rows.forEach(row => {
+      const keyEl = row.querySelector('.data-key');
+      const valueEl = row.querySelector('.data-value');
+      
+      if (keyEl && valueEl) {
+        // Get text content, excluding action buttons
+        const key = keyEl.textContent.replace(/\[.*?\]/g, '').trim();
+        const value = valueEl.textContent.replace(/\[.*?\]/g, '').trim();
+        if (key && value) {
+          cardData[key] = value;
+        }
+      }
+    });
+    
+    if (Object.keys(cardData).length > 0) {
+      data[title] = cardData;
+    }
+  });
+  
+  // Add metadata
+  const report = {
+    meta: {
+      generated: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      url: window.location.href,
+      timestamp: Date.now(),
+    },
+    data
+  };
+  
+  // Create and download the file
+  const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `what-you-reveal-${new Date().toISOString().split('T')[0]}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+</script>
 
 <template>
   <header>
-    <pre class="ascii-header">
+    <pre class="ascii-header" aria-label="What You Reveal - ASCII Art Logo">
 ╦ ╦╦ ╦╔═╗╔╦╗  ╦ ╦╔═╗╦ ╦  ╦═╗╔═╗╦  ╦╔═╗╔═╗╦  
 ║║║╠═╣╠═╣ ║   ╚╦╝║ ║║ ║  ╠╦╝║╣ ╚╗╔╝║╣ ╠═╣║  
 ╚╩╝╩ ╩╩ ╩ ╩    ╩ ╚═╝╚═╝  ╩╚═╚═╝ ╚╝ ╚═╝╩ ╩╩═╝
     </pre>
-    <div class="subtitle">SYSTEM ANALYSIS TOOL // BROWSER FINGERPRINT DEMO</div>
-    <div class="controls">
-      <button id="download-report" class="control-btn">[ DOWNLOAD LOG ]</button>
+    <p class="subtitle">SYSTEM ANALYSIS TOOL // BROWSER FINGERPRINT DEMO // v{{ version }}</p>
+    <nav class="controls" aria-label="Main controls">
+      <button 
+        id="download-report" 
+        class="control-btn" 
+        @click="downloadLog"
+        aria-label="Download fingerprint report as JSON"
+      >[ DOWNLOAD LOG ]</button>
       <a
         href="https://github.com/saatvik333/what-you-reveal"
         target="_blank"
         rel="noopener noreferrer"
         class="control-btn"
-        >[ GITHUB REPO ]</a
-      >
-    </div>
+        aria-label="View source code on GitHub"
+      >[ GITHUB REPO ]</a>
+      <a
+        href="https://github.com/saatvik333/what-you-reveal/issues"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="control-btn"
+        aria-label="Report a bug on GitHub Issues"
+      >[ FOUND BUG? ]</a>
+    </nav>
   </header>
 </template>
 
@@ -56,7 +132,7 @@ header {
   color: var(--fg-dim);
   font-size: var(--font-size-sm);
   letter-spacing: 0.1em;
-  margin-bottom: var(--spacing-md);
+  margin: 0 0 var(--spacing-md) 0;
   text-transform: uppercase;
 }
 
@@ -82,7 +158,6 @@ header {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 160px;
 }
 
 .control-btn:hover {

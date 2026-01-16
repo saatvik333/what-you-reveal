@@ -1,5 +1,37 @@
-# Vue 3 + Vite
+```text
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+╦ ╦╦ ╦╔═╗╔╦╗  ╦ ╦╔═╗╦ ╦  ╦═╗╔═╗╦  ╦╔═╗╔═╗╦
+║║║╠═╣╠═╣ ║   ╚╦╝║ ║║ ║  ╠╦╝║╣ ╚╗╔╝║╣ ╠═╣║
+╚╩╝╩ ╩╩ ╩ ╩    ╩ ╚═╝╚═╝  ╩╚═╚═╝ ╚╝ ╚═╝╩ ╩╩═╝
+```
 
-Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
+### SYSTEM ANALYSIS TOOL // BROWSER FINGERPRINT DEMO
+
+**What You Reveal** is a privacy analysis tool designed to show exactly what information your browser exposes to websites. It features a retro terminal aesthetic and robust, transparency-focused metrics.
+
+---
+
+### >\_ INSTALLATION
+
+```bash
+# Clone repository
+git clone https://github.com/saatvik333/what-you-reveal.git
+
+# Install dependencies
+bun install
+
+# Start development server
+bun run dev
+```
+
+### >\_ FEATURES
+
+- **Privacy Score**: Transparent scoring system based on verifiable signals.
+- **Fingerprinting**: Canvas, WebGL, Fonts, Audio, and more.
+- **Network Analysis**: IP leaks, DNS, and connection speed.
+- **System Info**: Hardware concurrency, battery status, and device memory.
+
+---
+
+> **DISCLAIMER**: This tool is for **educational purposes only**. The goal is to raise awareness about browser fingerprinting and web privacy. No data is stored on any server; all analysis happens locally in your browser.
+
