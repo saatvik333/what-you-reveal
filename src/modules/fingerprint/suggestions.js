@@ -68,7 +68,7 @@ export function generatePersonalizedSuggestions(context) {
     isIncognito,
     hasGPC,
     browserInfo,
-    normalizedScore,
+    protectionScore = 0, // New: use protectionScore instead of normalizedScore
     isVPNDetected,
     hasPrivacyExtensions,
   } = context;
@@ -85,7 +85,7 @@ export function generatePersonalizedSuggestions(context) {
   }
 
   // If score is already very high, congratulate them
-  if (normalizedScore >= 80 && isIncognito && hasPrivacyExtensions) {
+  if (protectionScore >= 80 && isIncognito && hasPrivacyExtensions) {
     suggestions.push({
       action: 'Excellent Privacy Setup!',
       impact: 'INFO',
@@ -132,7 +132,7 @@ export function generatePersonalizedSuggestions(context) {
   }
 
   // 5. VPN recommendation (only if low score)
-  if (!isVPNDetected && normalizedScore < 40) {
+  if (!isVPNDetected && protectionScore < 40) {
     suggestions.push({
       action: 'Consider Using a VPN',
       impact: 'LOW',

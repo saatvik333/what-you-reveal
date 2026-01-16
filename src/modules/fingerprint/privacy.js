@@ -1,27 +1,25 @@
 /**
  * Privacy Mode Detection Module (Incognito / Tor / Privacy Browsers)
- * Enhanced with state-of-the-art detection and weighted confidence scoring
  * 
- * This module orchestrates detection from sub-modules:
- * - incognito.js: Private browsing mode detection tests
- * - tor.js: Tor Browser and privacy browser detection
- * - extensions.js: Privacy extension detection (ad blockers, etc.)
- * - suggestions.js: Personalized privacy recommendations
+ * NEW ARCHITECTURE: Multi-dimensional privacy analysis
+ * 
+ * This module provides SEPARATE metrics for:
+ * 1. Incognito Detection - Binary YES/NO with confidence level
+ * 2. Privacy Protection Score - Based on extensions, signals, protections
+ * 3. Anonymity Indicators - VPN, Tor, Proxy detection
+ * 4. Fingerprint Resistance - API protection levels
+ * 
+ * This replaces the old conflated single-score system that caused
+ * false positives (e.g., Privacy Badger triggering "incognito detected").
  */
 
 import { detectPrivacyExtensions } from './extensions.js';
 import {
   detectIncognitoMode,
-  testQuotaHeapRatio,
-  testIndexedDB,
   testServiceWorker,
   testFileSystem,
-  testSafariLocalStorage,
   testCacheAPI,
-  testCredentialManagement,
   testStorageQuota,
-  testStoragePersist,
-  testTrackingProtection,
 } from './incognito.js';
 import { testTorBrowser, detectBrave, checkPrivacySignals } from './tor.js';
 import { generatePersonalizedSuggestions } from './suggestions.js';
@@ -68,300 +66,337 @@ function detectBrowser() {
 }
 
 // ============================================================
-// DETECTION WEIGHTS BY BROWSER
+// PRIVACY PROTECTION SCORE WEIGHTS
 // ============================================================
 
-const DETECTION_WEIGHTS = {
-  chromium: {
-    quotaHeapRatio: { weight: 40, reliability: 'HIGH' },
-    fileSystemAPI: { weight: 35, reliability: 'HIGH' },
-    storageQuota: { weight: 15, reliability: 'MEDIUM' },
-    serviceWorker: { weight: 10, reliability: 'LOW' },
-    credentialManagement: { weight: 20, reliability: 'MEDIUM' },
-    indexedDB: { weight: 25, reliability: 'MEDIUM' },
-  },
-  gecko: {
-    indexedDB: { weight: 45, reliability: 'HIGH' },
-    cacheAPI: { weight: 35, reliability: 'HIGH' },
-    storageQuota: { weight: 15, reliability: 'MEDIUM' },
-    serviceWorker: { weight: 15, reliability: 'MEDIUM' },
-  },
-  webkit: {
-    localStorageException: { weight: 50, reliability: 'HIGH' },
-    storageQuota: { weight: 25, reliability: 'MEDIUM' },
-    indexedDB: { weight: 20, reliability: 'MEDIUM' },
-  },
-  tor: {
-    timezone: { weight: 20, reliability: 'MEDIUM' },
-    screenDimensions: { weight: 25, reliability: 'HIGH' },
-    hardwareConcurrency: { weight: 15, reliability: 'MEDIUM' },
-    pluginsEmpty: { weight: 20, reliability: 'HIGH' },
-    webglRenderer: { weight: 15, reliability: 'MEDIUM' },
-    languageCheck: { weight: 10, reliability: 'LOW' },
-  },
+const PROTECTION_WEIGHTS = {
+  // Extensions (max 40 points)
+  adBlocker: 20,
+  canvasProtection: 10,
+  webrtcProtection: 10,
+  
+  // Browser Signals (max 20 points)
+  globalPrivacyControl: 15,
+  doNotTrack: 5,
+  
+  // Incognito Mode (max 20 points)
+  incognitoMode: 20,
+  
+  // Fingerprint Protection (max 20 points)
+  canvasNoise: 10,
+  webglBlocked: 5,
+  audioBlocked: 5,
 };
+
+// ============================================================
+// INCOGNITO CONFIDENCE CALCULATION
+// ============================================================
+
+/**
+ * Determine incognito confidence based on detection results
+ * @param {Object} incognitoResult - Result from detectIncognitoMode()
+ * @param {Object} extensionResult - Result from detectPrivacyExtensions()
+ * @returns {string} Confidence level
+ */
+function calculateIncognitoConfidence(incognitoResult, extensionResult) {
+  if (!incognitoResult.isPrivate) {
+    return 'NONE';
+  }
+  
+  // If extensions are heavily present, they might be causing false positives
+  // Reduce confidence if we detect many privacy extensions
+  const extensionInterference = extensionResult.hasExtensions && extensionResult.count >= 2;
+  
+  // Check the detection method reliability
+  const reliableMethods = ['opfs', 'webkitTemporaryStorage', 'indexeddb-blob'];
+  const methodIsReliable = reliableMethods.includes(incognitoResult.method);
+  
+  // If quota-based detection with possible extension interference, be cautious
+  if (incognitoResult.method === 'webkitTemporaryStorage' && extensionInterference) {
+    // Check if quota is VERY low (true incognito) vs just somewhat low (extension)
+    // True incognito typically has <150MB quota
+    if (incognitoResult.quotaMB && incognitoResult.quotaMB < 150) {
+      return 'HIGH';
+    }
+    return 'LOW'; // Possible false positive from extension
+  }
+  
+  if (methodIsReliable) {
+    return 'HIGH';
+  }
+  
+  return 'MEDIUM';
+}
+
+// ============================================================
+// PRIVACY PROTECTION SCORE CALCULATION
+// ============================================================
+
+/**
+ * Calculate privacy protection score based on detected protections
+ * This is SEPARATE from incognito detection
+ * @param {Object} params - Detection results
+ * @returns {Object} Score breakdown
+ */
+function calculatePrivacyProtectionScore({
+  incognitoResult,
+  extensionResult,
+  hasGPC,
+  hasDNT,
+}) {
+  let score = 0;
+  const breakdown = [];
+  
+  // Extensions contribution (max 40 points)
+  if (extensionResult.hasExtensions) {
+    if (extensionResult.details.baitBlocked || extensionResult.details.networkBlocked) {
+      score += PROTECTION_WEIGHTS.adBlocker;
+      breakdown.push({ name: 'Ad Blocker', points: PROTECTION_WEIGHTS.adBlocker });
+    }
+    if (extensionResult.details.canvasProtection) {
+      score += PROTECTION_WEIGHTS.canvasProtection;
+      breakdown.push({ name: 'Canvas Protection', points: PROTECTION_WEIGHTS.canvasProtection });
+    }
+    if (extensionResult.details.webrtcProtection) {
+      score += PROTECTION_WEIGHTS.webrtcProtection;
+      breakdown.push({ name: 'WebRTC Protection', points: PROTECTION_WEIGHTS.webrtcProtection });
+    }
+  }
+  
+  // Browser Signals contribution (max 20 points)
+  if (hasGPC) {
+    score += PROTECTION_WEIGHTS.globalPrivacyControl;
+    breakdown.push({ name: 'Global Privacy Control', points: PROTECTION_WEIGHTS.globalPrivacyControl });
+  }
+  if (hasDNT) {
+    score += PROTECTION_WEIGHTS.doNotTrack;
+    breakdown.push({ name: 'Do Not Track', points: PROTECTION_WEIGHTS.doNotTrack });
+  }
+  
+  // Incognito Mode contribution (max 20 points)
+  // Only add if we're CONFIDENT it's incognito (not a false positive)
+  if (incognitoResult.isPrivate && incognitoResult.confidence === 'HIGH') {
+    score += PROTECTION_WEIGHTS.incognitoMode;
+    breakdown.push({ name: 'Private Browsing Mode', points: PROTECTION_WEIGHTS.incognitoMode });
+  }
+  
+  return {
+    score: Math.min(100, score),
+    maxScore: 100,
+    breakdown,
+  };
+}
 
 // ============================================================
 // MAIN DETECTION FUNCTION
 // ============================================================
 
 /**
- * Detects privacy mode with weighted confidence scoring
+ * Detects privacy mode with MULTI-DIMENSIONAL analysis
+ * Returns separate metrics for incognito, protection score, anonymity, etc.
+ * @param {Object} options - Optional configuration
+ * @param {boolean} options.vpnDetected - VPN detection result from network module
  * @returns {Promise<Object>} Comprehensive privacy detection results
  */
-export async function detectPrivacyMode() {
+export async function detectPrivacyMode(options = {}) {
   const browserInfo = detectBrowser();
-  const findings = [];
-  const detectionResults = {};
-  let totalScore = 0;
-  let maxPossibleScore = 0;
-  let highConfidenceMatches = 0;
-  let totalHighConfidenceTests = 0;
-
-  // Get appropriate weights for this browser
-  const weights = DETECTION_WEIGHTS[browserInfo.engine] || DETECTION_WEIGHTS.chromium;
+  const { vpnDetected = false } = options;
 
   // Run all detection tests in parallel
   const [
-    incognitoResult, // Primary detection - browser-specific
-    quotaHeapResult,
-    idbResult,
+    incognitoResult,
+    extensionResult,
     swResult,
     fsResult,
     cacheResult,
-    credResult,
     quotaResult,
-    extensionResult,
-    persistResult,
-    trackingResult,
   ] = await Promise.all([
-    detectIncognitoMode(), // Primary: reliable browser-specific detection
-    testQuotaHeapRatio(),
-    testIndexedDB(),
+    detectIncognitoMode(),
+    detectPrivacyExtensions(),
     testServiceWorker(),
     testFileSystem(),
     testCacheAPI(),
-    testCredentialManagement(),
     testStorageQuota(),
-    detectPrivacyExtensions(),
-    testStoragePersist(),
-    testTrackingProtection(),
   ]);
 
   // Synchronous tests
-  const safariResult = testSafariLocalStorage();
   const torResult = testTorBrowser();
   const braveResult = await detectBrave();
   const privacySignals = checkPrivacySignals();
-
-  // Primary incognito detection (most reliable)
-  if (incognitoResult.isPrivate) {
-    totalScore += 50;
-    highConfidenceMatches++;
-    totalHighConfidenceTests++;
-    findings.push(incognitoResult.reason || `${incognitoResult.browserName} Private Mode detected`);
-  }
-
-  // Add extension detection to score and findings
-  if (extensionResult.hasExtensions) {
-    totalScore += extensionResult.score;
-    findings.push(...extensionResult.detected);
-  }
-
-  // Firefox-specific: Tracking Protection / ETP detection
-  if (trackingResult.triggered) {
-    totalScore += 20;
-    findings.push(trackingResult.reason);
-    if (browserInfo.engine === 'gecko') {
-      highConfidenceMatches++;
-      totalHighConfidenceTests++;
-    }
-  }
-
-  // Firefox-specific: Storage persist rejection
-  if (persistResult.triggered) {
-    totalScore += 15;
-    findings.push(persistResult.reason);
-  }
-
-  // Process Chromium-specific: Quota/Heap Ratio
-  if (weights.quotaHeapRatio && quotaHeapResult.available) {
-    maxPossibleScore += weights.quotaHeapRatio.weight;
-    if (weights.quotaHeapRatio.reliability === 'HIGH') { totalHighConfidenceTests++; }
-    
-    if (quotaHeapResult.triggered) {
-      totalScore += weights.quotaHeapRatio.weight;
-      findings.push(quotaHeapResult.reason);
-      detectionResults.quotaHeapRatio = { ...quotaHeapResult, weight: weights.quotaHeapRatio.weight };
-      if (weights.quotaHeapRatio.reliability === 'HIGH') { highConfidenceMatches++; }
-    }
-  }
-
-  // IndexedDB
-  if (weights.indexedDB) {
-    maxPossibleScore += weights.indexedDB.weight;
-    if (weights.indexedDB.reliability === 'HIGH') { totalHighConfidenceTests++; }
-    
-    if (idbResult.triggered) {
-      totalScore += weights.indexedDB.weight;
-      findings.push(idbResult.reason);
-      detectionResults.indexedDB = { ...idbResult, weight: weights.indexedDB.weight };
-      if (weights.indexedDB.reliability === 'HIGH') { highConfidenceMatches++; }
-    }
-  }
-
-  // ServiceWorker
-  if (weights.serviceWorker && swResult.supported) {
-    maxPossibleScore += weights.serviceWorker.weight;
-    if (weights.serviceWorker.reliability === 'HIGH') { totalHighConfidenceTests++; }
-    
-    if (swResult.triggered) {
-      totalScore += weights.serviceWorker.weight;
-      findings.push(swResult.reason);
-      detectionResults.serviceWorker = { ...swResult, weight: weights.serviceWorker.weight };
-      if (weights.serviceWorker.reliability === 'HIGH') { highConfidenceMatches++; }
-    }
-  }
-
-  // FileSystem API (Chromium)
-  if (weights.fileSystemAPI && fsResult.supported) {
-    maxPossibleScore += weights.fileSystemAPI.weight;
-    if (weights.fileSystemAPI.reliability === 'HIGH') { totalHighConfidenceTests++; }
-    
-    if (fsResult.triggered) {
-      totalScore += weights.fileSystemAPI.weight;
-      findings.push(fsResult.reason);
-      detectionResults.fileSystemAPI = { ...fsResult, weight: weights.fileSystemAPI.weight };
-      if (weights.fileSystemAPI.reliability === 'HIGH') { highConfidenceMatches++; }
-    }
-  }
-
-  // Safari localStorage
-  if (weights.localStorageException) {
-    maxPossibleScore += weights.localStorageException.weight;
-    if (weights.localStorageException.reliability === 'HIGH') { totalHighConfidenceTests++; }
-    
-    if (safariResult.triggered) {
-      totalScore += weights.localStorageException.weight;
-      findings.push(safariResult.reason);
-      detectionResults.localStorageException = { ...safariResult, weight: weights.localStorageException.weight };
-      if (weights.localStorageException.reliability === 'HIGH') { highConfidenceMatches++; }
-    }
-  }
-
-  // Cache API (Firefox)
-  if (weights.cacheAPI && cacheResult.supported) {
-    maxPossibleScore += weights.cacheAPI.weight;
-    if (weights.cacheAPI.reliability === 'HIGH') { totalHighConfidenceTests++; }
-    
-    if (cacheResult.triggered) {
-      totalScore += weights.cacheAPI.weight;
-      findings.push(cacheResult.reason);
-      detectionResults.cacheAPI = { ...cacheResult, weight: weights.cacheAPI.weight };
-      if (weights.cacheAPI.reliability === 'HIGH') { highConfidenceMatches++; }
-    }
-  }
-
-  // Credential Management
-  if (weights.credentialManagement && credResult.supported) {
-    maxPossibleScore += weights.credentialManagement.weight;
-    if (weights.credentialManagement.reliability === 'HIGH') { totalHighConfidenceTests++; }
-    
-    if (credResult.triggered) {
-      totalScore += weights.credentialManagement.weight;
-      findings.push(credResult.reason);
-      detectionResults.credentialManagement = { ...credResult, weight: weights.credentialManagement.weight };
-      if (weights.credentialManagement.reliability === 'HIGH') { highConfidenceMatches++; }
-    }
-  }
-
-  // Storage Quota
-  if (weights.storageQuota && quotaResult.available) {
-    maxPossibleScore += weights.storageQuota.weight;
-    
-    if (quotaResult.triggered && !quotaResult.weak) {
-      totalScore += weights.storageQuota.weight;
-      findings.push(quotaResult.reason);
-      detectionResults.storageQuota = { ...quotaResult, weight: weights.storageQuota.weight };
-    }
-  }
-
-  // Privacy signals
-  if (privacySignals.triggered) {
-    totalScore += privacySignals.score;
-    findings.push(...privacySignals.signals);
-  }
-
-  // Tor Browser detection
-  let isTor = false;
-  if (torResult.triggered) {
-    totalScore += torResult.score;
-    findings.push(...torResult.indicators);
-    if (torResult.isDefinite) {
-      isTor = true;
-    }
-  }
-
-  // Calculate normalized score (0-100)
-  const normalizedScore = Math.min(100, Math.round((totalScore / Math.max(maxPossibleScore, 1)) * 100));
   
-  // Determine confidence level
-  let confidence = 'LOW';
-  if (highConfidenceMatches >= 2 || (highConfidenceMatches === 1 && totalHighConfidenceTests === 1)) {
-    confidence = 'HIGH';
-  } else if (highConfidenceMatches === 1 || findings.length >= 3) {
-    confidence = 'MEDIUM';
-  }
-
-  // Determine status
-  let status = 'Standard Mode';
-  let warning = false;
-
-  if (isTor) {
-    status = 'Tor Browser Detected';
-    warning = true;
-    confidence = 'HIGH';
-  } else if (normalizedScore >= 60) {
-    status = 'Private / Incognito Detected';
-    warning = true;
-  } else if (normalizedScore >= 35) {
-    status = 'Privacy-Enhanced Mode';
-    warning = true;
-  } else if (normalizedScore >= 15) {
-    status = 'Some Privacy Features Active';
-  }
-
-  // Determine if in incognito/private mode based on primary detection
-  const isIncognito = incognitoResult.isPrivate || normalizedScore >= 60;
+  // Browser signals
   const hasGPC = navigator.globalPrivacyControl === true;
   const hasDNT = navigator.doNotTrack === '1';
 
-  // Generate personalized suggestions based on detected state
+  // ============================================================
+  // SECTION 1: INCOGNITO DETECTION (Binary + Confidence)
+  // ============================================================
+  
+  // Add confidence to incognito result
+  const incognitoConfidence = calculateIncognitoConfidence(incognitoResult, extensionResult);
+  const incognitoData = {
+    detected: incognitoResult.isPrivate && incognitoConfidence !== 'LOW',
+    confidence: incognitoConfidence,
+    method: incognitoResult.method || 'unknown',
+    browserName: incognitoResult.browserName,
+    rawResult: incognitoResult, // For debugging
+  };
+
+  // ============================================================
+  // SECTION 2: PRIVACY PROTECTION SCORE (0-100)
+  // ============================================================
+  
+  const protectionScore = calculatePrivacyProtectionScore({
+    incognitoResult: { ...incognitoResult, confidence: incognitoConfidence },
+    extensionResult,
+    hasGPC,
+    hasDNT,
+  });
+
+  // ============================================================
+  // SECTION 3: ANONYMITY INDICATORS
+  // ============================================================
+  
+  const anonymityData = {
+    vpn: {
+      detected: vpnDetected,
+      source: vpnDetected ? 'network-api' : null,
+    },
+    tor: {
+      detected: torResult.isDefinite || false,
+      likely: torResult.triggered || false,
+      confidence: torResult.score || 0,
+      indicators: torResult.indicators || [],
+    },
+    proxy: {
+      detected: false, // Would need network module integration
+    },
+  };
+
+  // ============================================================
+  // SECTION 4: FINGERPRINT RESISTANCE
+  // ============================================================
+  
+  const protectedAPIs = [];
+  if (extensionResult.details?.canvasProtection) protectedAPIs.push('Canvas');
+  if (extensionResult.details?.webrtcProtection) protectedAPIs.push('WebRTC');
+  if (!fsResult.available && fsResult.supported) protectedAPIs.push('FileSystem');
+  if (!cacheResult.available && cacheResult.supported) protectedAPIs.push('Cache API');
+  
+  let resistanceLevel = 'LOW';
+  if (protectedAPIs.length >= 3 || torResult.isDefinite) {
+    resistanceLevel = 'HIGH';
+  } else if (protectedAPIs.length >= 1 || extensionResult.hasExtensions) {
+    resistanceLevel = 'MEDIUM';
+  }
+  
+  const fingerprintResistance = {
+    level: resistanceLevel,
+    protectedAPIs,
+    spoofingDetected: extensionResult.details?.canvasProtection || false,
+  };
+
+  // ============================================================
+  // SECTION 5: GENERATE SUGGESTIONS
+  // ============================================================
+  
   const personalizedSuggestions = generatePersonalizedSuggestions({
-    isTor,
+    isTor: anonymityData.tor.detected,
     isBrave: braveResult.detected,
-    isIncognito,
+    isIncognito: incognitoData.detected,
     hasGPC,
     hasDNT,
     browserInfo,
-    normalizedScore,
-    isVPNDetected: false, // Would need network module integration for true detection
+    protectionScore: protectionScore.score,
+    isVPNDetected: vpnDetected,
     hasPrivacyExtensions: extensionResult.hasExtensions,
     extensionCount: extensionResult.count,
   });
 
-  // Build result object with enhancement suggestions placed after Privacy Score
+  // ============================================================
+  // BUILD OUTPUT FOR UI
+  // ============================================================
+  
+  // Determine overall status label
+  let browsingModeLabel = 'Standard Browsing';
+  let browsingModeWarning = false;
+  
+  if (anonymityData.tor.detected) {
+    browsingModeLabel = 'Tor Browser';
+    browsingModeWarning = true;
+  } else if (incognitoData.detected && incognitoData.confidence === 'HIGH') {
+    browsingModeLabel = `${incognitoData.browserName} Private Mode`;
+    browsingModeWarning = true;
+  } else if (incognitoData.detected && incognitoData.confidence === 'MEDIUM') {
+    browsingModeLabel = 'Likely Private Mode';
+    browsingModeWarning = true;
+  } else if (protectionScore.score >= 50) {
+    browsingModeLabel = 'Privacy-Enhanced Browsing';
+  }
+
   const result = {
-    'Browsing Mode': { value: status, warning },
-    'Privacy Score': `${normalizedScore}/100`,
+    // Header section
+    'Browsing Mode': { value: browsingModeLabel, warning: browsingModeWarning },
+    'Browser': browserInfo.name,
+    
+    // Incognito Section
+    '── INCOGNITO DETECTION ──': '',
+    'Private Mode': incognitoData.detected 
+      ? { value: 'DETECTED', warning: true }
+      : 'Not Detected',
+    'Detection Confidence': incognitoData.detected 
+      ? incognitoData.confidence
+      : 'N/A',
+    'Detection Method': incognitoData.detected 
+      ? incognitoData.method
+      : 'N/A',
+    
+    // Privacy Protection Section
+    '── PRIVACY PROTECTION ──': '',
+    'Protection Score': `${protectionScore.score}/100`,
+    'Score Breakdown': protectionScore.breakdown.length > 0
+      ? protectionScore.breakdown.map(b => `${b.name} (+${b.points})`).join(', ')
+      : 'No active protections detected',
+    
+    // Privacy Signals
+    'Global Privacy Control': hasGPC ? { value: 'Enabled', warning: false } : 'Disabled',
+    'Do Not Track': hasDNT ? 'Enabled' : 'Disabled',
+    
+    // Extensions
+    'Privacy Extensions': extensionResult.hasExtensions 
+      ? { value: `Detected (${extensionResult.count} feature${extensionResult.count > 1 ? 's' : ''})`, warning: false }
+      : 'None Detected',
+    
+    // Anonymity Section
+    '── ANONYMITY ──': '',
+    'VPN/Proxy': anonymityData.vpn.detected 
+      ? { value: 'Detected', warning: true }
+      : 'Not Detected',
+    'Tor Browser': anonymityData.tor.detected 
+      ? { value: 'DETECTED', warning: true }
+      : anonymityData.tor.likely 
+        ? { value: `Possible (${anonymityData.tor.confidence}% confidence)`, warning: true }
+        : 'Not Detected',
+    
+    // Fingerprint Resistance Section
+    '── FINGERPRINT RESISTANCE ──': '',
+    'Resistance Level': resistanceLevel === 'HIGH' 
+      ? { value: 'HIGH', warning: false }
+      : resistanceLevel,
+    'Protected APIs': protectedAPIs.length > 0 
+      ? protectedAPIs.join(', ')
+      : 'None',
+    
+    // Recommendations
     'Privacy Recommendations': {
-      value: 'View Privacy Recommendations',
+      value: 'View Recommendations',
       interactive: true,
       suggestions: personalizedSuggestions,
     },
-    'Detection Confidence': `${confidence} (${highConfidenceMatches}/${totalHighConfidenceTests} strong indicators)`,
-    'Browser Profile': browserInfo.name,
-    'IndexedDB': idbResult.available ? 'Available' : 'Blocked',
+    
+    // API Status (detailed)
+    '── API STATUS ──': '',
+    'IndexedDB': incognitoResult.available !== false ? 'Available' : 'Blocked',
     'ServiceWorker': swResult.supported
       ? swResult.triggered
         ? 'Restricted'
@@ -377,30 +412,18 @@ export async function detectPrivacyMode() {
         ? 'Available'
         : 'Restricted'
       : 'Not Supported',
-    'Global Privacy Control': navigator.globalPrivacyControl ? 'Enabled' : 'Not Set',
-    'Do Not Track': navigator.doNotTrack === '1' ? 'Enabled' : 'Disabled',
   };
 
-  // Add privacy indicators if found
-  if (findings.length > 0) {
-    result['Privacy Indicators'] = { value: findings.slice(0, 5).join(', '), warning: true };
-    if (findings.length > 5) {
-      result['Additional Indicators'] = `+${findings.length - 5} more`;
-    }
-  } else {
-    result['Privacy Indicators'] = 'None detected';
-  }
-
-  // Brave Browser
+  // Add Brave Browser indicator if detected
   if (braveResult.detected) {
-    result['Brave Browser'] = 'Detected';
+    result['Brave Browser'] = { value: 'Detected', warning: false };
   }
 
-  // Privacy Extensions
-  if (extensionResult.hasExtensions) {
-    result['Privacy Extensions'] = { 
-      value: `Detected (${extensionResult.count} feature${extensionResult.count > 1 ? 's' : ''})`, 
-      warning: false,
+  // Add Tor indicators if detected
+  if (anonymityData.tor.likely && anonymityData.tor.indicators.length > 0) {
+    result['Tor Indicators'] = { 
+      value: anonymityData.tor.indicators.slice(0, 3).join(', '),
+      warning: true,
     };
   }
 

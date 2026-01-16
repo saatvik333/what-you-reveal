@@ -16,6 +16,22 @@
  * @returns {Object} Browser identification
  */
 function identifyBrowserEngine() {
+  // 1. Standard Feature Detection (Primary)
+  
+  // Firefox
+  const isFirefoxFeature = typeof InstallTrigger !== 'undefined' || /Firefox/.test(navigator.userAgent);
+  
+  // Safari (approximate)
+  const isSafariFeature = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+  
+  // Chrome/Chromium
+  const isChromeFeature = !!window.chrome && (!!window.chrome.webstore || !!window.chrome.runtime || /Chrome/.test(navigator.userAgent));
+
+  if (isFirefoxFeature) return { isSafari: false, isChrome: false, isFirefox: true, method: 'feature' };
+  if (isChromeFeature) return { isSafari: false, isChrome: true, isFirefox: false, method: 'feature' };
+  if (isSafariFeature) return { isSafari: true, isChrome: false, isFirefox: false, method: 'feature' };
+
+  // 2. Fallback: toFixed error string length (Legacy method)
   let toFixedEngineID = 0;
   try {
     const neg = parseInt('-1');
@@ -24,12 +40,11 @@ function identifyBrowserEngine() {
     toFixedEngineID = e.message.length;
   }
 
-  // Engine identification by error message length
   const isSafari = toFixedEngineID === 44 || toFixedEngineID === 43;
   const isChrome = toFixedEngineID === 51;
   const isFirefox = toFixedEngineID === 25;
 
-  return { isSafari, isChrome, isFirefox, engineId: toFixedEngineID };
+  return { isSafari, isChrome, isFirefox, engineId: toFixedEngineID, method: 'to-fixed' };
 }
 
 /**
@@ -123,17 +138,23 @@ export async function testChromePrivate() {
     return { triggered: false, available: false, supported: false, engine: 'not-chrome' };
   }
 
-  // Get heap size limit for comparison
-  const heapLimit = window.performance?.memory?.jsHeapSizeLimit ?? 1073741824;
-
-  // Modern Chrome (>= 76) - webkitTemporaryStorage quota
+  // Modern Chrome (>= 76) - improved webkitTemporaryStorage quota check
+  // Uses absolute thresholds rather than relative heap comparisons to avoid 
+  // false positives from extensions like Privacy Badger that modify storage
   if (navigator.webkitTemporaryStorage?.queryUsageAndQuota) {
     return new Promise((resolve) => {
       navigator.webkitTemporaryStorage.queryUsageAndQuota(
         (usage, quota) => {
           const quotaInMib = Math.round(quota / (1024 * 1024));
-          const quotaLimitInMib = Math.round(heapLimit / (1024 * 1024)) * 2;
-          const isPrivate = quotaInMib < quotaLimitInMib;
+          
+          // True Incognito mode in Chrome typically has a quota between 50MB and 120MB
+          // Normal mode typically has quotas in the GB range (often 10% of disk space)
+          // We use a safe upper bound of 500MB to account for variations
+          
+          // Why absolute threshold?
+          // Extensions like Privacy Badger can artificially lower the quota reported
+          // but rarely to the extremely low levels seen in actual Incognito mode.
+          const isPrivate = quotaInMib < 500;
           
           resolve({
             triggered: isPrivate,
@@ -141,8 +162,8 @@ export async function testChromePrivate() {
             supported: true,
             method: 'webkitTemporaryStorage',
             quotaMB: quotaInMib,
-            limitMB: quotaLimitInMib,
-            reason: isPrivate ? `Chrome Incognito detected (quota ${quotaInMib}MB < ${quotaLimitInMib}MB limit)` : null,
+            // Only report reason if triggered to keep output clean
+            reason: isPrivate ? `Chrome Incognito detected (Low storage quota: ${quotaInMib}MB)` : null,
           });
         },
         (error) => {

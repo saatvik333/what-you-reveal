@@ -133,15 +133,26 @@ async function collectNetworkChain() {
       // Merge GeoIP into shared state
       networkState = { ...networkState, ...geoData };
       updateUI();
+      
+      // Check for VPN detection
+      const vpnDetected = geoData['VPN/Proxy Detected']?.value === 'YES';
+      return { vpnDetected };
 
     } catch (e) {
       console.error('[Network] Server chain failed:', e);
       networkState['Server Connection'] = 'Failed';
       updateUI();
+      return { vpnDetected: false };
     }
   })();
 
-  await Promise.allSettled([localTask, serverTask]);
+  const results = await Promise.allSettled([localTask, serverTask]);
+  const serverResult = results[1].status === 'fulfilled' ? results[1].value : { vpnDetected: false };
+  
+  // If VPN detected, re-run privacy check to update score
+  if (serverResult?.vpnDetected) {
+    runTask('incognito-info', () => detectPrivacyMode({ vpnDetected: true }), 'Privacy Mode');
+  }
 }
 
 // ============================================================

@@ -55,13 +55,13 @@ export function testTorBrowser() {
   const tzOffset = new Date().getTimezoneOffset();
   if (tz === 'UTC' || tz === 'Etc/UTC' || tzOffset === 0) {
     indicators.push('UTC timezone');
-    score += 15;
+    score += 5; // Reduced from 15 (too common)
   }
 
   // 2. Hardware concurrency (Tor reports 2)
   if (navigator.hardwareConcurrency === 2) {
     indicators.push('2 CPU cores (Tor default)');
-    score += 15;
+    score += 5; // Reduced from 15 (common in VMs/dual-core)
   }
 
   // 3. Screen dimensions letterboxing (Tor rounds to specific sizes)
@@ -69,7 +69,7 @@ export function testTorBrowser() {
   const torHeights = [900, 1000, 1100];
   if (torWidths.includes(screen.width) || torHeights.includes(screen.height)) {
     indicators.push('Tor letterbox dimensions');
-    score += 15;
+    score += 10; // Reduced from 15
   }
 
   // 4. Window inner dimensions rounded to 200px (Tor's letterboxing feature)
@@ -81,20 +81,20 @@ export function testTorBrowser() {
     if (window.innerWidth >= 800 && window.innerWidth <= 1800 && 
         window.innerHeight >= 600 && window.innerHeight <= 1200) {
       indicators.push(`Window dimensions rounded (${window.innerWidth}x${window.innerHeight})`);
-      score += 20;
+      score += 15; // Reduced from 20
     }
   }
 
   // 5. Plugins array empty (Tor hides plugins)
   if (navigator.plugins.length === 0) {
     indicators.push('No plugins detected');
-    score += 15;
+    score += 10; // Reduced from 15 (common in modern browsers)
   }
 
   // 6. Languages check (Tor reports en-US only)
   if (navigator.languages?.length === 1 && navigator.languages[0] === 'en-US') {
     indicators.push('Single en-US language');
-    score += 10;
+    score += 5; // Reduced from 10
   }
 
   // 7. WebGL renderer check (Tor uses Mesa software renderer or blocks WebGL)
@@ -111,7 +111,7 @@ export function testTorBrowser() {
         renderer === 'webgl' || // Generic spoofed value
         vendor.includes('mesa')) {
       indicators.push('Software WebGL renderer (Mesa/llvmpipe)');
-      score += 25;
+      score += 35; // Increased from 25 (Strong signal)
     }
   } else {
     // WebGL blocked entirely is also a Tor indicator
