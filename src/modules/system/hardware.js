@@ -159,6 +159,10 @@ async function getUSBStatus() {
 
 /**
  * Infers device class from available signals
+ * Uses multiple signals for robust classification:
+ * 1. User-Agent Client Hints (primary, when available)
+ * 2. Aspect ratio + CSS dimensions (fallback)
+ * 3. Pointer/touch capabilities
  * @returns {Object} Device classification data
  */
 function inferDeviceClass() {
@@ -169,9 +173,8 @@ function inferDeviceClass() {
   const screenWidth = screen.width;
   const screenHeight = screen.height;
   const dpr = window.devicePixelRatio || 1;
-  const physicalWidth = screenWidth * dpr;
   
-  // Pointer type detection (more accurate than touch alone)
+  // Pointer type detection
   const hasFinePointer = window.matchMedia('(pointer: fine)').matches;
   const hasCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
   const hasHover = window.matchMedia('(hover: hover)').matches;
@@ -185,14 +188,53 @@ function inferDeviceClass() {
   let deviceClass = 'Unknown';
   let confidence = 'Low';
   
-  if (hasTouch && !hasFinePointer && !hasHover) {
-    // Pure touch device
-    if (physicalWidth >= 1024 || Math.max(screenWidth, screenHeight) >= 768) {
+  // --- Primary Signal: User-Agent Client Hints ---
+  // This is the browser's own statement about the device type
+  const uaData = navigator.userAgentData;
+  const isMobileUA = uaData?.mobile === true;
+  const isDesktopUA = uaData?.mobile === false;
+  
+  // --- Secondary Signals for Phone vs Tablet distinction ---
+  // Calculate aspect ratio (taller = more phone-like)
+  const shorterSide = Math.min(screenWidth, screenHeight);
+  const longerSide = Math.max(screenWidth, screenHeight);
+  const aspectRatio = longerSide / shorterSide; // e.g., 2.16 for 19.5:9 phone
+  
+  // Phones typically: shorter CSS side < 500px AND aspect ratio > 1.6
+  // Tablets typically: shorter CSS side >= 600px OR aspect ratio < 1.5 (more square)
+  const isPhoneLikeScreen = shorterSide < 500 && aspectRatio > 1.6;
+  const isTabletLikeScreen = shorterSide >= 600 || aspectRatio < 1.5;
+  
+  // --- Classification Logic ---
+  if (isMobileUA && hasTouch && hasCoarsePointer && !hasHover) {
+    // User-Agent says mobile + touch device without hover
+    if (isPhoneLikeScreen) {
+      deviceClass = 'Mobile Phone';
+      confidence = 'High';
+    } else if (isTabletLikeScreen) {
       deviceClass = 'Tablet';
       confidence = 'High';
     } else {
+      // Ambiguous screen size, trust the UA
+      deviceClass = 'Mobile Phone';
+      confidence = 'Medium';
+    }
+  } else if (isDesktopUA && hasFinePointer && hasHover) {
+    // User-Agent says desktop + mouse/trackpad with hover
+    deviceClass = 'Desktop/Laptop';
+    confidence = 'High';
+  } else if (hasTouch && !hasFinePointer && !hasHover) {
+    // Fallback: Pure touch device (no UA data or UA unavailable)
+    if (isPhoneLikeScreen) {
       deviceClass = 'Mobile Phone';
       confidence = 'High';
+    } else if (isTabletLikeScreen) {
+      deviceClass = 'Tablet';
+      confidence = 'Medium';
+    } else {
+      // Default to phone for narrow screens, tablet for wider
+      deviceClass = shorterSide < 450 ? 'Mobile Phone' : 'Tablet';
+      confidence = 'Medium';
     }
   } else if (hasFinePointer && hasHover && !hasCoarsePointer) {
     // Pure mouse/trackpad device
@@ -213,7 +255,8 @@ function inferDeviceClass() {
   }
   
   // TV detection (large screen, no touch, limited pointing)
-  if (!hasTouch && physicalWidth >= 1920 && !hasFinePointer) {
+  const physicalWidth = screenWidth * dpr;
+  if (!hasTouch && physicalWidth >= 1920 && !hasFinePointer && !isDesktopUA) {
     deviceClass = 'Smart TV / Game Console';
     confidence = 'Medium';
   }

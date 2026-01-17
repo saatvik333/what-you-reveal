@@ -93,6 +93,13 @@ function downloadLog() {
         class="control-btn"
         aria-label="Report a bug on GitHub Issues"
       >[ FOUND BUG? ]</a>
+      <a
+        href="https://www.buymeacoffee.com/saatvik333"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="control-btn"
+        aria-label="Support the project on Buy Me a Coffee"
+      >[ BUY ME A COFFEE ]</a>
     </nav>
   </header>
 </template>
