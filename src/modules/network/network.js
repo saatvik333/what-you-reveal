@@ -3,6 +3,8 @@
  * Combines Connection, Latency, GeoIP, and Threat Detection
  */
 
+import { fetchCachedGeoIP } from '../../utils/geoip.js';
+
 export async function collectNetworkData(onUpdate) {
   const data = {};
   
@@ -138,14 +140,8 @@ async function fetchGeoIPAndThreats(data, notify) {
         notify();
 
         // Using ipapi.co for HTTPS support (ip-api.com free is HTTP only)
-        const response = await fetch('https://ipapi.co/json/');
-        if (!response.ok) throw new Error('API Error: ' + response.status);
-        
-        const geo = await response.json();
-        
-        if (geo.error) {
-            throw new Error(geo.reason || 'GeoIP Lookup Failed');
-        }
+        // Fetched via caching utility to prevent duplicate calls
+        const geo = await fetchCachedGeoIP();
 
         delete data['GeoIP Analysis'];
 

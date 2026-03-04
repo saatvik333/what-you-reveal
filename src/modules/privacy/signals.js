@@ -1,3 +1,4 @@
+import { fetchCachedGeoIP } from '../../utils/geoip.js';
 /**
  * Privacy Signals Detection Module
  * 
@@ -326,14 +327,8 @@ async function detectWebRTCLeak() {
 export async function detectVPNProxy() {
   try {
     // Switched to ipapi.co for HTTPS support
-    const response = await fetch('https://ipapi.co/json/');
-    if (!response.ok) throw new Error('API Error');
-    
-    const geo = await response.json();
-    
-    if (geo.error) {
-      return { isVPN: false, error: true };
-    }
+    // Fetched via caching utility to prevent duplicate calls
+    const geo = await fetchCachedGeoIP();
 
     // Comprehensive VPN/Datacenter keywords
     const vpnKeywords = [
