@@ -91,6 +91,12 @@ const getNextIndex = (revealedSet) => {
   }
 }
 
+const getCryptoRandom = () => {
+  const array = new Uint32Array(1)
+  window.crypto.getRandomValues(array)
+  return array[0] / (0xffffffff + 1)
+}
+
 const shuffleText = (originalText, currentRevealed) => {
   if (props.useOriginalCharsOnly) {
     const positions = originalText.split('').map((char, i) => ({
@@ -103,7 +109,7 @@ const shuffleText = (originalText, currentRevealed) => {
     const nonSpaceChars = positions.filter(p => !p.isSpace && !p.isRevealed).map(p => p.char)
 
     for (let i = nonSpaceChars.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
+      const j = Math.floor(getCryptoRandom() * (i + 1));
       [nonSpaceChars[i], nonSpaceChars[j]] = [nonSpaceChars[j], nonSpaceChars[i]]
     }
 
@@ -121,7 +127,7 @@ const shuffleText = (originalText, currentRevealed) => {
       .map((char, i) => {
         if (char === ' ') return ' '
         if (currentRevealed.has(i)) return originalText[i]
-        return availableChars.value[Math.floor(Math.random() * availableChars.value.length)]
+        return availableChars.value[Math.floor(getCryptoRandom() * availableChars.value.length)]
       })
       .join('')
   }
