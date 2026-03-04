@@ -27,7 +27,9 @@ function handleAction(actionName) {
       </span>
       
       <span class="data-value" :class="{ 'warning': value && value.warning }">
-        <span v-if="value && value.element" v-html="value.element"></span>
+        <span v-if="value && value.element">
+          <img v-if="value.element.type === 'image'" :src="value.element.src" :alt="value.element.alt" class="canvas-fingerprint-img" />
+        </span>
         <span v-else>{{ (value && typeof value === 'object' && 'value' in value) ? value.value : value }}</span>
       </span>
     </div>
@@ -96,6 +98,14 @@ function handleAction(actionName) {
   cursor: pointer;
   padding: 0;
   flex-shrink: 0;
+}
+
+.canvas-fingerprint-img {
+  border: 1px solid var(--fg);
+  margin-top: 5px;
+  max-width: 100%;
+  height: auto;
+  image-rendering: pixelated;
 }
 
 .inline-action:hover {

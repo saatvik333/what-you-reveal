@@ -233,7 +233,7 @@ export async function collectFingerprintData() {
     'Canvas Visual': {
       // Inline image for visual verification
       value: 'Rendered below',
-      element: `<img src="${canvasFP}" style="border: 1px solid var(--color-text); margin-top: 5px; max-width: 100%; height: auto; image-rendering: pixelated;" alt="Canvas Fingerprint" />`,
+      element: { type: 'image', src: canvasFP, alt: 'Canvas Fingerprint' },
     },
     
     'WebGL Canvas Hash': { value: cyrb53(webglCanvasFP).toString(16) },
