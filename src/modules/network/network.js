@@ -104,16 +104,16 @@ async function detectLocalIP(data, notify) {
 
 async function measureLatency(data, notify) {
   try {
-    const pings = [];
     const samples = 5;
     const target = '/favicon.ico?t=' + Date.now(); 
 
-    for (let i = 0; i < samples; i++) {
-        const start = performance.now();
-        await fetch(target, { cache: 'no-store' });
-        const end = performance.now();
-        pings.push(end - start);
-    }
+    const pings = await Promise.all(
+        Array.from({ length: samples }, async () => {
+            const start = performance.now();
+            await fetch(target, { cache: 'no-store' });
+            return performance.now() - start;
+        })
+    );
     
     if (pings.length > 0) {
         const avg = pings.reduce((a, b) => a + b) / pings.length;
