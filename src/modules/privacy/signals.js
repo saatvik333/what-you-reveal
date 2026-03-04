@@ -167,17 +167,20 @@ function detectAdBlockerBait() {
     ];
     
     const elements = [];
+    const fragment = document.createDocumentFragment();
     
     for (const config of baits) {
       const bait = document.createElement('div');
-      bait.innerHTML = '&nbsp;';
+      bait.textContent = '\u00A0';
       bait.className = config.className;
       if (config.id) bait.id = config.id;
       bait.style.cssText = 'width:1px!important;height:1px!important;position:absolute!important;left:-10000px!important;top:-1000px!important;pointer-events:none!important;';
-      document.body.appendChild(bait);
+      fragment.appendChild(bait);
       elements.push(bait);
     }
     
+    document.body.appendChild(fragment);
+
     // Wait for ad blocker to process
     requestAnimationFrame(() => {
       setTimeout(() => {
