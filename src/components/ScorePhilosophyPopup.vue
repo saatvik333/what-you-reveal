@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onUnmounted, watch } from 'vue';
+import { onUnmounted, watch } from 'vue';
 
 const props = defineProps({
   isOpen: {
