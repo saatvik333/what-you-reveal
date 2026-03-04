@@ -4,6 +4,7 @@
  */
 
 import { cyrb53 } from '../../utils/crypto';
+import { getSharedWebGLContext } from '../../utils/webgl.js';
 
 /**
  * Generates a unique hash by rendering a 2D scene
@@ -72,29 +73,25 @@ function getWebGLRenderFingerprint(gl, canvas) {
       gl.deleteShader(fs);
 
       return cyrb53(pixels.toString()).toString(16).toUpperCase();
-  } catch(e) {
+  } catch {
       return 'Error';
   }
 }
 
-function getShaderPrecision(gl, shaderType, precisionType) {
+export function _getShaderPrecision(gl, shaderType, precisionType) {
     try {
         const format = gl.getShaderPrecisionFormat(shaderType, precisionType);
         return format ? `${format.rangeMin},${format.rangeMax},${format.precision}` : 'N/A';
-    } catch(e) { return 'N/A'; }
+    } catch { return 'N/A'; }
 }
 
 export async function collectWebGLData() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 64; 
-  canvas.height = 64; // Small canvas for fingerprinting speed
-  
-  const gl = canvas.getContext('webgl2') || canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+  const { gl, canvas } = getSharedWebGLContext();
   const data = {};
 
   if (gl) {
       const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-      const isWebGL2 = typeof WebGL2RenderingContext !== 'undefined' && gl instanceof WebGL2RenderingContext;
+
 
       // 1. Core Info
       data['WebGL Version'] = {
@@ -145,7 +142,7 @@ export async function collectWebGLData() {
                   value: 'Supported' + (info ? ` (${info.device})` : ''),
                   url: 'https://developer.mozilla.org/en-US/docs/Web/API/WebGPU_API'
               };
-          } catch(e) {
+          } catch {
               data['WebGPU Support'] = { value: 'Supported (Blocked)', warning: true };
           }
       } else {
