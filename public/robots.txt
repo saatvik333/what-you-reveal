@@ -4,8 +4,12 @@
 User-agent: *
 Allow: /
 
+# Block ad crawlers from indexing
+User-agent: AdsBot-Google
+Disallow: /
+
 # Sitemap location
 Sitemap: https://what-you-reveal.vercel.app/sitemap.xml
 
-# Crawl delay (optional, for rate limiting)
-Crawl-delay: 1
+# Crawl delay
+Crawl-delay: 2

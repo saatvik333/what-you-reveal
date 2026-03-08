@@ -50,6 +50,8 @@ const props = defineProps({
   }
 })
 
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 const displayText = ref(props.text)
 const isHovering = ref(false)
 const isScrambling = ref(false)
@@ -128,10 +130,12 @@ const shuffleText = (originalText, currentRevealed) => {
 }
 
 const startScramble = () => {
+  if (prefersReducedMotion) return;
   setIsHovering(true)
 }
 
 const stopScramble = () => {
+  if (prefersReducedMotion) return;
   setIsHovering(false)
 }
 

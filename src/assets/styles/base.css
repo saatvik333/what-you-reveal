@@ -51,6 +51,58 @@ body {
 }
 
 /* ============================================
+   SKIP LINK
+   ============================================ */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  color: var(--fg);
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  left: var(--spacing-sm);
+  top: var(--spacing-sm);
+  width: auto;
+  height: auto;
+  overflow: visible;
+  z-index: 10000;
+  background: var(--bg);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--fg);
+}
+
+/* ============================================
+   SCREEN READER ONLY
+   ============================================ */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ============================================
+   SEO CONTENT (visible to crawlers, hidden visually)
+   ============================================ */
+.seo-content {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* ============================================
    TERMINAL AESTHETIC EXTRAS
    ============================================ */
 
@@ -70,6 +122,6 @@ body::after {
     rgba(0, 0, 0, 0.1) 2px,
     rgba(0, 0, 0, 0.1) 4px
   );
-  z-index: 9999;
+  z-index: 999;
   opacity: 0.3;
 }

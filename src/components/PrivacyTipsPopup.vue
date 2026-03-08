@@ -1,7 +1,8 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import BasePopup from './BasePopup.vue';
 
-const props = defineProps({
+defineProps({
   isOpen: {
     type: Boolean,
     default: false,
@@ -15,7 +16,7 @@ const browserInfo = ref({ name: 'Unknown', isFirefox: false, isChrome: false, is
 
 onMounted(async () => {
   const ua = navigator.userAgent;
-  
+
   // Check for Brave first (it also has Chrome in UA)
   if (navigator.brave && typeof navigator.brave.isBrave === 'function') {
     try {
@@ -26,7 +27,7 @@ onMounted(async () => {
       }
     } catch (e) {}
   }
-  
+
   if (ua.includes('Firefox')) {
     browserInfo.value = { name: 'Firefox', isFirefox: true, isChrome: false, isBrave: false };
   } else if (ua.includes('Chrome')) {
@@ -36,41 +37,22 @@ onMounted(async () => {
   }
 });
 
-// Handle Escape key to close popup
-function handleKeydown(e) {
-  if (e.key === 'Escape') {
-    close();
-  }
-}
-
-watch(() => props.isOpen, (newVal) => {
-  if (newVal) {
-    document.addEventListener('keydown', handleKeydown);
-  } else {
-    document.removeEventListener('keydown', handleKeydown);
-  }
-});
-
-onUnmounted(() => {
-  document.removeEventListener('keydown', handleKeydown);
-});
-
 const recommendations = computed(() => {
   const tips = [];
-  
+
   // Universal recommendations
   tips.push({
     title: 'Enable Do Not Track',
     description: 'Signal to websites that you don\'t want to be tracked.',
     action: 'Browser Settings → Privacy → Send "Do Not Track" request',
   });
-  
+
   tips.push({
     title: 'Enable Global Privacy Control',
     description: 'Legally binding opt-out in CA/EU.',
     link: 'https://globalprivacycontrol.org/',
   });
-  
+
   // Ad Blocker recommendations
   if (browserInfo.value.isFirefox) {
     tips.push({
@@ -111,15 +93,15 @@ const recommendations = computed(() => {
       action: 'Click the Brave icon in address bar → Shields Up',
     });
   }
-  
+
   // WebRTC recommendation
   tips.push({
     title: 'Disable WebRTC IP Leak',
-    description: browserInfo.value.isFirefox 
+    description: browserInfo.value.isFirefox
       ? 'about:config → media.peerconnection.enabled → false'
       : 'Use browser extension or VPN with WebRTC leak protection.',
   });
-  
+
   // VPN recommendation
   tips.push({
     title: 'Use a Privacy-Focused VPN',
@@ -129,117 +111,42 @@ const recommendations = computed(() => {
 
   return tips;
 });
-
-function close() {
-  emit('close');
-}
 </script>
 
 <template>
-  <Teleport to="body">
-    <div v-if="isOpen" class="popup-overlay" @click.self="close">
-      <div class="popup-container">
-        <div class="popup-header">
-          <span class="prompt">root@privacy:~#</span>
-          <span class="title">enhance_privacy.sh</span>
-          <button class="close-btn" @click="close">[X]</button>
+  <BasePopup
+    :isOpen="isOpen"
+    title="enhance_privacy.sh"
+    prompt="root@privacy:~#"
+    @close="emit('close')"
+  >
+    <div class="intro">
+      <pre>$ ./enhance_privacy.sh --browser={{ browserInfo.name }}</pre>
+      <pre class="output">[*] Generating recommendations...</pre>
+    </div>
+
+    <div class="recommendations">
+      <div v-for="(tip, index) in recommendations" :key="index" class="tip">
+        <div class="tip-header">
+          <span class="tip-title">{{ tip.title }}</span>
         </div>
-        
-        <div class="popup-content">
-          <div class="intro">
-            <pre>$ ./enhance_privacy.sh --browser={{ browserInfo.name }}</pre>
-            <pre class="output">[*] Generating recommendations...</pre>
-          </div>
-          
-          <div class="recommendations">
-            <div v-for="(tip, index) in recommendations" :key="index" class="tip">
-              <div class="tip-header">
-                <span class="tip-title">{{ tip.title }}</span>
-              </div>
-              <p class="tip-description">{{ tip.description }}</p>
-              <div v-if="tip.action" class="tip-action">
-                <span class="prompt-mini">→</span> {{ tip.action }}
-              </div>
-              <a v-if="tip.link" :href="tip.link" target="_blank" rel="noopener" class="tip-link">
-                Open ↗
-              </a>
-            </div>
-          </div>
-          
-          <div class="footer">
-            <pre>$ exit</pre>
-          </div>
+        <p class="tip-description">{{ tip.description }}</p>
+        <div v-if="tip.action" class="tip-action">
+          <span class="prompt-mini">&rarr;</span> {{ tip.action }}
         </div>
+        <a v-if="tip.link" :href="tip.link" target="_blank" rel="noopener" class="tip-link">
+          Open ↗
+        </a>
       </div>
     </div>
-  </Teleport>
+
+    <div class="footer">
+      <pre>$ exit</pre>
+    </div>
+  </BasePopup>
 </template>
 
 <style scoped>
-.popup-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  backdrop-filter: blur(4px);
-}
-
-.popup-container {
-  background: var(--bg);
-  border: 1px solid var(--fg-dim);
-  max-width: 600px;
-  width: 90%;
-  max-height: 80vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 0 30px rgba(0, 255, 0, 0.1);
-}
-
-.popup-header {
-  display: flex;
-  align-items: center;
-  gap: 1ch;
-  padding: 0.5rem 1rem;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-dim);
-}
-
-.prompt {
-  color: var(--fg-dim);
-}
-
-.title {
-  color: var(--fg);
-  flex: 1;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  color: var(--fg);
-  font-family: inherit;
-  font-size: inherit;
-  cursor: pointer;
-  padding: 0;
-}
-
-.close-btn:hover {
-  color: var(--warning);
-}
-
-.popup-content {
-  padding: 1rem;
-  overflow-y: auto;
-  flex: 1;
-}
-
 .intro pre {
   margin: 0;
   font-family: inherit;

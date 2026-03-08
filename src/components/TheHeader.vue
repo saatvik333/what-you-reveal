@@ -2,45 +2,10 @@
 import { inject } from 'vue';
 import packageJson from '../../package.json';
 
-// Inject collected data from parent (will be provided by App.vue)
 const collectedData = inject('collectedData', null);
-
-// Get version from package.json
 const version = packageJson.version;
 
 function downloadLog() {
-  // Gather all data from the page
-  const data = {};
-  
-  // Get all data grids from the DOM
-  const cards = document.querySelectorAll('.terminal-card');
-  cards.forEach(card => {
-    const titleEl = card.querySelector('.terminal-title');
-    const title = titleEl ? titleEl.textContent.trim() : 'Unknown';
-    
-    const rows = card.querySelectorAll('.data-row');
-    const cardData = {};
-    
-    rows.forEach(row => {
-      const keyEl = row.querySelector('.data-key');
-      const valueEl = row.querySelector('.data-value');
-      
-      if (keyEl && valueEl) {
-        // Get text content, excluding action buttons
-        const key = keyEl.textContent.replace(/\[.*?\]/g, '').trim();
-        const value = valueEl.textContent.replace(/\[.*?\]/g, '').trim();
-        if (key && value) {
-          cardData[key] = value;
-        }
-      }
-    });
-    
-    if (Object.keys(cardData).length > 0) {
-      data[title] = cardData;
-    }
-  });
-  
-  // Add metadata
   const report = {
     meta: {
       generated: new Date().toISOString(),
@@ -48,10 +13,9 @@ function downloadLog() {
       url: window.location.href,
       timestamp: Date.now(),
     },
-    data
+    data: collectedData?.value || {},
   };
-  
-  // Create and download the file
+
   const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -71,6 +35,7 @@ function downloadLog() {
 ║║║╠═╣╠═╣ ║   ╚╦╝║ ║║ ║  ╠╦╝║╣ ╚╗╔╝║╣ ╠═╣║  
 ╚╩╝╩ ╩╩ ╩ ╩    ╩ ╚═╝╚═╝  ╩╚═╚═╝ ╚╝ ╚═╝╩ ╩╩═╝
     </pre>
+    <h1 class="sr-only">What You Reveal - Browser Fingerprint and Privacy Analysis Tool</h1>
     <p class="subtitle">SYSTEM ANALYSIS TOOL // BROWSER FINGERPRINT DEMO // v{{ version }}</p>
     <nav class="controls" aria-label="Main controls">
       <button 
@@ -175,5 +140,12 @@ header {
 .control-btn:focus {
   outline: 1px solid var(--fg);
   outline-offset: 2px;
+}
+
+@media (max-width: 700px) {
+  .control-btn {
+    padding: 0.75rem 1rem;
+    min-height: 44px;
+  }
 }
 </style>

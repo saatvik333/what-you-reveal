@@ -1,8 +1,8 @@
 {
-  "name": "What You Reveal - Browser Fingerprint Analysis",
+  "name": "What You Reveal - Browser Fingerprint & Privacy Analysis",
   "short_name": "What You Reveal",
-  "description": "Discover what your browser reveals about you. Real-time browser fingerprinting analysis, privacy score, and tracking detection tool.",
-  "version": "0.3.2",
+  "description": "Analyze your browser fingerprint and privacy exposure. Detect tracking, system information leakage, and digital signatures. Free open-source tool.",
+  "version": "0.3.3",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -20,6 +20,5 @@
       "purpose": "any maskable"
     }
   ],
-  "screenshots": [],
   "prefer_related_applications": false
 }

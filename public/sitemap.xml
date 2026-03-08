@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://what-you-reveal.vercel.app/</loc>
-    <lastmod>2026-01-16</lastmod>
-    <changefreq>monthly</changefreq>
+    <lastmod>2026-03-09</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://what-you-reveal.vercel.app/logo.png</image:loc>
+      <image:title>What You Reveal - Browser Fingerprint Analysis Tool</image:title>
+    </image:image>
   </url>
 </urlset>
