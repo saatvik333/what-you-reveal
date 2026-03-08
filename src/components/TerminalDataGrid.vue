@@ -123,6 +123,14 @@ function handleAction(actionName) {
   flex-shrink: 0;
 }
 
+.canvas-fingerprint-img {
+  border: 1px solid var(--fg);
+  margin-top: 5px;
+  max-width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+}
+
 .inline-action:hover {
   text-decoration: underline;
 }

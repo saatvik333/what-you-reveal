@@ -3,6 +3,8 @@
  * Combines Connection, Latency, GeoIP, and Threat Detection
  */
 
+import { fetchCachedGeoIP } from '../../utils/geoip.js';
+
 export async function collectNetworkData(onUpdate) {
   const data = {};
   
@@ -104,16 +106,16 @@ async function detectLocalIP(data, notify) {
 
 async function measureLatency(data, notify) {
   try {
-    const pings = [];
     const samples = 5;
     const target = '/favicon.ico?t=' + Date.now(); 
 
-    for (let i = 0; i < samples; i++) {
-        const start = performance.now();
-        await fetch(target, { cache: 'no-store' });
-        const end = performance.now();
-        pings.push(end - start);
-    }
+    const pings = await Promise.all(
+        Array.from({ length: samples }, async () => {
+            const start = performance.now();
+            await fetch(target, { cache: 'no-store' });
+            return performance.now() - start;
+        })
+    );
     
     if (pings.length > 0) {
         const avg = pings.reduce((a, b) => a + b) / pings.length;
@@ -138,14 +140,8 @@ async function fetchGeoIPAndThreats(data, notify) {
         notify();
 
         // Using ipapi.co for HTTPS support (ip-api.com free is HTTP only)
-        const response = await fetch('https://ipapi.co/json/');
-        if (!response.ok) throw new Error('API Error: ' + response.status);
-        
-        const geo = await response.json();
-        
-        if (geo.error) {
-            throw new Error(geo.reason || 'GeoIP Lookup Failed');
-        }
+        // Fetched via caching utility to prevent duplicate calls
+        const geo = await fetchCachedGeoIP();
 
         delete data['GeoIP Analysis'];
 
