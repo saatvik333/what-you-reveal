@@ -8,6 +8,31 @@ defineProps({
 
 const emit = defineEmits(['action']);
 
+function sanitizeHtml(html) {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  // Only allow img elements with data: or blob: src
+  const elements = div.querySelectorAll('*');
+  for (const el of elements) {
+    if (el.tagName !== 'IMG') {
+      el.remove();
+      continue;
+    }
+    const src = el.getAttribute('src') || '';
+    if (!src.startsWith('data:') && !src.startsWith('blob:')) {
+      el.remove();
+      continue;
+    }
+    // Strip event handler attributes
+    for (const attr of [...el.attributes]) {
+      if (attr.name.startsWith('on')) {
+        el.removeAttribute(attr.name);
+      }
+    }
+  }
+  return div.innerHTML;
+}
+
 function handleAction(actionName) {
   emit('action', actionName);
 }
@@ -27,7 +52,7 @@ function handleAction(actionName) {
       </span>
       
       <span class="data-value" :class="{ 'warning': value && value.warning }">
-        <span v-if="value && value.element" v-html="value.element"></span>
+        <span v-if="value && value.element" v-html="sanitizeHtml(value.element)"></span>
         <span v-else>{{ (value && typeof value === 'object' && 'value' in value) ? value.value : value }}</span>
       </span>
     </div>
@@ -100,5 +125,17 @@ function handleAction(actionName) {
 
 .inline-action:hover {
   text-decoration: underline;
+}
+
+@media (max-width: 600px) {
+  .data-row {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .data-value {
+    text-align: left;
+    word-break: break-word;
+  }
 }
 </style>

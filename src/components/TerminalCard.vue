@@ -123,4 +123,10 @@ function onMouseLeave() {
   line-height: 1.6;
   margin: 0;
 }
+
+@media (max-width: 700px) {
+  .info-block {
+    max-height: none;
+  }
+}
 </style>

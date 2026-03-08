@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, provide, onMounted } from 'vue';
 import TheHeader from "./components/TheHeader.vue";
 import TerminalCard from "./components/TerminalCard.vue";
 import TerminalDataGrid from "./components/TerminalDataGrid.vue";
@@ -21,6 +21,9 @@ import { collectWebGLData } from "./modules/fingerprint/webgl";
 import { collectFingerprintData } from "./modules/fingerprint/identity";
 import { collectTorData } from "./modules/privacy/tor";
 
+// Error sentinel value used to distinguish failed loads from pending (null)
+const ERROR = Symbol('error');
+
 const clipboardData = ref(null);
 const hardwareData = ref(null);
 const screenData = ref(null);
@@ -39,27 +42,72 @@ const privacyData = ref(null);
 const showPrivacyTips = ref(false);
 const showScorePhilosophy = ref(false);
 
+function isError(val) {
+  return val === ERROR;
+}
+
+function collectWithErrorHandling(collectFn, target) {
+  collectFn()
+    .then(d => target.value = d)
+    .catch(() => target.value = ERROR);
+}
+
+// Provide all collected data to children (for download)
+const collectedData = computed(() => {
+  const cards = {
+    '0. PRIVACY_MODE': privacyData.value,
+    '1. NETWORK_INFO': networkData.value,
+    '2. DEVICE_CORE': hardwareData.value,
+    '3. SCREEN_INFO': screenData.value,
+    '4. CLIENT_HINTS': clientHintsData.value,
+    '5. NAVIGATOR_VARS': navigatorData.value,
+    '6. INTL_FINGERPRINT': intlData.value,
+    '7. FONTS_FINGERPRINT': fontData.value,
+    '8. WEBGL_RENDERER': webglData.value,
+    '9. DIGITAL_IDENTITY': identityData.value,
+    '10. MEDIA_DEVICES': mediaDeviceData.value,
+    '11. MEDIA_CODECS': mediaCodecData.value,
+    '12. PERMISSIONS_CHECK': permissionsData.value,
+    '13. CLIPBOARD_ACCESS': clipboardData.value,
+    '14. INTEGRITY_CHECK': integrityData.value,
+  };
+
+  const result = {};
+  for (const [title, data] of Object.entries(cards)) {
+    if (data && data !== ERROR) {
+      const cardData = {};
+      for (const [key, val] of Object.entries(data)) {
+        cardData[key] = (val && typeof val === 'object' && 'value' in val) ? val.value : val;
+      }
+      result[title] = cardData;
+    }
+  }
+  return result;
+});
+
+provide('collectedData', collectedData);
+
 onMounted(() => {
   // Execute all checks in parallel to prevent blocking
-  collectClipboardData().then(d => clipboardData.value = d);
-  collectHardwareData().then(d => hardwareData.value = d);
-  collectScreenData().then(d => screenData.value = d);
-  collectPermissionsData().then(d => permissionsData.value = d);
-  collectMediaDevices().then(d => mediaDeviceData.value = d);
-  collectMediaCodecs().then(d => mediaCodecData.value = d);
-  collectClientHints().then(d => clientHintsData.value = d);
-  collectIntlData().then(d => intlData.value = d);
+  collectWithErrorHandling(collectClipboardData, clipboardData);
+  collectWithErrorHandling(collectHardwareData, hardwareData);
+  collectWithErrorHandling(collectScreenData, screenData);
+  collectWithErrorHandling(collectPermissionsData, permissionsData);
+  collectWithErrorHandling(collectMediaDevices, mediaDeviceData);
+  collectWithErrorHandling(collectMediaCodecs, mediaCodecData);
+  collectWithErrorHandling(collectClientHints, clientHintsData);
+  collectWithErrorHandling(collectIntlData, intlData);
   integrityData.value = detectBot(); // Sync
-  collectNavigatorData().then(d => navigatorData.value = d);
-  collectFontData().then(d => fontData.value = d);
-  collectWebGLData().then(d => webglData.value = d);
-  collectFingerprintData().then(d => identityData.value = d);
-  collectTorData().then(d => privacyData.value = d);
-  
+  collectWithErrorHandling(collectNavigatorData, navigatorData);
+  collectWithErrorHandling(collectFontData, fontData);
+  collectWithErrorHandling(collectWebGLData, webglData);
+  collectWithErrorHandling(collectFingerprintData, identityData);
+  collectWithErrorHandling(collectTorData, privacyData);
+
   // Start network collection (accepts callback for updates)
   collectNetworkData((newData) => {
       networkData.value = newData;
-  }).then(d => networkData.value = d);
+  }).then(d => networkData.value = d).catch(() => networkData.value = ERROR);
 });
 
 function handlePrivacyAction(actionName) {
@@ -81,89 +129,104 @@ function handlePrivacyAction(actionName) {
     <main class="grid">
       <!-- Privacy & Network -->
       <TerminalCard title="0. PRIVACY_MODE">
-        <TerminalDataGrid 
-          v-if="privacyData" 
-          :data="privacyData" 
+        <TerminalDataGrid
+          v-if="privacyData && !isError(privacyData)"
+          :data="privacyData"
           @action="handlePrivacyAction"
         />
-        <pre v-else>Checking Tor network status...</pre>
+        <pre v-else-if="isError(privacyData)" class="error-msg">[ERR] Unable to check privacy status</pre>
+        <pre v-else class="loading-msg">Checking Tor network status...</pre>
       </TerminalCard>
 
       <TerminalCard title="1. NETWORK_INFO">
-        <TerminalDataGrid v-if="networkData" :data="networkData" />
-        <pre v-else>Scanning network environment...</pre>
+        <TerminalDataGrid v-if="networkData && !isError(networkData)" :data="networkData" />
+        <pre v-else-if="isError(networkData)" class="error-msg">[ERR] Network scan failed</pre>
+        <pre v-else class="loading-msg">Scanning network environment...</pre>
       </TerminalCard>
 
       <!-- Hardware & Display -->
       <TerminalCard title="2. DEVICE_CORE">
-        <TerminalDataGrid v-if="hardwareData" :data="hardwareData" />
-        <pre v-else>Scanning hardware...</pre>
+        <TerminalDataGrid v-if="hardwareData && !isError(hardwareData)" :data="hardwareData" />
+        <pre v-else-if="isError(hardwareData)" class="error-msg">[ERR] Hardware scan failed</pre>
+        <pre v-else class="loading-msg">Scanning hardware...</pre>
       </TerminalCard>
 
       <TerminalCard title="3. SCREEN_INFO">
-        <TerminalDataGrid v-if="screenData" :data="screenData" />
-        <pre v-else>Analyzing display...</pre>
+        <TerminalDataGrid v-if="screenData && !isError(screenData)" :data="screenData" />
+        <pre v-else-if="isError(screenData)" class="error-msg">[ERR] Display analysis failed</pre>
+        <pre v-else class="loading-msg">Analyzing display...</pre>
       </TerminalCard>
 
       <!-- Browser & User Agent -->
       <TerminalCard title="4. CLIENT_HINTS">
-        <TerminalDataGrid v-if="clientHintsData" :data="clientHintsData" />
-        <pre v-else>Analyzing User Agent Data...</pre>
+        <TerminalDataGrid v-if="clientHintsData && !isError(clientHintsData)" :data="clientHintsData" />
+        <pre v-else-if="isError(clientHintsData)" class="error-msg">[ERR] Client hints unavailable</pre>
+        <pre v-else class="loading-msg">Analyzing User Agent Data...</pre>
       </TerminalCard>
 
       <TerminalCard title="5. NAVIGATOR_VARS">
-        <TerminalDataGrid v-if="navigatorData" :data="navigatorData" />
-        <pre v-else>Reading headers...</pre>
+        <TerminalDataGrid v-if="navigatorData && !isError(navigatorData)" :data="navigatorData" />
+        <pre v-else-if="isError(navigatorData)" class="error-msg">[ERR] Navigator read failed</pre>
+        <pre v-else class="loading-msg">Reading headers...</pre>
       </TerminalCard>
 
       <!-- Fingerprinting -->
       <TerminalCard title="6. INTL_FINGERPRINT">
-        <TerminalDataGrid v-if="intlData" :data="intlData" />
-        <pre v-else>Calculating locale fingerprint...</pre>
+        <TerminalDataGrid v-if="intlData && !isError(intlData)" :data="intlData" />
+        <pre v-else-if="isError(intlData)" class="error-msg">[ERR] Intl fingerprint failed</pre>
+        <pre v-else class="loading-msg">Calculating locale fingerprint...</pre>
       </TerminalCard>
 
       <TerminalCard title="7. FONTS_FINGERPRINT">
-        <TerminalDataGrid v-if="fontData" :data="fontData" />
-        <pre v-else>Scanning font library...</pre>
+        <TerminalDataGrid v-if="fontData && !isError(fontData)" :data="fontData" />
+        <pre v-else-if="isError(fontData)" class="error-msg">[ERR] Font scan failed</pre>
+        <pre v-else class="loading-msg">Scanning font library...</pre>
       </TerminalCard>
 
       <!-- Graphics & Identity -->
       <TerminalCard title="8. WEBGL_RENDERER">
-        <TerminalDataGrid v-if="webglData" :data="webglData" />
-        <pre v-else>Initializing WebGL context...</pre>
+        <TerminalDataGrid v-if="webglData && !isError(webglData)" :data="webglData" />
+        <pre v-else-if="isError(webglData)" class="error-msg">[ERR] WebGL unavailable</pre>
+        <pre v-else class="loading-msg">Initializing WebGL context...</pre>
       </TerminalCard>
 
       <TerminalCard title="9. DIGITAL_IDENTITY">
-        <TerminalDataGrid v-if="identityData" :data="identityData" />
-        <pre v-else>Generating digital fingerprint...</pre>
+        <TerminalDataGrid v-if="identityData && !isError(identityData)" :data="identityData" />
+        <pre v-else-if="isError(identityData)" class="error-msg">[ERR] Fingerprint generation failed</pre>
+        <pre v-else class="loading-msg">Generating digital fingerprint...</pre>
       </TerminalCard>
 
       <!-- Media -->
       <TerminalCard title="10. MEDIA_DEVICES">
-        <TerminalDataGrid v-if="mediaDeviceData" :data="mediaDeviceData" />
-        <pre v-else>Enumerating devices...</pre>
+        <TerminalDataGrid v-if="mediaDeviceData && !isError(mediaDeviceData)" :data="mediaDeviceData" />
+        <pre v-else-if="isError(mediaDeviceData)" class="error-msg">[ERR] Device enumeration failed</pre>
+        <pre v-else class="loading-msg">Enumerating devices...</pre>
       </TerminalCard>
 
       <TerminalCard title="11. MEDIA_CODECS">
-        <TerminalDataGrid v-if="mediaCodecData" :data="mediaCodecData" />
-        <pre v-else>Checking codecs...</pre>
+        <TerminalDataGrid v-if="mediaCodecData && !isError(mediaCodecData)" :data="mediaCodecData" />
+        <pre v-else-if="isError(mediaCodecData)" class="error-msg">[ERR] Codec check failed</pre>
+        <pre v-else class="loading-msg">Checking codecs...</pre>
       </TerminalCard>
 
       <!-- Access & Permissions -->
       <TerminalCard title="12. PERMISSIONS_CHECK">
-        <TerminalDataGrid v-if="permissionsData" :data="permissionsData" />
-        <pre v-else>Querying permissions...</pre>
+        <TerminalDataGrid v-if="permissionsData && !isError(permissionsData)" :data="permissionsData" />
+        <pre v-else-if="isError(permissionsData)" class="error-msg">[ERR] Permission query failed</pre>
+        <pre v-else class="loading-msg">Querying permissions...</pre>
       </TerminalCard>
 
       <TerminalCard title="13. CLIPBOARD_ACCESS">
-        <TerminalDataGrid v-if="clipboardData" :data="clipboardData" />
-        <pre v-else>Checking clipboard permissions...</pre>
+        <TerminalDataGrid v-if="clipboardData && !isError(clipboardData)" :data="clipboardData" />
+        <pre v-else-if="isError(clipboardData)" class="error-msg">[ERR] Clipboard check failed</pre>
+        <pre v-else class="loading-msg">Checking clipboard permissions...</pre>
       </TerminalCard>
 
       <!-- Security -->
       <TerminalCard title="14. INTEGRITY_CHECK">
-        <TerminalDataGrid v-if="integrityData" :data="integrityData" />
-        <pre v-else>Scanning environment...</pre>
+        <TerminalDataGrid v-if="integrityData && !isError(integrityData)" :data="integrityData" />
+        <pre v-else-if="isError(integrityData)" class="error-msg">[ERR] Integrity scan failed</pre>
+        <pre v-else class="loading-msg">Scanning environment...</pre>
       </TerminalCard>
 
     </main>
@@ -242,5 +305,19 @@ footer {
 
 .action-btn:hover {
   color: var(--fg);
+}
+
+.loading-msg {
+  color: var(--fg-dim);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.error-msg {
+  color: var(--warning);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
 </style>
