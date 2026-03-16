@@ -15,7 +15,7 @@ export async function sha256(str) {
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  } catch (e) {
+  } catch {
     console.warn('Web Crypto API not available, falling back to simple hash');
     return simpleHash(str);
   }

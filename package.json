@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint src --ext .js,.ts,.vue",
-    "lint:fix": "eslint src --ext .js,.ts,.vue --fix"
+    "lint:fix": "eslint src --ext .js,.ts,.vue --fix",
+    "test": "node --test src/**/*.test.js"
   },
   "dependencies": {
     "detectincognitojs": "^1.6.2",
@@ -16,6 +17,7 @@
     "vue": "^3.5.24"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^25.0.9",
     "@vitejs/plugin-vue": "^6.0.3",
     "eslint": "^9.39.2",
