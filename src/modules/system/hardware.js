@@ -1,3 +1,5 @@
+import { getSharedWebGLContext } from '../../utils/webgl.js';
+
 /**
  * Hardware information collection module
  * Enhanced with Gamepad API, GPU memory estimation, and more sensors
@@ -11,9 +13,7 @@ function getGPUInfo() {
   const gpuData = {};
   
   try {
-    const canvas = document.createElement('canvas');
-    // Prefer WebGL2 for better info
-    const gl = canvas.getContext('webgl2') || canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    const { gl } = getSharedWebGLContext();
 
     if (!gl) {
       return { 'GPU Context': 'Not Available' };

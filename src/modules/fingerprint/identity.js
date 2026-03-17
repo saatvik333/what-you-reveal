@@ -4,6 +4,7 @@
  */
 
 import { cyrb53 } from '../../utils/crypto';
+import { getSharedWebGLContext } from '../../utils/webgl.js';
 
 /**
  * Generates a standard canvas fingerprint with text, emojis, and shapes
@@ -59,10 +60,7 @@ function getCanvasFingerprint() {
  */
 function getWebGLCanvasFingerprint() {
   try {
-    const canvas = document.createElement('canvas');
-    canvas.width = 64;
-    canvas.height = 64;
-    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    const { gl, canvas } = getSharedWebGLContext();
 
     if (!gl) return 'Not Supported';
 
