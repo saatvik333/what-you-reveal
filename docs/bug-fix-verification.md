@@ -24,4 +24,14 @@ The real application was served using its existing `npm run dev -- --host 127.0.
 
 Live success and browser-enforced failure checks supplement, rather than replace, the deterministic mocked regression tests. The stale-request race and malformed HTTP response cases remain synthetic boundary checks. No production deployment or real Tor-positive connection was tested.
 
+## Full-page production acceptance follow-up
+
+Served the unmodified `dist/` output through Vite's public `preview()` API on three separate localhost origins. Port 4173 had no added policy, port 4174 sent `Content-Security-Policy: connect-src 'self' https://api.ipify.org https://ipapi.co`, and port 4175 sent `Content-Security-Policy: connect-src 'self'`. Each scenario was a fresh page navigation. These checks did not import collectors manually, write Vue state, replace fetch, or substitute response payloads. The actual production asset `/assets/index-COrY5bGx.js` drove startup, collection, and rendering.
+
+- **Exit-list outage, port 4174:** DOM assertion passed for `Failed (Exit Node List Unavailable)` and warning styling. Zero pending loading indicators and zero card-level errors. This supersedes the earlier limitation concerning manually connecting collector results to the UI.
+- **IP outage, port 4175:** DOM assertions passed for `Failed (IP Unknown)`, IP `unknown`, cached nodes `0`, and warning styling. Zero pending loading indicators and zero card-level errors. Privacy actions remained rendered.
+- **Unrestricted production, port 4173:** An assertion expecting a successful negative lookup failed because the external exit list was unavailable on this run. The actual UI instead displayed the corrected `Failed (Exit Node List Unavailable)` warning with zero nodes. Follow-up assertions verified that warning, exactly one GeoIP request, zero loading indicators, and zero card-level errors. Earlier unrestricted development runs successfully loaded 1328 nodes. External list availability is therefore a constraint, not evidence of a successful production Tor-list lookup.
+- The report download button was clicked in the list-outage scenario, but no downloaded artifact was located in the default Downloads directory. Export contents are therefore not claimed as verified.
+
+
 Full-project lint remains at its measured pre-fix baseline: 49 errors and 8 warnings. The new test file and changed GeoIP utility pass ESLint. This work does not claim the entire codebase is bug-free.
