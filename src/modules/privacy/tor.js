@@ -62,7 +62,11 @@ async function getIpAddress() {
   try {
     // Use ipify (CORS-friendly)
     const response = await fetch('https://api.ipify.org?format=json');
+    if (!response.ok) throw new Error(`IP lookup failed: ${response.status}`);
     const data = await response.json();
+    if (typeof data.ip !== 'string' || !data.ip.trim()) {
+      throw new Error('IP lookup returned no address');
+    }
     return data.ip;
   } catch (e) {
     console.warn('Error fetching IP address:', e);
@@ -183,6 +187,11 @@ export async function isUsingTor() {
     return { isTor: false, ip: 'unknown', error: true };
   }
 
+  // An unavailable list cannot establish that an address is not a Tor exit node.
+  if (torNodes.size === 0) {
+    return { isTor: false, ip: userIp, nodeCount: 0, error: true };
+  }
+
   return {
     isTor: torNodes.has(userIp),
     ip: userIp,
@@ -275,7 +284,10 @@ export async function collectTorData() {
   data['Your IP Address'] = { value: torResult.ip };
 
   if (torResult.error) {
-    data['Tor Network'] = { value: 'Failed (IP Unknown)', warning: true };
+    data['Tor Network'] = {
+      value: torResult.ip === 'unknown' ? 'Failed (IP Unknown)' : 'Failed (Exit Node List Unavailable)',
+      warning: true,
+    };
   } else if (torResult.isTor) {
     data['Tor Network'] = { value: 'DETECTED - Using Tor Exit Node', warning: true };
   } else {

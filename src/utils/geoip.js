@@ -10,26 +10,24 @@ export async function fetchCachedGeoIP() {
         return geoIPPromise;
     }
 
-    geoIPPromise = fetch('https://ipapi.co/json/')
+    const request = fetch('https://ipapi.co/json/')
         .then(async (response) => {
             if (!response.ok) {
-                // Clear the cached promise so we can retry later if it failed
-                geoIPPromise = null;
                 throw new Error('API Error: ' + response.status);
             }
             const geo = await response.json();
             if (geo.error) {
-                geoIPPromise = null;
                 throw new Error(geo.reason || 'GeoIP Lookup Failed');
             }
             return geo;
         })
         .catch(error => {
-            // Also clear on error
-            geoIPPromise = null;
+            // A request started before a cache reset must not evict its replacement.
+            if (geoIPPromise === request) geoIPPromise = null;
             throw error;
         });
 
+    geoIPPromise = request;
     return geoIPPromise;
 }
 
