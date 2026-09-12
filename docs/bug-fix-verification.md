@@ -34,4 +34,12 @@ Served the unmodified `dist/` output through Vite's public `preview()` API on th
 - The report download button was clicked in the list-outage scenario, but no downloaded artifact was located in the default Downloads directory. Export contents are therefore not claimed as verified.
 
 
+## Final whole-result rerun (23:53–23:54 UTC)
+
+After the requirement map was complete, reran `npm ci --ignore-scripts --no-audit --no-fund`, all eight named tests in the map, `npm run build`, `git diff --check`, and full lint. Clean install, every regression check, production build, and diff validation passed. Lint remained at 49 errors and 8 warnings. The freshly rebuilt production asset hash was unchanged.
+
+Then navigated through all three production origins again. List-outage assertions passed for the exact failure message, warning styling, known IP, and zero nodes. A broader assertion also requiring every unrelated card to finish failed: `Enumerating devices...` was still pending after the bounded wait. This is an observed browser/media-enumeration limitation, so completion of every card is not claimed for every run. The corrected privacy outputs were independently asserted and passed. IP-outage assertions passed for the exact message, warning, unknown IP, and zero nodes, with no pending cards. Unrestricted production again encountered an unavailable exit list and correctly reported its failure, made exactly one GeoIP request, and had no pending or error cards.
+
+Every changed public output was re-observed on the final build. The successful real Tor-list network path remains externally unavailable on the last production runs, while the two membership outcomes, failed/missing HTTP IP responses, empty lists, shared/retry caching, and stale-request race all passed their named deterministic checks again. Earlier differential verification against exact pre-fix source produced five failures and three passes using the identical suite, versus eight passes on the fix.
+
 Full-project lint remains at its measured pre-fix baseline: 49 errors and 8 warnings. The new test file and changed GeoIP utility pass ESLint. This work does not claim the entire codebase is bug-free.
