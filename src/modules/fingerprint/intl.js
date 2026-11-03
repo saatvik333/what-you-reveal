@@ -1,123 +1,72 @@
-import { sha256 } from '../../utils/crypto';
+import { sha256 } from '../../utils/crypto.js';
+
+const JS_REF = 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/';
+const INTL = `${JS_REF}Intl/`;
+
+// Fixed inputs: the fingerprint must not change from one day (or minute) to the next.
+const SAMPLE_DATE = new Date(2024, 0, 15, 13, 30, 45);
+const SAMPLE_NUMBER = 1234567.89;
+
+/** Runs a formatter and records its output; engines that lack an Intl feature skip the row. */
+function addFormatted(data, label, url, format) {
+  try {
+    data[label] = { value: format(), url };
+  } catch {}
+}
 
 export async function collectIntlData() {
   const data = {};
-  const intlUrl = 'https://developer.mozilla.org/en-US/docs/Web/API/Intl';
 
-  // Basic Locale Info
-  data['Navigator Language'] = { 
-      value: navigator.language, 
-      url: 'https://developer.mozilla.org/en-US/docs/Web/API/Navigator/language' 
-  };
-  data['Languages List'] = { 
-      value: navigator.languages ? navigator.languages.join(', ') : 'N/A', 
-      url: 'https://developer.mozilla.org/en-US/docs/Web/API/Navigator/languages' 
+  data['Languages'] = {
+    value: navigator.languages?.length ? navigator.languages.join(', ') : navigator.language,
+    url: 'https://developer.mozilla.org/en-US/docs/Web/API/Navigator/languages',
   };
 
-  // Timezone
-  try {
-    const dtf = Intl.DateTimeFormat();
-    const resolved = dtf.resolvedOptions();
-    const dtfUrl = 'https://developer.mozilla.org/en-US/docs/Web/API/Intl/DateTimeFormat/resolvedOptions';
-    
-    data['Timezone'] = { value: resolved.timeZone, url: dtfUrl };
-    data['Locale (Resolved)'] = { value: resolved.locale, url: dtfUrl };
-    data['Calendar'] = { value: resolved.calendar, url: dtfUrl };
-    data['Numbering System'] = { value: resolved.numberingSystem, url: dtfUrl };
-  } catch (e) {
-    /* ignore */
-  }
+  const resolved = Intl.DateTimeFormat().resolvedOptions();
+  const resolvedUrl = `${INTL}DateTimeFormat/resolvedOptions`;
+  data['Timezone'] = { value: resolved.timeZone, url: resolvedUrl };
+  const offset = -new Date().getTimezoneOffset(); // minutes east of UTC; may be fractional hours
+  const pad = (n) => String(n).padStart(2, '0');
+  data['UTC Offset'] = {
+    value: `UTC${offset >= 0 ? '+' : '-'}${pad(Math.floor(Math.abs(offset) / 60))}:${pad(Math.abs(offset) % 60)}`,
+    url: `${JS_REF}Date/getTimezoneOffset`,
+  };
+  data['Locale (Resolved)'] = { value: resolved.locale, url: resolvedUrl };
+  data['Calendar'] = { value: resolved.calendar, url: resolvedUrl };
+  data['Numbering System'] = { value: resolved.numberingSystem, url: resolvedUrl };
+  data['Hour Cycle'] = {
+    value: new Intl.DateTimeFormat(undefined, { hour: 'numeric' }).resolvedOptions().hourCycle ?? 'Unknown',
+    url: resolvedUrl,
+  };
 
-  // Date/Time Formatting Fingerprint
-  try {
-    const testDate = new Date(2024, 0, 15, 13, 30, 45); // Jan 15, 2024 13:30:45
+  addFormatted(data, 'Date Format', `${JS_REF}Date/toLocaleDateString`, () => SAMPLE_DATE.toLocaleDateString());
+  addFormatted(data, 'Full DateTime Format', `${INTL}DateTimeFormat`, () =>
+    new Intl.DateTimeFormat(undefined, {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+      hour: 'numeric', minute: 'numeric', timeZoneName: 'long',
+    }).format(SAMPLE_DATE));
+  addFormatted(data, 'Number Format', `${INTL}NumberFormat`, () => SAMPLE_NUMBER.toLocaleString());
+  addFormatted(data, 'Currency Format (USD)', `${INTL}NumberFormat`, () =>
+    new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(SAMPLE_NUMBER));
+  addFormatted(data, 'Relative Time (-1 day)', `${INTL}RelativeTimeFormat`, () =>
+    new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' }).format(-1, 'day'));
+  addFormatted(data, 'List Format', `${INTL}ListFormat`, () =>
+    new Intl.ListFormat().format(['Apple', 'Banana', 'Cherry']));
+  addFormatted(data, 'Plural Rules', `${INTL}PluralRules`, () => {
+    const pr = new Intl.PluralRules();
+    return [0, 1, 2, 5].map((n) => `${n}:${pr.select(n)}`).join(', ');
+  });
 
-    // Default format
-    data['Date Format (Default)'] = { value: testDate.toLocaleDateString(), url: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toLocaleDateString' };
-    
-    // Long format reveals locale differences
-    const longFormat = new Intl.DateTimeFormat(undefined, {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: 'numeric',
-      timeZoneName: 'long',
-    }).format(testDate);
-    data['Full DateTime Format'] = { value: longFormat, url: 'https://developer.mozilla.org/en-US/docs/Web/API/Intl/DateTimeFormat/format' };
-  } catch (e) {
-    /* ignore */
-  }
-
-  // Number Formatting
-  try {
-    const testNum = 1234567.89;
-    data['Number Format'] = { value: testNum.toLocaleString(), url: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/toLocaleString' };
-
-    // Currency format
-    const currencyFormat = new Intl.NumberFormat(undefined, {
-      style: 'currency',
-      currency: 'USD',
-    }).format(testNum);
-    data['Currency Format (USD)'] = { value: currencyFormat, url: 'https://developer.mozilla.org/en-US/docs/Web/API/Intl/NumberFormat' };
-
-    // Percent
-    const percentFormat = new Intl.NumberFormat(undefined, {
-      style: 'percent',
-    }).format(0.75);
-    data['Percent Format'] = { value: percentFormat, url: 'https://developer.mozilla.org/en-US/docs/Web/API/Intl/NumberFormat' };
-  } catch (e) {
-    /* ignore */
-  }
-
-  // RelativeTimeFormat
-  try {
-    if (Intl.RelativeTimeFormat) {
-      const rtf = new Intl.RelativeTimeFormat();
-      data['Relative Time (-1 day)'] = { value: rtf.format(-1, 'day'), url: 'https://developer.mozilla.org/en-US/docs/Web/API/Intl/RelativeTimeFormat' };
-    }
-  } catch (e) { /* ignore */ }
-
-  // ListFormat
-  try {
-    if (Intl.ListFormat) {
-      const lf = new Intl.ListFormat();
-      data['List Format'] = { value: lf.format(['Apple', 'Banana', 'Cherry']), url: 'https://developer.mozilla.org/en-US/docs/Web/API/Intl/ListFormat' };
-    }
-  } catch (e) { /* ignore */ }
-
-  // PluralRules
-  try {
-    if (Intl.PluralRules) {
-      const pr = new Intl.PluralRules();
-      data['Plural Rules'] = { 
-          value: `1:${pr.select(1)}, 2:${pr.select(2)}, 5:${pr.select(5)}`, 
-          url: 'https://developer.mozilla.org/en-US/docs/Web/API/Intl/PluralRules' 
-      };
-    }
-  } catch (e) { /* ignore */ }
-
-  // Generate locale fingerprint hash
-  try {
-      const localeComponents = [
-        navigator.language,
-        (navigator.languages || []).join(','),
-        Intl.DateTimeFormat().resolvedOptions().timeZone,
-        new Date().toLocaleDateString(),
-        (1234567.89).toLocaleString(),
-      ].join('||');
-
-      const hash = (await sha256(localeComponents)).toUpperCase();
-      
-      data['Locale Fingerprint'] = {
-        value: hash,
-        warning: true,
-        url: intlUrl
-      };
-  } catch(e) {
-      // ignore
-  }
+  // The UTC offset shifts with daylight saving time; the zone name already covers it.
+  const hashInput = Object.entries(data)
+    .filter(([key]) => key !== 'UTC Offset')
+    .map(([key, row]) => `${key}=${row.value}`)
+    .join('|');
+  data['Locale Fingerprint'] = {
+    value: (await sha256(hashInput)).slice(0, 16).toUpperCase(),
+    warning: true,
+    url: 'https://developer.mozilla.org/en-US/docs/Glossary/Fingerprinting',
+  };
 
   return data;
 }

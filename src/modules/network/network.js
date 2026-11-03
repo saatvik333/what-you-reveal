@@ -1,206 +1,145 @@
 /**
- * Unified Network Module
- * Combines Connection, Latency, GeoIP, and Threat Detection
+ * Network card: connection hints, public addresses, IP geolocation, WebRTC exposure and
+ * latency. Sections fill in as they finish; `onUpdate` receives a fresh copy each time so
+ * Vue sees a new object, and the returned promise resolves with the complete result.
  */
 
 import { fetchCachedGeoIP } from '../../utils/geoip.js';
+import { fetchPublicIPs } from '../../utils/publicip.js';
+import { probeWebRTC } from './webrtc.js';
+
+const MDN = 'https://developer.mozilla.org/en-US/docs/Web/API/';
+
+function connectionRows() {
+  const conn = navigator.connection;
+  if (!conn) return { 'Network Information API': { value: 'Not Supported', url: `${MDN}Network_Information_API` } };
+  return {
+    'Effective Type': { value: conn.effectiveType?.toUpperCase() ?? 'Unknown', url: `${MDN}NetworkInformation/effectiveType` },
+    'RTT (Browser Est.)': { value: `${conn.rtt ?? 0} ms`, url: `${MDN}NetworkInformation/rtt` },
+    'Downlink (Browser Est.)': { value: `${conn.downlink ?? 0} Mbps`, url: `${MDN}NetworkInformation/downlink` },
+    'Save-Data': { value: conn.saveData ? 'On' : 'Off', url: `${MDN}NetworkInformation/saveData` },
+  };
+}
+
+async function publicIPRows() {
+  const { v4, v6 } = await fetchPublicIPs();
+  return {
+    'Public IPv4': { value: v4 ?? 'None / Lookup Failed', url: 'https://www.ipify.org/' },
+    'Public IPv6': { value: v6 ?? 'None / Lookup Failed', url: 'https://www.ipify.org/' },
+  };
+}
+
+async function geoRows() {
+  try {
+    const geo = await fetchCachedGeoIP();
+    const place = [geo.city, geo.region, geo.country].filter(Boolean).join(', ') || 'Unknown';
+    const rows = {
+      'ISP / Organization': { value: geo.org || 'Unknown' },
+      'AS Number': { value: geo.asn || 'Unknown', url: geo.asn ? `https://bgp.he.net/${geo.asn}` : undefined },
+      'Location (Approx.)': {
+        value: place,
+        url: `https://www.openstreetmap.org/search?query=${encodeURIComponent(place)}`,
+      },
+      'Coordinates (Approx.)': {
+        value: `${geo.latitude}, ${geo.longitude}`,
+        url: `https://www.openstreetmap.org/#map=11/${geo.latitude}/${geo.longitude}`,
+      },
+    };
+    if (geo.postal) rows['Postal Code'] = { value: geo.postal };
+
+    const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const comparison = compareTimeZones(browserTz, geo.timezone);
+    if (comparison) rows['Timezone vs IP'] = comparison;
+    rows['GeoIP Source'] = { value: geo.source, url: `https://${geo.source}` };
+    return rows;
+  } catch (e) {
+    return { 'GeoIP': { value: `Lookup Failed (${e.message})`, warning: true } };
+  }
+}
+
+/** Canonical name via the engine's own tz database, so aliases (Asia/Calcutta = Asia/Kolkata) compare equal. */
+function canonicalZone(zone) {
+  try {
+    return new Intl.DateTimeFormat('en-US', { timeZone: zone }).resolvedOptions().timeZone;
+  } catch {
+    return null; // unknown to this engine
+  }
+}
+
+function utcOffset(zone) {
+  return new Intl.DateTimeFormat('en-US', { timeZone: zone, timeZoneName: 'longOffset' })
+    .formatToParts(new Date())
+    .find((part) => part.type === 'timeZoneName')?.value;
+}
+
+/**
+ * Sites flag VPN and proxy users when the clock's UTC offset disagrees with the IP's location.
+ * Neighboring zones with the same offset (IP geolocated one border over) are not a mismatch.
+ */
+function compareTimeZones(browserTz, ipTz) {
+  const browser = canonicalZone(browserTz);
+  const ip = canonicalZone(ipTz);
+  if (!browser || !ip) return null;
+  if (browser === ip) return { value: `Consistent (${browser})` };
+  const [browserOffset, ipOffset] = [utcOffset(browser), utcOffset(ip)];
+  if (browserOffset === ipOffset) return { value: `Same offset (${browserOffset}; browser ${browser}, IP ${ip})` };
+  return { value: `Mismatch (browser ${browser} ${browserOffset}, IP ${ip} ${ipOffset})`, warning: true };
+}
+
+async function webrtcRows() {
+  const result = await probeWebRTC();
+  const url = `${MDN}RTCIceCandidate/address`;
+  if (!result.supported) return { 'WebRTC': { value: 'Not Available', url } };
+  return {
+    'Local IP (WebRTC)': result.localIPs.length > 0
+      ? { value: result.localIPs.join(', '), warning: true, url }
+      : { value: result.mdnsHidden ? 'Hidden (mDNS)' : 'Not Exposed', url },
+    'Public IP (WebRTC STUN)': result.stunIPs.length > 0
+      ? { value: result.stunIPs.join(', '), warning: result.leakedPublicIPs.length > 0, url }
+      : { value: 'Not Exposed (STUN unreachable or blocked)', url },
+  };
+}
+
+/**
+ * Sequential round trips to this site; parallel requests would measure queueing, not latency.
+ * Each sample is the browser's own request-sent → first-byte time (Resource Timing), so main-thread
+ * work by the other cards running at the same time does not inflate it.
+ */
+async function latencyRows() {
+  const url = 'https://developer.mozilla.org/en-US/docs/Web/API/PerformanceResourceTiming';
+  const samples = [];
+  try {
+    for (let i = 0; i < 5; i++) {
+      const target = new URL(`/robots.txt?ping=${Date.now()}-${i}`, location.href).href;
+      const start = performance.now();
+      const response = await fetch(target, { cache: 'no-store' });
+      await response.arrayBuffer(); // finish the exchange before timing the next one
+      const timing = performance.getEntriesByName(target).pop();
+      samples.push(timing?.responseStart > 0 ? timing.responseStart - timing.requestStart : performance.now() - start);
+    }
+  } catch {
+    return { 'Latency': { value: 'Failed', warning: true, url } };
+  }
+  const sorted = [...samples].sort((a, b) => a - b);
+  // Jitter as the mean difference between consecutive samples (RFC 3550 style).
+  const jitter = samples.slice(1).reduce((sum, s, i) => sum + Math.abs(s - samples[i]), 0) / (samples.length - 1);
+  return {
+    'Latency to Site (Median)': { value: `${sorted[2].toFixed(1)} ms`, url },
+    'Latency (Min/Max)': { value: `${sorted[0].toFixed(1)} / ${sorted[4].toFixed(1)} ms`, url },
+    'Jitter': { value: `${jitter.toFixed(1)} ms`, url: 'https://developer.mozilla.org/en-US/docs/Glossary/Jitter' },
+  };
+}
 
 export async function collectNetworkData(onUpdate) {
-  const data = {};
-  
-  // Helper to notify updates
-  const notify = () => {
-    if (onUpdate && typeof onUpdate === 'function') {
-      onUpdate({ ...data });
-    }
-  };
+  // Fixed section order, so rows don't jump around as sections finish.
+  const sections = [connectionRows(), {}, {}, {}, {}];
+  const merge = () => Object.assign({}, ...sections);
+  onUpdate?.(merge());
 
-  // --- 1. Connection Info (Network API) ---
-  if (navigator.connection) {
-    const conn = navigator.connection;
-    data['RTT (Est.)'] = { 
-        value: (conn.rtt || 0) + ' ms', 
-        url: 'https://developer.mozilla.org/en-US/docs/Web/API/NetworkInformation/rtt' 
-    };
-    data['Effective Type'] = {
-        value: conn.effectiveType ? conn.effectiveType.toUpperCase() : 'Unknown',
-        url: 'https://developer.mozilla.org/en-US/docs/Web/API/NetworkInformation/effectiveType'
-    };
-    data['Downlink'] = {
-        value: (conn.downlink || 0) + ' Mbps',
-        url: 'https://developer.mozilla.org/en-US/docs/Web/API/NetworkInformation/downlink'
-    };
-  } else {
-    data['Network Info API'] = { value: 'Not Supported', url: 'https://developer.mozilla.org/en-US/docs/Web/API/Network_Information_API' };
-  }
-  notify();
+  await Promise.all([publicIPRows, geoRows, webrtcRows, latencyRows].map(async (collect, i) => {
+    sections[i + 1] = await collect();
+    onUpdate?.(merge());
+  }));
 
-  // --- 2. Time Info ---
-  const now = new Date();
-  data['Local Time'] = { value: now.toLocaleString(), url: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toLocaleString' };
-  data['UTC Time'] = { value: now.toUTCString(), url: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toUTCString' };
-  data['Timezone Offset'] = { value: (now.getTimezoneOffset() / -60) + ' hrs', url: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/getTimezoneOffset' };
-  notify();
-
-  // --- 3. WebRTC Local IP Detection ---
-  detectLocalIP(data, notify);
-
-  // --- 4. Latency & Jitter ---
-  measureLatency(data, notify);
-
-  // --- 5. GeoIP & Threat Intelligence ---
-  fetchGeoIPAndThreats(data, notify);
-
-  return data; // Return initial state (updates happen via callback)
+  return merge();
 }
-
-async function detectLocalIP(data, notify) {
-  try {
-    const rtcCandidates = new Set();
-    const rtcPeer = new RTCPeerConnection({ iceServers: [] });
-    rtcPeer.createDataChannel('');
-    const offer = await rtcPeer.createOffer();
-    await rtcPeer.setLocalDescription(offer);
-    
-    data['Local IP Detection'] = { value: 'Scanning via WebRTC...', url: 'https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API' };
-    notify();
-
-    await new Promise(resolve => {
-      rtcPeer.onicecandidate = (event) => {
-        if (event?.candidate?.candidate) {
-          const candidate = event.candidate.candidate;
-          // Extract IPv4/IPv6 or .local
-          const ipMatch = candidate.match(/([0-9]{1,3}(\.[0-9]{1,3}){3}|[a-f0-9]{1,4}(:[a-f0-9]{1,4}){7})/);
-          if (ipMatch) {
-             // Simple validity check
-             if (candidate.indexOf('.local') > 0 || candidate.match(/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/) || candidate.indexOf(':') > -1) {
-                rtcCandidates.add(ipMatch[1]);
-             }
-          }
-        }
-      };
-      setTimeout(() => { rtcPeer.close(); resolve(); }, 1500);
-    });
-
-    delete data['Local IP Detection'];
-
-    if (rtcCandidates.size > 0) {
-      const detectedIps = Array.from(rtcCandidates).join(', ');
-      // Private IP ranges check
-      const isPrivate = detectedIps.startsWith('192.168.') || detectedIps.startsWith('10.') || detectedIps.startsWith('172.');
-      
-      data['Local IP (WebRTC)'] = { 
-          value: detectedIps, 
-          warning: !isPrivate && !detectedIps.includes('.local'), // Public IP leak via WebRTC is bad
-          url: 'https://developer.mozilla.org/en-US/docs/Web/API/RTCIceCandidate' 
-      };
-    } else {
-      data['Local IP (WebRTC)'] = { value: 'Not Detected / Blocked', url: 'https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API' };
-    }
-    notify();
-  } catch (e) {
-    data['Local IP (WebRTC)'] = { value: 'Error: ' + e.message, warning: true };
-    notify();
-  }
-}
-
-async function measureLatency(data, notify) {
-  try {
-    const samples = 5;
-    const target = '/favicon.ico?t=' + Date.now(); 
-
-    const pings = await Promise.all(
-        Array.from({ length: samples }, async () => {
-            const start = performance.now();
-            await fetch(target, { cache: 'no-store' });
-            return performance.now() - start;
-        })
-    );
-    
-    if (pings.length > 0) {
-        const avg = pings.reduce((a, b) => a + b) / pings.length;
-        const min = Math.min(...pings);
-        const max = Math.max(...pings);
-        const jitter = pings.reduce((acc, p) => acc + Math.abs(p - avg), 0) / pings.length;
-
-        data['Latency (Avg)'] = { value: avg.toFixed(2) + ' ms', url: 'https://developer.mozilla.org/en-US/docs/Web/API/Performance' };
-        data['Latency (Min/Max)'] = { value: `${min.toFixed(2)} / ${max.toFixed(2)} ms`, url: 'https://developer.mozilla.org/en-US/docs/Web/API/Performance' };
-        data['Jitter'] = { value: jitter.toFixed(2) + ' ms', url: 'https://developer.mozilla.org/en-US/docs/Glossary/Jitter' };
-    }
-    notify();
-  } catch (e) {
-    data['Latency'] = { value: 'Failed', warning: true };
-    notify();
-  }
-}
-
-async function fetchGeoIPAndThreats(data, notify) {
-    try {
-        data['GeoIP Analysis'] = { value: 'Fetching...', url: 'https://ipapi.co' };
-        notify();
-
-        // Using ipapi.co for HTTPS support (ip-api.com free is HTTP only)
-        // Fetched via caching utility to prevent duplicate calls
-        const geo = await fetchCachedGeoIP();
-
-        delete data['GeoIP Analysis'];
-
-        // Basic Info - Mapped from ipapi.co
-        data['Public IP'] = { value: geo.ip, url: 'https://ipapi.co' };
-        data['ISP'] = { value: geo.org || 'Unknown', url: 'https://ipapi.co' };
-        data['AS Number'] = { value: geo.asn || 'Unknown', url: 'https://ipapi.co' };
-        data['Location'] = { 
-            value: `${geo.city}, ${geo.region}, ${geo.country_name}`, 
-            url: 'https://www.openstreetmap.org/search?query=' + encodeURIComponent(geo.city + ', ' + geo.country_name)
-        };
-        data['Coordinates'] = { value: `${geo.latitude}, ${geo.longitude}`, url: `https://www.openstreetmap.org/#map=13/${geo.latitude}/${geo.longitude}` };
-        data['Postal Code'] = { value: geo.postal || 'Unknown', url: 'https://ipapi.co' };
-        
-        // Threat Intelligence Logic
-        let threatScore = 0;
-        const threats = [];
-        
-        // 1. VPN/Proxy Keywords
-        const vpnKeywords = ['VPN', 'Proxy', 'Unblocker', 'Relay', 'Private', 'Haus', 'Hosting', 'Cloud', 'Datacenter', 'DigitalOcean', 'Linode', 'AWS', 'Google', 'Azure', 'Hetzner', 'OVH'];
-        const ispStr = ((geo.org || '') + ' ' + (geo.asn || '')).toUpperCase();
-        
-        const isSuspiciousISP = vpnKeywords.some(k => ispStr.includes(k.toUpperCase()));
-        if (isSuspiciousISP) {
-            threatScore += 40;
-            threats.push('Datacenter/VPN ISP Detected');
-        }
-
-        // 2. Timezone Consistency
-        try {
-            const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-            const geoTz = geo.timezone;
-            
-            if (browserTz && geoTz) {
-                if (browserTz !== geoTz) {
-                    threatScore += 30;
-                    threats.push(`Timezone Mismatch (${browserTz} vs ${geoTz})`);
-                    data['Timezone Check'] = { value: 'MISMATCH', warning: true, url: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/resolvedOptions' };
-                } else {
-                    data['Timezone Check'] = { value: 'Consistent', url: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/resolvedOptions' };
-                }
-            }
-        } catch (e) { /* ignore */ }
-
-        // Result
-        if (threatScore > 0) {
-            data['Threat Score'] = { value: `${threatScore}/100`, warning: threatScore >= 40, url: 'https://ipapi.co' };
-            data['Threats'] = { value: threats.join(', '), warning: true, url: 'https://ipapi.co' };
-            data['Privacy Status'] = { value: 'Suspicious / VPN', warning: true };
-        } else {
-            data['Threat Score'] = { value: '0/100 (Clean)', url: 'https://ipapi.co' };
-            data['Privacy Status'] = { value: 'Residential / Standard', url: 'https://ipapi.co' };
-        }
-        
-        notify();
-
-    } catch (e) {
-        data['GeoIP Analysis'] = { value: 'Failed / Blocked (' + e.message + ')', warning: true };
-        notify();
-    }
-}
-

@@ -1,67 +1,41 @@
 /**
- * Media Devices Enumeration Module
- * Counts input/output devices without requesting access (unless granted)
+ * Media devices card: how many cameras, microphones and outputs any page can count without
+ * permission (labels stay hidden until a capture permission is granted).
  */
 
+const MDN = 'https://developer.mozilla.org/en-US/docs/Web/API/';
+// Firefox defers enumerateDevices() until the tab has focus; don't spin forever in a background tab.
+const ENUMERATE_TIMEOUT_MS = 5000;
+
 export async function collectMediaDevices() {
-  const mediaDevicesUrl = 'https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/enumerateDevices';
-
-  if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
-    return { 'Media Devices API': { value: 'Not Supported', url: 'https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices' } };
+  if (!navigator.mediaDevices?.enumerateDevices) {
+    return { 'Media Devices API': { value: 'Not Supported', url: `${MDN}MediaDevices` } };
   }
 
+  let timer;
+  const timeout = new Promise((resolve) => { timer = setTimeout(() => resolve(null), ENUMERATE_TIMEOUT_MS); });
+  let devices;
   try {
-    const devices = await navigator.mediaDevices.enumerateDevices();
-
-    const counts = {
-      audioinput: 0,
-      audiooutput: 0,
-      videoinput: 0,
-      other: 0,
-    };
-
-    const labels = [];
-
-    devices.forEach((d) => {
-      if (counts[d.kind] !== undefined) {
-        counts[d.kind]++;
-      } else {
-        counts['other']++;
-      }
-      // Label is often empty if permission is not granted
-      if (d.label) {
-        labels.push(`${d.kind}: ${d.label}`);
-      }
-    });
-
-    const data = {
-      Microphones: { 
-          value: counts['audioinput'], 
-          url: 'https://developer.mozilla.org/en-US/docs/Web/API/MediaDeviceInfo/kind' 
-      },
-      'Speakers/Headphones': { 
-          value: counts['audiooutput'], 
-          url: 'https://developer.mozilla.org/en-US/docs/Web/API/MediaDeviceInfo/kind' 
-      },
-      Cameras: { 
-          value: counts['videoinput'], 
-          url: 'https://developer.mozilla.org/en-US/docs/Web/API/MediaDeviceInfo/kind' 
-      },
-      'Total Devices': {
-          value: devices.length,
-          url: mediaDevicesUrl
-      },
-    };
-
-    // If we have labels (permission granted), show them
-    if (labels.length > 0) {
-      data['Device Labels'] = { value: labels.join('\n'), warning: false, url: 'https://developer.mozilla.org/en-US/docs/Web/API/MediaDeviceInfo/label' };
-    } else {
-      data['Device Labels'] = { value: 'Hidden (Permission required)', warning: true, url: 'https://developer.mozilla.org/en-US/docs/Web/API/MediaDeviceInfo/label' };
-    }
-
-    return data;
-  } catch (e) {
-    return { Error: { value: 'Failed to enumerate devices', warning: true } };
+    devices = await Promise.race([navigator.mediaDevices.enumerateDevices(), timeout]);
+  } catch {
+    return { 'Media Devices API': { value: 'Blocked', url: `${MDN}MediaDevices/enumerateDevices` } };
+  } finally {
+    clearTimeout(timer);
   }
+  if (devices === null) {
+    return { 'Media Devices API': { value: 'Deferred by browser (tab not focused)', url: `${MDN}MediaDevices/enumerateDevices` } };
+  }
+
+  const count = (kind) => devices.filter((d) => d.kind === kind).length;
+  const labels = devices.filter((d) => d.label).map((d) => `${d.kind}: ${d.label}`);
+  const kindUrl = `${MDN}MediaDeviceInfo/kind`;
+
+  return {
+    'Microphones': { value: count('audioinput'), url: kindUrl },
+    'Cameras': { value: count('videoinput'), url: kindUrl },
+    'Audio Outputs': { value: count('audiooutput'), url: kindUrl },
+    'Device Labels': labels.length > 0
+      ? { value: labels.join('; '), warning: true, url: `${MDN}MediaDeviceInfo/label` }
+      : { value: 'Hidden (no capture permission granted)', url: `${MDN}MediaDeviceInfo/label` },
+  };
 }

@@ -4,92 +4,54 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Primary Meta Tags -->
     <title>Browser Fingerprint Detector | See What You Reveal</title>
-    <meta name="title" content="Browser Fingerprint Detector | See What You Reveal" />
-    <meta name="description" content="Analyze your browser fingerprint in seconds. Discover privacy risks, tracking methods, and what websites know about you. 15+ fingerprinting vectors analyzed. Free & open-source." />
-    <meta name="keywords" content="browser fingerprint, privacy analysis, tracking detection, device fingerprint, canvas fingerprint, WebGL fingerprint, privacy score, browser security, online privacy, fingerprinting protection, what websites know about you, digital identity, font fingerprinting, audio fingerprinting" />
+    <meta name="description" content="See what your browser reveals to every website: canvas, WebGL, font and audio fingerprints, IP address and WebRTC leaks, and which privacy protections are working. Free, open-source, runs in your browser." />
     <meta name="author" content="saatvik333" />
-    <meta name="robots" content="index, follow" />
-    <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large" />
-    <meta name="theme-color" content="#00ff00" />
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+    <meta name="theme-color" content="#000000" />
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" sizes="192x192" href="/logo.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/logo.png" />
-    <link rel="shortcut icon" href="/logo.png" />
-
-    <!-- Web App Manifest -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />
+    <link rel="canonical" href="https://what-you-reveal.vercel.app/" />
 
-    <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://what-you-reveal.vercel.app/" />
     <meta property="og:title" content="Browser Fingerprint & Privacy Analyzer | What You Reveal" />
-    <meta property="og:description" content="Analyze your browser's digital fingerprint in seconds. Discover privacy risks, tracking methods, and what sites know. Free open-source security tool." />
+    <meta property="og:description" content="See what your browser reveals to every website: fingerprints, IP and WebRTC leaks, and which privacy protections are working." />
     <meta property="og:image" content="https://what-you-reveal.vercel.app/logo.png" />
-    <meta property="og:image:alt" content="What You Reveal - Browser Fingerprint Analysis Dashboard" />
-    <meta property="og:image:width" content="512" />
-    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="What You Reveal fingerprint logo" />
+    <meta property="og:image:width" content="1024" />
+    <meta property="og:image:height" content="1024" />
     <meta property="og:locale" content="en_US" />
     <meta property="og:site_name" content="What You Reveal" />
 
-    <!-- Twitter -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:url" content="https://what-you-reveal.vercel.app/" />
+    <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="What Does Your Browser Reveal? | Privacy & Fingerprint Check" />
-    <meta name="twitter:description" content="See your digital fingerprint & privacy exposure. Detect tracking, fingerprinting methods & system data leakage. Free security tool." />
+    <meta name="twitter:description" content="See your browser fingerprint, IP and WebRTC exposure, and which privacy protections are working. Free and open-source." />
     <meta name="twitter:image" content="https://what-you-reveal.vercel.app/logo.png" />
-    <meta name="twitter:image:alt" content="Browser fingerprinting analysis results visualization" />
+    <meta name="twitter:image:alt" content="What You Reveal fingerprint logo" />
 
-    <!-- Canonical URL -->
-    <link rel="canonical" href="https://what-you-reveal.vercel.app/" />
-    <link rel="alternate" hreflang="en" href="https://what-you-reveal.vercel.app/" />
-    <link rel="alternate" hreflang="x-default" href="https://what-you-reveal.vercel.app/" />
-
-    <!-- DNS Prefetch & Preconnect -->
-    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
-    <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap"
-      rel="stylesheet"
-    />
-
-    <!-- Structured Data: SoftwareApplication -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
+      "@type": "WebApplication",
       "name": "What You Reveal",
-      "alternateName": "What You Reveal - Browser Fingerprint & Privacy Analysis Tool",
-      "description": "Browser fingerprinting and privacy analysis tool that shows what information your browser exposes to websites. Analyzes canvas fingerprinting, WebGL fingerprinting, fonts, network info, privacy signals, media devices, and bot detection.",
+      "description": "Browser fingerprinting and privacy analysis tool that shows what information your browser exposes to websites: canvas, WebGL, audio and font fingerprints, network and WebRTC exposure, privacy signals, media devices and automation detection.",
       "url": "https://what-you-reveal.vercel.app/",
       "applicationCategory": "SecurityApplication",
       "operatingSystem": "Any",
-      "browserRequirements": "Any modern browser with JavaScript enabled",
+      "browserRequirements": "Requires JavaScript",
       "isAccessibleForFree": true,
-      "inLanguage": "en-US",
-      "softwareVersion": "0.3.3",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD",
-        "availability": "https://schema.org/InStock"
-      },
-      "author": {
-        "@type": "Person",
-        "name": "saatvik333",
-        "url": "https://github.com/saatvik333"
-      },
-      "codeRepository": "https://github.com/saatvik333/what-you-reveal",
-      "image": "https://what-you-reveal.vercel.app/logo.png",
-      "keywords": "browser fingerprint, privacy analysis, tracking detection, canvas fingerprint, WebGL fingerprint, privacy score, browser security, online privacy, fingerprinting protection"
+      "inLanguage": "en",
+      "softwareVersion": "%APP_VERSION%",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "author": { "@type": "Person", "name": "saatvik333", "url": "https://github.com/saatvik333" },
+      "image": "https://what-you-reveal.vercel.app/logo.png"
     }
     </script>
 
-    <!-- Structured Data: FAQPage -->
+    <!-- Must match the visible FAQ in <section class="about"> below. -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -98,108 +60,88 @@
         {
           "@type": "Question",
           "name": "What is browser fingerprinting?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Browser fingerprinting is a tracking technique that identifies users by collecting unique device data including screen resolution, installed fonts, browser version, GPU information, and system configuration. Unlike cookies, fingerprints persist across private browsing and don't require consent."
-          }
+          "acceptedAnswer": { "@type": "Answer", "text": "Browser fingerprinting identifies a browser by combining details it reveals to every website: screen size, installed fonts, graphics card, language, time zone, how it draws canvas images and more. A fingerprint is not stored on your device, so clearing cookies does not reset it, and a private window usually leaves it unchanged." }
         },
         {
           "@type": "Question",
           "name": "How does canvas fingerprinting work?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Canvas fingerprinting renders text or graphics using the HTML5 Canvas API, converting the result into a unique hash. Variations in font rendering, anti-aliasing, and GPU processing across devices create distinctive outputs that can identify individual browsers."
-          }
+          "acceptedAnswer": { "@type": "Answer", "text": "A script draws text and shapes on an invisible canvas and hashes the resulting pixels. Fonts, anti-aliasing, graphics drivers and the operating system all change the pixels slightly, so the hash differs between devices but stays the same on one device." }
         },
         {
           "@type": "Question",
-          "name": "Can VPN protect against browser fingerprinting?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "VPN masks your IP address but does not prevent browser fingerprinting. Your device characteristics, fonts, GPU data, and system information remain exposed. Effective anti-fingerprinting requires privacy extensions, GPC/DNT signals, and privacy-focused browsers like Firefox or Brave."
-          }
+          "name": "Can a VPN protect against browser fingerprinting?",
+          "acceptedAnswer": { "@type": "Answer", "text": "A VPN hides your IP address and location, but your fonts, graphics card, screen and browser settings stay visible. Against fingerprinting you need a browser that standardizes or randomizes those values, such as Tor Browser, Mullvad Browser, Brave, or Firefox with strict Enhanced Tracking Protection." }
         },
         {
           "@type": "Question",
           "name": "How is the privacy score calculated?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Privacy score starts at 30 points and adjusts based on protections and risks. Active protections like ad blockers (+15), WebRTC protection (+15), and Global Privacy Control (+10) add points. Actual risks like WebRTC IP leaks (-15) subtract points. The system rewards protections rather than penalizing defaults."
-          }
+          "acceptedAnswer": { "@type": "Answer", "text": "The score starts at 30 and adds points for protections this page can observe: an ad or tracker blocker (+15), canvas fingerprinting protection (+15), WebRTC exposing no extra IP address (+15), Global Privacy Control (+10), a VPN or hosting network (+10), Tor (+10), private browsing (+5) and the Brave browser (+5). A WebRTC IP leak (-15) and browser automation (-10) subtract points. Defaults are never penalized, and the result is capped to 0-100." }
         },
         {
           "@type": "Question",
           "name": "Is my data stored or transmitted?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "No. All analysis happens locally in your browser. Your fingerprint data is never stored or sent to any server. You can verify this by checking the network requests in your browser developer tools."
-          }
+          "acceptedAnswer": { "@type": "Answer", "text": "Fingerprint values are computed in your browser and never sent anywhere, and the downloadable report is created locally. To show your public IP address, location, VPN and Tor status, the page asks ipify, ipapi.co (with geojs.io as a fallback), the Tor Project's Onionoo service and a Cloudflare STUN server. Like any server you connect to, they see your IP address." }
         },
         {
           "@type": "Question",
           "name": "How can I protect against browser fingerprinting?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Protect against fingerprinting by enabling an ad blocker (uBlock Origin or AdGuard), using privacy-focused browsers (Firefox or Brave), enabling Global Privacy Control and Do Not Track, disabling WebRTC IP leaks, and using a VPN with WebRTC leak protection."
-          }
+          "acceptedAnswer": { "@type": "Answer", "text": "Use a browser with fingerprinting protection (Tor Browser, Mullvad Browser, Brave, or Firefox with Enhanced Tracking Protection set to Strict), block tracking scripts with a content blocker such as uBlock Origin, and avoid rare fonts and extensions that make your browser stand out. Global Privacy Control does not stop fingerprinting, but it legally opts you out of data sales in places that recognize it." }
         }
-      ]
-    }
-    </script>
-
-    <!-- Structured Data: Organization -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      "name": "What You Reveal",
-      "url": "https://what-you-reveal.vercel.app/",
-      "logo": "https://what-you-reveal.vercel.app/logo.png",
-      "description": "Open-source browser fingerprinting and privacy analysis tool",
-      "sameAs": [
-        "https://github.com/saatvik333/what-you-reveal"
       ]
     }
     </script>
   </head>
   <body>
-    <!-- Accessibility: skip to main content -->
-    <a href="#app" class="skip-link">Skip to main content</a>
+    <a href="#main" class="skip-link">Skip to results</a>
 
-    <!-- App container -->
-    <div id="app" aria-label="Browser fingerprint analysis results"></div>
+    <div id="app"></div>
 
-    <!-- SEO: Static content for crawlers (hidden visually, accessible to search engines) -->
-    <div class="seo-content" aria-hidden="true">
-      <h2>Browser Fingerprinting Analysis Categories</h2>
-      <p>What You Reveal performs real-time detection of 15 fingerprinting vectors to show what your browser exposes to websites. All analysis happens locally in your browser.</p>
-      <ul>
-        <li>Privacy Mode and Tor Network Detection</li>
-        <li>Network Information and IP Address Detection</li>
-        <li>Device Hardware Analysis (CPU, GPU, Memory)</li>
-        <li>Screen and Display Metrics</li>
-        <li>Client Hints and User Agent Analysis</li>
-        <li>Navigator Object Variables</li>
-        <li>Intl API Locale Fingerprinting</li>
-        <li>Font Library Detection and Fingerprinting</li>
-        <li>WebGL Renderer and GPU Identification</li>
-        <li>Digital Identity Hash (Canvas, Audio, Emoji)</li>
-        <li>Media Device Enumeration</li>
-        <li>Audio and Video Codec Detection</li>
-        <li>Browser Permission Status</li>
-        <li>Clipboard Access Detection</li>
-        <li>Bot and Automation Integrity Scanning</li>
+    <section class="container about" aria-labelledby="about-title">
+      <h2 id="about-title" class="section-title">ABOUT THIS SCAN</h2>
+      <p>
+        What You Reveal reads your browser the way tracking scripts do and shows the results:
+        15 groups of signals that any website can collect without asking.
+      </p>
+      <ul class="about-list">
+        <li>Privacy mode: Tor, VPN, private browsing, WebRTC leaks, canvas protection, ad blocking, Global Privacy Control</li>
+        <li>Network: public IPv4/IPv6, approximate location, ISP, latency</li>
+        <li>Device: CPU cores, memory, battery, storage, paired USB/HID/serial devices</li>
+        <li>Screen: resolution, color gamut, HDR, accessibility preferences</li>
+        <li>User-Agent Client Hints and navigator APIs</li>
+        <li>Locale (Intl) fingerprint and installed fonts</li>
+        <li>WebGL renderer and digital identity hashes (canvas, audio, emoji, voices)</li>
+        <li>Media devices, codecs and DRM</li>
+        <li>Permissions, clipboard access and automation (bot) detection</li>
       </ul>
-    </div>
 
-    <!-- Noscript fallback -->
+      <h3>Frequently asked questions</h3>
+      <dl class="faq">
+        <dt>What is browser fingerprinting?</dt>
+        <dd>Browser fingerprinting identifies a browser by combining details it reveals to every website: screen size, installed fonts, graphics card, language, time zone, how it draws canvas images and more. A fingerprint is not stored on your device, so clearing cookies does not reset it, and a private window usually leaves it unchanged.</dd>
+        <dt>How does canvas fingerprinting work?</dt>
+        <dd>A script draws text and shapes on an invisible canvas and hashes the resulting pixels. Fonts, anti-aliasing, graphics drivers and the operating system all change the pixels slightly, so the hash differs between devices but stays the same on one device.</dd>
+        <dt>Can a VPN protect against browser fingerprinting?</dt>
+        <dd>A VPN hides your IP address and location, but your fonts, graphics card, screen and browser settings stay visible. Against fingerprinting you need a browser that standardizes or randomizes those values, such as Tor Browser, Mullvad Browser, Brave, or Firefox with strict Enhanced Tracking Protection.</dd>
+        <dt>How is the privacy score calculated?</dt>
+        <dd>The score starts at 30 and adds points for protections this page can observe: an ad or tracker blocker (+15), canvas fingerprinting protection (+15), WebRTC exposing no extra IP address (+15), Global Privacy Control (+10), a VPN or hosting network (+10), Tor (+10), private browsing (+5) and the Brave browser (+5). A WebRTC IP leak (-15) and browser automation (-10) subtract points. Defaults are never penalized, and the result is capped to 0-100.</dd>
+        <dt>Is my data stored or transmitted?</dt>
+        <dd>Fingerprint values are computed in your browser and never sent anywhere, and the downloadable report is created locally. To show your public IP address, location, VPN and Tor status, the page asks ipify, ipapi.co (with geojs.io as a fallback), the Tor Project's Onionoo service and a Cloudflare STUN server. Like any server you connect to, they see your IP address.</dd>
+        <dt>How can I protect against browser fingerprinting?</dt>
+        <dd>Use a browser with fingerprinting protection (Tor Browser, Mullvad Browser, Brave, or Firefox with Enhanced Tracking Protection set to Strict), block tracking scripts with a content blocker such as uBlock Origin, and avoid rare fonts and extensions that make your browser stand out. Global Privacy Control does not stop fingerprinting, but it legally opts you out of data sales in places that recognize it.</dd>
+      </dl>
+    </section>
+
     <noscript>
-      <div style="padding:2rem;text-align:center;font-family:monospace;color:#00ff00;background:#000;">
+      <div class="container noscript">
         <h1>What You Reveal</h1>
         <p>JavaScript is required to analyze your browser fingerprint and privacy settings.</p>
-        <p>Please enable JavaScript to use this tool.</p>
+        <p>With JavaScript off, websites still see your IP address and the HTTP headers your browser sends (User-Agent, language), but none of the script-based signals listed above.</p>
       </div>
     </noscript>
+
+    <footer class="container site-footer">
+      <span class="prompt">user@what-you-reveal:~$</span>echo "nothing from this scan is stored on a server"<span class="cursor" aria-hidden="true"></span>
+    </footer>
 
     <script type="module" src="/src/main.js"></script>
   </body>

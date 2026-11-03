@@ -1,49 +1,41 @@
 /**
- * Digital Identity & Fingerprinting Module
- * Aggregates Canvas, Audio, Emoji, and Voice vectors into a Composite ID
+ * Digital identity card: canvas, WebGL-composited canvas, emoji, audio and speech-voice
+ * vectors, combined into one composite device ID.
  */
 
-import { cyrb53 } from '../../utils/crypto';
+import { cyrb53 } from '../../utils/crypto.js';
+import { detectCanvasProtection, isCanvasProtected } from './canvas.js';
 
-/**
- * Generates a standard canvas fingerprint with text, emojis, and shapes
- */
+const hash = (value) => cyrb53(String(value)).toString(16).toUpperCase();
+
 function getCanvasFingerprint() {
   const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
   canvas.width = 280;
   canvas.height = 60;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
 
-  // Background
   ctx.fillStyle = '#f0f0f0';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Text with specific font rendering
+  // Text and emoji: font rasterization and emoji sets differ by OS, browser and GPU.
   ctx.textBaseline = 'alphabetic';
   ctx.font = '14px Arial';
   ctx.fillStyle = '#069';
   ctx.fillText('Browser Fingerprint 🎨', 2, 15);
-
-  // Emoji rendering (varies significantly across OS/browser)
   ctx.font = '18px Arial';
   ctx.fillText('👨‍👩‍👧‍👦🏳️‍🌈🦄', 2, 38);
-
-  // Unicode characters (font rendering differences)
   ctx.font = '12px serif';
   ctx.fillStyle = '#333';
   ctx.fillText('Ωαβγδ中文العربية', 150, 15);
 
-  // Shapes with anti-aliasing differences
+  // Blended shapes and curves: anti-aliasing and compositing differences.
   ctx.beginPath();
   ctx.arc(240, 30, 20, 0, Math.PI * 2);
   ctx.fillStyle = 'rgba(255, 0, 128, 0.7)';
   ctx.fill();
-
-  // Overlapping transparent rectangle
   ctx.fillStyle = 'rgba(0, 128, 255, 0.5)';
   ctx.fillRect(220, 10, 40, 40);
-
-  // Bezier curve (anti-aliasing fingerprint)
   ctx.beginPath();
   ctx.moveTo(100, 50);
   ctx.bezierCurveTo(130, 20, 160, 50, 190, 25);
@@ -54,73 +46,44 @@ function getCanvasFingerprint() {
   return canvas.toDataURL();
 }
 
-/**
- * Generates a WebGL-accelerated canvas fingerprint (toDataURL variation)
- */
+/** How the browser composites a WebGL buffer into an image (differs from the WebGL card's render hash). */
 function getWebGLCanvasFingerprint() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 64;
+  canvas.height = 64;
+  const gl = canvas.getContext('webgl');
+  if (!gl) return null;
   try {
-    const canvas = document.createElement('canvas');
-    canvas.width = 64;
-    canvas.height = 64;
-    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-
-    if (!gl) return 'Not Supported';
-
-    // Draw gradient pattern using WebGL
     gl.clearColor(0.3, 0.5, 0.7, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
-
-    // The way browsers composite WebGL to 2D varies
     return canvas.toDataURL();
-  } catch (e) {
-    return 'Error';
+  } finally {
+    // Browsers cap live WebGL contexts; release this one now instead of at garbage collection.
+    gl.getExtension('WEBGL_lose_context')?.loseContext();
   }
 }
 
-/**
- * Tests emoji rendering variations across platforms
- */
 function getEmojiFingerprint() {
   const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
   canvas.width = 200;
   canvas.height = 30;
-
-  // Emoji that render very differently across platforms
-  const testEmojis = [
-    '😀', // Basic smiley - varies in style
-    '🏳️‍🌈', // Rainbow flag - complex composition
-    '👨‍👩‍👧‍👦', // Family - ZWJ sequence handling
-    '🦄', // Unicorn - newer emoji
-    '⚡', // Lightning - varies between color/monochrome
-    '☺️', // Classic smiley - very variant
-    '🫠', // Melting face - very new, often unsupported
-  ];
-
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+  // Basic, ZWJ sequence, flag, newer and text-vs-emoji presentation code points.
   ctx.font = '20px Arial';
-  ctx.fillText(testEmojis.join(''), 0, 22);
-
+  ctx.fillText('😀🏳️‍🌈👨‍👩‍👧‍👦🦄⚡☺️🫠', 0, 22);
   return canvas.toDataURL();
 }
 
-/**
- * Generates an enhanced audio fingerprint using OfflineAudioContext
- */
 async function getAudioFingerprint() {
+  if (typeof OfflineAudioContext !== 'function') return null;
   try {
-    const AudioContext = window.OfflineAudioContext || window.webkitOfflineAudioContext;
-    if (!AudioContext) {
-      return 'Not Supported';
-    }
-
-    const context = new AudioContext(1, 44100, 44100);
-
-    // Oscillator
+    const context = new OfflineAudioContext(1, 44100, 44100);
     const oscillator = context.createOscillator();
     oscillator.type = 'triangle';
     oscillator.frequency.value = 10000;
 
-    // Compressor with specific settings (hardware dependent)
+    // Compressor output depends on the platform's floating-point audio pipeline.
     const compressor = context.createDynamicsCompressor();
     compressor.threshold.value = -50;
     compressor.knee.value = 40;
@@ -128,119 +91,86 @@ async function getAudioFingerprint() {
     compressor.attack.value = 0;
     compressor.release.value = 0.25;
 
-    // Analyser node
-    const analyser = context.createAnalyser();
-    analyser.fftSize = 256;
-
-    // Connect nodes
     oscillator.connect(compressor);
-    compressor.connect(analyser);
-    analyser.connect(context.destination);
-
+    compressor.connect(context.destination);
     oscillator.start(0);
-    const buffer = await context.startRendering();
 
-    // Get channel data and create fingerprint
-    const channelData = buffer.getChannelData(0);
+    const samples = (await context.startRendering()).getChannelData(0);
     let sum = 0;
-    for (let i = 0; i < channelData.length; i++) {
-      sum += Math.abs(channelData[i]);
-    }
-
+    for (let i = 0; i < samples.length; i++) sum += Math.abs(samples[i]);
     return sum.toString();
-  } catch (e) {
-    return 'Error';
+  } catch {
+    return null;
   }
 }
 
-/**
- * Gets speech synthesis voices fingerprint
- */
-async function getSpeechVoicesFingerprint() {
+/** Voices load asynchronously in most browsers; wait for `voiceschanged`, at most one second. */
+function getSpeechVoices() {
+  if (!('speechSynthesis' in window)) return Promise.resolve(null);
   return new Promise((resolve) => {
-    if (!('speechSynthesis' in window)) {
-      resolve({ available: false, count: 0, hash: 'Not Supported' });
-      return;
-    }
-
-    const getVoices = () => {
-      const voices = speechSynthesis.getVoices();
-      if (voices.length === 0) {
-        // Voices not loaded yet, wait
-        setTimeout(getVoices, 100);
-        return;
-      }
-
-      const voiceData = voices.map((v) => `${v.name}|${v.lang}|${v.localService}`).join('||');
-      resolve({
-        available: true,
-        count: voices.length,
-        hash: cyrb53(voiceData).toString(16),
-        sample: voices
-          .slice(0, 5)
-          .map((v) => v.name)
-          .join(', '),
-      });
+    const finish = () => {
+      clearTimeout(timer);
+      speechSynthesis.removeEventListener?.('voiceschanged', check);
+      resolve(speechSynthesis.getVoices());
     };
-
-    // Browsers often load voices asynchronously
-    if (speechSynthesis.onvoiceschanged !== undefined) {
-      speechSynthesis.onvoiceschanged = getVoices;
-    }
-
-    getVoices();
-
-    // Timeout fallback (some browsers don't have voices or fail to load)
-    setTimeout(() => {
-      resolve({ available: true, count: 0, hash: 'Timeout/None' });
-    }, 1000);
+    const check = () => {
+      if (speechSynthesis.getVoices().length > 0) finish();
+    };
+    const timer = setTimeout(finish, 1000);
+    speechSynthesis.addEventListener?.('voiceschanged', check);
+    check();
   });
 }
 
-/**
- * Collects digital fingerprint data
- */
 export async function collectFingerprintData() {
   const canvasFP = getCanvasFingerprint();
-  
-  // Note: This is different from the WebGL Module. This checks toDataURL composition.
-  const webglCanvasFP = getWebGLCanvasFingerprint(); 
-  
+  const webglCanvasFP = getWebGLCanvasFingerprint();
   const emojiFP = getEmojiFingerprint();
-  const audioFP = await getAudioFingerprint();
-  const voicesFP = await getSpeechVoicesFingerprint();
+  const protection = detectCanvasProtection();
+  const [audioFP, voices] = await Promise.all([getAudioFingerprint(), getSpeechVoices()]);
 
-  // Composite Hash Data (high entropy combination)
-  const fingerprintComponents = [
+  const voiceList = voices?.map((v) => `${v.name}|${v.lang}|${v.localService}`).join('||') ?? '';
+
+  const deviceHash = hash([
     canvasFP,
     webglCanvasFP,
     emojiFP,
     audioFP,
     navigator.hardwareConcurrency,
-    screen.width + 'x' + screen.height,
+    `${screen.width}x${screen.height}`,
     Intl.DateTimeFormat().resolvedOptions().timeZone,
     navigator.language,
-    voicesFP.hash,
-  ].join('||');
+    voiceList,
+  ].join('||'));
 
-  const deviceHash = cyrb53(fingerprintComponents).toString(16);
-
-  return {
-    'Composite Device ID': { value: deviceHash.toUpperCase(), warning: true },
-    'Trackability Estimate': { value: 'Very High (Multi-Vector)', warning: true },
-    
-    'Canvas Hash': { value: cyrb53(canvasFP).toString(16) },
-    'Canvas Visual': {
-      // Inline image for visual verification
-      value: 'Rendered below',
-      element: { type: 'image', src: canvasFP, alt: 'Canvas Fingerprint' },
-    },
-    
-    'WebGL Canvas Hash': { value: cyrb53(webglCanvasFP).toString(16) },
-    'Emoji Render Hash': { value: cyrb53(emojiFP).toString(16) },
-    'Audio Hash': { value: cyrb53(audioFP).toString(16) },
-    
-    'Speech Voices': { value: voicesFP.available ? `${voicesFP.count} voices` : 'Not Supported' },
-    'Sample Voice': { value: voicesFP.available ? voicesFP.sample : 'N/A' }
+  const protectedCanvas = isCanvasProtected(protection);
+  const data = {
+    'Composite Device ID': { value: deviceHash, warning: !protectedCanvas },
+    'Stability Across Sites': protectedCanvas
+      ? { value: 'Reduced (canvas readback altered; hashes may vary per site or session)' }
+      : { value: 'High (no canvas protection detected)', warning: true },
+    'Canvas Hash': { value: canvasFP ? hash(canvasFP) : 'Not Supported' },
   };
+  if (canvasFP) {
+    data['Canvas Render'] = {
+      value: 'Image below',
+      element: { type: 'image', src: canvasFP, alt: 'The test image this browser rendered for canvas fingerprinting' },
+    };
+  }
+  Object.assign(data, {
+    'WebGL Canvas Hash': { value: webglCanvasFP ? hash(webglCanvasFP) : 'Not Supported' },
+    'Emoji Render Hash': { value: emojiFP ? hash(emojiFP) : 'Not Supported' },
+    'Audio Hash': {
+      value: audioFP ? hash(audioFP) : 'Not Supported',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/API/OfflineAudioContext',
+    },
+    'Speech Voices': {
+      value: voices === null ? 'Not Supported' : voices.length > 0 ? `${voices.length} (hash ${hash(voiceList)})` : 'None loaded',
+      url: 'https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesis/getVoices',
+    },
+  });
+  if (voices?.length > 0) {
+    data['Sample Voices'] = { value: voices.slice(0, 5).map((v) => v.name).join(', ') };
+  }
+  return data;
 }

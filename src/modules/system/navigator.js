@@ -1,134 +1,63 @@
 /**
- * Navigator Variables and Feature Detection Module
- * Enhanced with MDN Resource Links
+ * Navigator card: the User-Agent string and which web platform APIs this browser exposes.
+ * The set of supported APIs alone narrows down browser, version and platform.
+ * Language, privacy signals and device data live in their own cards.
  */
 
+const MDN = 'https://developer.mozilla.org/en-US/docs/Web/API/';
+
+const FEATURES = [
+  ['Service Worker', () => 'serviceWorker' in navigator, 'Service_Worker_API'],
+  ['Push API', () => 'PushManager' in window, 'Push_API'],
+  ['Storage Manager', () => 'storage' in navigator, 'StorageManager'],
+  ['File System Access', () => 'showOpenFilePicker' in window, 'File_System_API'],
+  ['Web Bluetooth', () => 'bluetooth' in navigator, 'Web_Bluetooth_API'],
+  ['WebUSB', () => 'usb' in navigator, 'WebUSB_API'],
+  ['WebHID', () => 'hid' in navigator, 'WebHID_API'],
+  ['Web Serial', () => 'serial' in navigator, 'Web_Serial_API'],
+  ['Web MIDI', () => 'requestMIDIAccess' in navigator, 'Web_MIDI_API'],
+  ['Gamepad', () => 'getGamepads' in navigator, 'Gamepad_API'],
+  ['WebAuthn (Passkeys)', () => 'PublicKeyCredential' in window, 'Web_Authentication_API'],
+  ['Credential Management', () => 'credentials' in navigator, 'Credential_Management_API'],
+  ['Web Share', () => 'share' in navigator, 'Web_Share_API'],
+  ['Clipboard', () => 'clipboard' in navigator, 'Clipboard_API'],
+  ['Virtual Keyboard', () => 'virtualKeyboard' in navigator, 'VirtualKeyboard_API'],
+  ['WebXR', () => 'xr' in navigator, 'WebXR_Device_API'],
+  ['WebGPU', () => 'gpu' in navigator, 'WebGPU_API'],
+  ['WebCodecs', () => 'VideoDecoder' in window, 'WebCodecs_API'],
+  ['Media Session', () => 'mediaSession' in navigator, 'Media_Session_API'],
+  ['Picture-in-Picture', () => 'pictureInPictureEnabled' in document, 'Picture-in-Picture_API'],
+  ['Presentation', () => 'presentation' in navigator, 'Presentation_API'],
+  ['Screen Wake Lock', () => 'wakeLock' in navigator, 'Screen_Wake_Lock_API'],
+  ['Vibration', () => 'vibrate' in navigator, 'Vibration_API'],
+  ['Device Orientation', () => 'DeviceOrientationEvent' in window, 'Device_orientation_events'],
+  ['Generic Sensors', () => 'Accelerometer' in window, 'Sensor_APIs'],
+  ['Compute Pressure', () => 'PressureObserver' in window, 'Compute_Pressure_API'],
+  ['Shared Storage', () => 'sharedStorage' in window, 'Shared_Storage_API'],
+  ['Topics (ad interests)', () => 'browsingTopics' in document, 'Topics_API'],
+];
+
 export async function collectNavigatorData() {
-  const nav = navigator;
-  const data = {};
-
-  // --- 1. Core Navigator Functions ---
-  data['User Agent'] = { 
-      value: nav.userAgent, 
-      url: 'https://developer.mozilla.org/en-US/docs/Web/API/Navigator/userAgent' 
-  };
-  data['Language'] = { 
-    value: nav.language, 
-    url: 'https://developer.mozilla.org/en-US/docs/Web/API/Navigator/language' 
-  };
-  data['Languages'] = { 
-    value:  nav.languages ? nav.languages.join(', ') : 'N/A', 
-    url: 'https://developer.mozilla.org/en-US/docs/Web/API/Navigator/languages' 
-  };
-  data['Cookies Enabled'] = { 
-    value: nav.cookieEnabled ? 'Yes' : 'No', 
-    url: 'https://developer.mozilla.org/en-US/docs/Web/API/Navigator/cookieEnabled' 
-  };
-  data['Do Not Track'] = { 
-    value: nav.doNotTrack === '1' ? 'Enabled' : 'Disabled', 
-    url: 'https://developer.mozilla.org/en-US/docs/Web/API/Navigator/doNotTrack' 
-  };
-  data['Global Privacy Control'] = { 
-    value: nav.globalPrivacyControl ? 'Enabled' : 'Not Set', 
-    url: 'https://globalprivacycontrol.org/' 
+  const data = {
+    'User Agent': { value: navigator.userAgent, url: `${MDN}Navigator/userAgent` },
+    'Platform (Legacy)': { value: navigator.platform || 'Empty', url: `${MDN}Navigator/platform` },
+    'Vendor': { value: navigator.vendor || 'Empty', url: `${MDN}Navigator/vendor` },
+    'PDF Viewer': {
+      value: navigator.pdfViewerEnabled === undefined ? 'Unknown' : navigator.pdfViewerEnabled ? 'Built-in' : 'None',
+      url: `${MDN}Navigator/pdfViewerEnabled`,
+    },
   };
 
-  // --- 2. Feature Detection (APIs) ---
-  
-  // Storage & Files
-  data['Storage Manager API'] = {
-      value: 'storage' in nav ? 'Supported' : 'Not Supported',
-      url: 'https://developer.mozilla.org/en-US/docs/Web/API/StorageManager'
-  };
-  data['File System Access API'] = {
-      value: 'showOpenFilePicker' in window ? 'Supported' : 'Not Supported',
-      url: 'https://developer.mozilla.org/en-US/docs/Web/API/File_System_Access_API'
-  };
-
-  // Hardware/Communication
-  data['Web Bluetooth API'] = {
-      value: 'bluetooth' in nav ? 'Supported' : 'Not Supported',
-      url: 'https://developer.mozilla.org/en-US/docs/Web/API/Web_Bluetooth_API'
-  };
-  data['Web USB API'] = {
-      value: 'usb' in nav ? 'Supported' : 'Not Supported',
-      url: 'https://developer.mozilla.org/en-US/docs/Web/API/WebUSB_API'
-  };
-  data['Web HID API'] = {
-      value: 'hid' in nav ? 'Supported' : 'Not Supported',
-      url: 'https://developer.mozilla.org/en-US/docs/Web/API/WebHID_API'
-  };
-  data['Web Serial API'] = {
-      value: 'serial' in nav ? 'Supported' : 'Not Supported',
-      url: 'https://developer.mozilla.org/en-US/docs/Web/API/Web_Serial_API'
-  };
-  data['Gamepads API'] = {
-      value: 'getGamepads' in nav ? 'Supported' : 'Not Supported',
-      url: 'https://developer.mozilla.org/en-US/docs/Web/API/Gamepad_API'
-  };
-
-  // Security & Auth
-  data['Web Authentication API'] = {
-      value: 'credentials' in nav ? 'Supported' : 'Not Supported',
-      url: 'https://developer.mozilla.org/en-US/docs/Web/API/Web_Authentication_API'
-  };
-  data['Credential Management API'] = {
-      value: 'credentials' in nav ? 'Supported' : 'Not Supported',
-      url: 'https://developer.mozilla.org/en-US/docs/Web/API/Credential_Management_API'
-  };
-
-  // Input & Share
-  data['Web Share API'] = {
-      value: 'share' in nav ? 'Supported' : 'Not Supported',
-      url: 'https://developer.mozilla.org/en-US/docs/Web/API/Web_Share_API'
-  };
-  data['Clipboard API'] = {
-      value: 'clipboard' in nav ? 'Supported' : 'Not Supported',
-      url: 'https://developer.mozilla.org/en-US/docs/Web/API/Clipboard_API'
-  };
-  data['Virtual Keyboard API'] = {
-      value: 'virtualKeyboard' in nav ? 'Supported' : 'Not Supported',
-      url: 'https://developer.mozilla.org/en-US/docs/Web/API/VirtualKeyboard_API'
-  };
-
-  // Media & VR
-  data['WebXR Device API'] = {
-      value: 'xr' in nav ? 'Supported' : 'Not Supported',
-      url: 'https://developer.mozilla.org/en-US/docs/Web/API/WebXR_Device_API'
-  };
-  data['Media Session API'] = {
-      value: 'mediaSession' in nav ? 'Supported' : 'Not Supported',
-      url: 'https://developer.mozilla.org/en-US/docs/Web/API/Media_Session_API'
-  };
-  data['Picture-in-Picture'] = {
-      value: 'pictureInPictureEnabled' in document ? 'Supported' : 'Not Supported',
-      url: 'https://developer.mozilla.org/en-US/docs/Web/API/Picture-in-Picture_API'
-  };
-
-  // Other Modern APIs
-  data['Service Worker'] = {
-      value: 'serviceWorker' in nav ? 'Supported' : 'Not Supported',
-      url: 'https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API'
-  };
-  data['Push API'] = {
-      value: 'PushManager' in window ? 'Supported' : 'Not Supported',
-      url: 'https://developer.mozilla.org/en-US/docs/Web/API/Push_API'
-  };
-  data['Presentation API'] = {
-      value: 'presentation' in nav ? 'Supported' : 'Not Supported',
-      url: 'https://developer.mozilla.org/en-US/docs/Web/API/Presentation_API'
-  };
-  data['Wake Lock API'] = {
-      value: 'wakeLock' in nav ? 'Supported' : 'Not Supported',
-      url: 'https://developer.mozilla.org/en-US/docs/Web/API/Screen_Wake_Lock_API'
-  };
-  
-  // PDF Viewer
-  data['PDF Viewer'] = { 
-      value: nav.pdfViewerEnabled === true ? 'Enabled' : (nav.pdfViewerEnabled === false ? 'Disabled' : 'Unknown'),
-      url: 'https://developer.mozilla.org/en-US/docs/Web/API/Navigator/pdfViewerEnabled' 
-  };
-
-
+  const results = FEATURES.map(([name, test, page]) => {
+    let supported = false;
+    try {
+      supported = Boolean(test());
+    } catch {}
+    return [name, supported, page];
+  });
+  data['APIs Exposed'] = { value: `${results.filter(([, ok]) => ok).length} of ${FEATURES.length} tested` };
+  for (const [name, ok, page] of results) {
+    data[name] = { value: ok ? 'Supported' : 'Not Supported', url: `${MDN}${page}` };
+  }
   return data;
 }

@@ -1,164 +1,133 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { computed } from 'vue';
 import BasePopup from './BasePopup.vue';
 
-defineProps({
-  isOpen: {
-    type: Boolean,
-    default: false,
-  },
+const props = defineProps({
+  open: { type: Boolean, default: false },
+  // Score factors from the privacy card; tips for protections already in place are skipped.
+  // null while the privacy checks are still running: every tip is shown.
+  factors: { type: Object, default: null },
 });
 
 const emit = defineEmits(['close']);
 
-// Detect browser for specific recommendations
-const browserInfo = ref({ name: 'Unknown', isFirefox: false, isChrome: false, isBrave: false });
-
-onMounted(async () => {
+const browser = computed(() => {
+  if (props.factors?.brave) return 'Brave';
   const ua = navigator.userAgent;
-
-  // Check for Brave first (it also has Chrome in UA)
-  if (navigator.brave && typeof navigator.brave.isBrave === 'function') {
-    try {
-      const isBrave = await navigator.brave.isBrave();
-      if (isBrave) {
-        browserInfo.value = { name: 'Brave', isFirefox: false, isChrome: false, isBrave: true };
-        return;
-      }
-    } catch (e) {}
-  }
-
-  if (ua.includes('Firefox')) {
-    browserInfo.value = { name: 'Firefox', isFirefox: true, isChrome: false, isBrave: false };
-  } else if (ua.includes('Chrome')) {
-    browserInfo.value = { name: 'Chrome', isFirefox: false, isChrome: true, isBrave: false };
-  } else if (ua.includes('Safari')) {
-    browserInfo.value = { name: 'Safari', isFirefox: false, isChrome: false, isBrave: false };
-  }
+  if (ua.includes('Firefox/')) return 'Firefox';
+  if (ua.includes('Edg/')) return 'Edge';
+  if (ua.includes('Chrome/')) return 'Chrome';
+  if (ua.includes('Safari/')) return 'Safari';
+  return 'Unknown';
 });
 
-const recommendations = computed(() => {
-  const tips = [];
+const tips = computed(() => {
+  const f = props.factors ?? {};
+  const b = browser.value;
+  const list = [];
 
-  // Universal recommendations
-  tips.push({
-    title: 'Enable Do Not Track',
-    description: 'Signal to websites that you don\'t want to be tracked.',
-    action: 'Browser Settings → Privacy → Send "Do Not Track" request',
-  });
+  if (!f.fingerprintProtection) {
+    list.push(b === 'Firefox'
+      ? {
+        title: 'Turn on fingerprinting protection',
+        description: 'Strict Enhanced Tracking Protection blocks known fingerprinters and randomizes canvas readback.',
+        action: 'Settings → Privacy & Security → Enhanced Tracking Protection → Strict',
+      }
+      : {
+        title: 'Use a browser that resists fingerprinting',
+        description: 'Tor Browser and Mullvad Browser make every user look the same; Brave randomizes canvas, audio and other readings per site.',
+        link: 'https://mullvad.net/en/browser',
+      });
+  }
 
-  tips.push({
-    title: 'Enable Global Privacy Control',
-    description: 'Legally binding opt-out in CA/EU.',
-    link: 'https://globalprivacycontrol.org/',
-  });
-
-  // Ad Blocker recommendations
-  if (browserInfo.value.isFirefox) {
-    tips.push({
-      title: 'Install uBlock Origin',
-      description: 'Best ad blocker for Firefox.',
-      link: 'https://addons.mozilla.org/en-US/firefox/addon/ublock-origin/',
-    });
-    tips.push({
-      title: 'Install Privacy Badger',
-      description: 'Automatically blocks invisible trackers.',
-      link: 'https://addons.mozilla.org/en-US/firefox/addon/privacy-badger17/',
-    });
-    tips.push({
-      title: 'Enable Enhanced Tracking Protection',
-      description: 'Settings → Privacy & Security → Enhanced Tracking Protection → Strict',
-      action: 'Firefox Settings',
-    });
-  } else if (browserInfo.value.isChrome) {
-    tips.push({
-      title: 'Install AdGuard',
-      description: 'Recommended ad blocker for Chrome (Manifest V3 compatible).',
-      link: 'https://chromewebstore.google.com/detail/bgnkhhnnamicmpeenaelnjfhikgbkllg',
-    });
-    tips.push({
-      title: 'Install Privacy Badger',
-      description: 'Automatically blocks invisible trackers.',
-      link: 'https://chromewebstore.google.com/detail/privacy-badger/pkehgijcmpdhfbdbbnkijodmdjhbjlgp',
-    });
-    tips.push({
-      title: 'Consider Switching to Firefox',
-      description: 'Chrome restricts ad blockers. Firefox has better privacy defaults.',
-      link: 'https://www.mozilla.org/en-US/firefox/new/',
-    });
-  } else if (browserInfo.value.isBrave) {
-    tips.push({
-      title: 'You\'re using Brave!',
-      description: 'Brave has built-in ad/tracker blocking. Ensure Shields are enabled.',
-      action: 'Click the Brave icon in address bar → Shields Up',
+  if (!f.adBlocker && b !== 'Brave') {
+    const blockers = {
+      Firefox: { title: 'Install uBlock Origin', link: 'https://addons.mozilla.org/firefox/addon/ublock-origin/' },
+      Chrome: { title: 'Install uBlock Origin Lite', link: 'https://chromewebstore.google.com/detail/ublock-origin-lite/ddkjiahejlhfcafbddmgiahcphecmpfh' },
+      Edge: { title: 'Install uBlock Origin Lite', link: 'https://chromewebstore.google.com/detail/ublock-origin-lite/ddkjiahejlhfcafbddmgiahcphecmpfh' },
+    };
+    list.push({
+      ...(blockers[b] ?? { title: 'Install a content blocker', link: 'https://github.com/gorhill/uBlock#ublock-origin-ubo' }),
+      description: 'Blocks ads and the tracking and fingerprinting scripts that load with them.',
     });
   }
 
-  // WebRTC recommendation
-  tips.push({
-    title: 'Disable WebRTC IP Leak',
-    description: browserInfo.value.isFirefox
-      ? 'about:config → media.peerconnection.enabled → false'
-      : 'Use browser extension or VPN with WebRTC leak protection.',
+  if (!f.gpcEnabled) {
+    list.push(b === 'Firefox'
+      ? {
+        title: 'Send Global Privacy Control',
+        description: 'A legally recognized "do not sell or share my data" signal in California, Colorado and other jurisdictions.',
+        action: 'Settings → Privacy & Security → Tell websites not to sell or share my data',
+      }
+      : {
+        title: 'Send Global Privacy Control',
+        description: 'A legally recognized opt-out signal. Brave and Firefox can send it; Privacy Badger adds it to other browsers.',
+        link: 'https://globalprivacycontrol.org/',
+      });
+  }
+
+  if (f.webrtcLeaking) {
+    const fixes = {
+      Firefox: 'about:config → media.peerconnection.ice.default_address_only → true',
+      Brave: 'Settings → Privacy and security → WebRTC IP handling policy → Disable non-proxied UDP',
+    };
+    list.push({
+      title: 'Stop the WebRTC IP leak',
+      description: 'WebRTC is exposing an address that your regular traffic hides.',
+      action: fixes[b] ?? 'Use your VPN\'s WebRTC leak protection, or an extension such as uBlock Origin that limits WebRTC.',
+    });
+  }
+
+  if (!f.vpnDetected && !f.torDetected) {
+    list.push({
+      title: 'Hide your IP address',
+      description: 'A trustworthy VPN or Tor hides your IP and location from sites. It does not stop fingerprinting by itself.',
+      link: 'https://www.privacyguides.org/en/vpn/',
+    });
+  }
+
+  list.push({
+    title: 'Blend in',
+    description: 'Rare fonts, many extensions and unusual settings make a fingerprint more unique. Fewer customizations make you harder to single out.',
   });
 
-  // VPN recommendation
-  tips.push({
-    title: 'Use a Privacy-Focused VPN',
-    description: 'Mullvad, ProtonVPN, or IVPN for maximum privacy.',
-    link: 'https://mullvad.net/',
-  });
-
-  return tips;
+  return list;
 });
 </script>
 
 <template>
-  <BasePopup
-    :isOpen="isOpen"
-    title="enhance_privacy.sh"
-    prompt="root@privacy:~#"
-    @close="emit('close')"
-  >
-    <div class="intro">
-      <pre>$ ./enhance_privacy.sh --browser={{ browserInfo.name }}</pre>
-      <pre class="output">[*] Generating recommendations...</pre>
-    </div>
+  <BasePopup :open="open" title="enhance_privacy.sh" @close="emit('close')">
+    <pre class="intro">$ ./enhance_privacy.sh --browser={{ browser }}</pre>
+    <p class="output">
+      [*] {{ tips.length }} recommendation(s)
+      {{ factors ? 'based on this scan' : '(privacy checks still running: showing all)' }}
+    </p>
 
-    <div class="recommendations">
-      <div v-for="(tip, index) in recommendations" :key="index" class="tip">
-        <div class="tip-header">
-          <span class="tip-title">{{ tip.title }}</span>
-        </div>
+    <ul class="recommendations">
+      <li v-for="tip in tips" :key="tip.title" class="tip">
+        <h3 class="tip-title">{{ tip.title }}</h3>
         <p class="tip-description">{{ tip.description }}</p>
-        <div v-if="tip.action" class="tip-action">
-          <span class="prompt-mini">&rarr;</span> {{ tip.action }}
-        </div>
-        <a v-if="tip.link" :href="tip.link" target="_blank" rel="noopener" class="tip-link">
-          Open ↗
+        <p v-if="tip.action" class="tip-action"><span aria-hidden="true">&rarr; </span>{{ tip.action }}</p>
+        <a v-if="tip.link" :href="tip.link" target="_blank" rel="noopener noreferrer" class="tip-link">
+          Open<span class="sr-only">: {{ tip.title }} (new tab)</span> ↗
         </a>
-      </div>
-    </div>
-
-    <div class="footer">
-      <pre>$ exit</pre>
-    </div>
+      </li>
+    </ul>
   </BasePopup>
 </template>
 
 <style scoped>
-.intro pre {
-  margin: 0;
-  font-family: inherit;
+.intro {
   color: var(--fg);
 }
 
-.intro .output {
+.output {
   color: var(--fg-dim);
   margin-bottom: 1rem;
 }
 
 .recommendations {
+  list-style: none;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -170,32 +139,20 @@ const recommendations = computed(() => {
   background: var(--bg-dim);
 }
 
-.tip-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
 .tip-title {
-  color: var(--fg);
-  font-weight: bold;
+  font-size: inherit;
+  margin-bottom: 0.5rem;
 }
 
 .tip-description {
   color: var(--fg-dim);
-  margin: 0 0 0.5rem 0;
+  margin-bottom: 0.5rem;
   font-size: 0.9rem;
 }
 
 .tip-action {
   color: var(--fg-muted);
   font-size: 0.85rem;
-  font-family: monospace;
-}
-
-.prompt-mini {
-  color: var(--fg-dim);
 }
 
 .tip-link {
@@ -208,19 +165,9 @@ const recommendations = computed(() => {
   padding: 0.25rem 0.5rem;
 }
 
-.tip-link:hover {
+.tip-link:hover,
+.tip-link:focus-visible {
   background: var(--fg);
   color: var(--bg);
-}
-
-.footer {
-  margin-top: 1rem;
-  border-top: 1px solid var(--border);
-  padding-top: 0.5rem;
-}
-
-.footer pre {
-  margin: 0;
-  color: var(--fg-dim);
 }
 </style>

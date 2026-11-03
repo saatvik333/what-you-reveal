@@ -1,22 +1,20 @@
 @import "./assets/styles/variables.css";
 @import "./assets/styles/base.css";
 
-/* Utility Classes */
 .container {
-  max-width: 1200px;
-  width: 100%;
+  max-width: 1240px;
   margin: 0 auto;
-  padding: 0 var(--spacing-sm);
 }
 
 .grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--spacing-md);
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--spacing-sm);
+  align-items: start;
 }
 
-@media (min-width: 700px) {
+@media (min-width: 760px) {
   .grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

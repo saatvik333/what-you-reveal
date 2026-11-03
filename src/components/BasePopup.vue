@@ -1,133 +1,68 @@
 <script setup>
-import { ref, watch, onUnmounted, nextTick } from 'vue';
+import { ref, watch, onMounted, useId } from 'vue';
 
+// Native modal <dialog>: the browser provides the focus trap, inert background, Escape to
+// close, top-layer stacking and focus return to the opener.
 const props = defineProps({
-  isOpen: {
-    type: Boolean,
-    default: false,
-  },
-  title: {
-    type: String,
-    required: true,
-  },
-  prompt: {
-    type: String,
-    default: 'root@privacy:~#',
-  },
+  open: { type: Boolean, default: false },
+  title: { type: String, required: true },
+  prompt: { type: String, default: 'root@privacy:~#' },
 });
 
 const emit = defineEmits(['close']);
-const containerRef = ref(null);
-let previouslyFocused = null;
+const dialog = ref(null);
+const titleId = useId();
 
-function close() {
-  emit('close');
+function sync(open) {
+  if (!dialog.value) return;
+  if (open && !dialog.value.open) dialog.value.showModal();
+  else if (!open && dialog.value.open) dialog.value.close();
 }
 
-function handleKeydown(e) {
-  if (e.key === 'Escape') {
-    close();
-    return;
-  }
+watch(() => props.open, sync);
+onMounted(() => sync(props.open));
 
-  // Focus trapping
-  if (e.key === 'Tab' && containerRef.value) {
-    const focusable = containerRef.value.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-    if (focusable.length === 0) return;
-
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-
-    if (e.shiftKey) {
-      if (document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      }
-    } else {
-      if (document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    }
-  }
+// A click whose target is the <dialog> itself landed on the backdrop, outside the panel.
+function onClick(event) {
+  if (event.target === dialog.value) dialog.value.close();
 }
-
-watch(() => props.isOpen, async (newVal) => {
-  if (newVal) {
-    previouslyFocused = document.activeElement;
-    document.addEventListener('keydown', handleKeydown);
-    await nextTick();
-    // Focus the close button when the dialog opens
-    if (containerRef.value) {
-      const closeBtn = containerRef.value.querySelector('.close-btn');
-      if (closeBtn) closeBtn.focus();
-    }
-  } else {
-    document.removeEventListener('keydown', handleKeydown);
-    // Restore focus to the element that opened the popup
-    if (previouslyFocused && previouslyFocused.focus) {
-      previouslyFocused.focus();
-    }
-  }
-});
-
-onUnmounted(() => {
-  document.removeEventListener('keydown', handleKeydown);
-});
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      v-if="isOpen"
-      class="popup-overlay"
-      @click.self="close"
-      role="dialog"
-      aria-modal="true"
-      :aria-label="title"
-    >
-      <div class="popup-container" ref="containerRef">
-        <div class="popup-header">
-          <span class="prompt">{{ prompt }}</span>
-          <span class="title">{{ title }}</span>
-          <button class="close-btn" @click="close" aria-label="Close dialog">[X]</button>
-        </div>
-
-        <div class="popup-content">
-          <slot />
-        </div>
+  <dialog ref="dialog" :aria-labelledby="titleId" @close="emit('close')" @click="onClick">
+    <div class="popup-container">
+      <div class="popup-header">
+        <span class="prompt" aria-hidden="true">{{ prompt }}</span>
+        <h2 :id="titleId" class="title">{{ title }}</h2>
+        <button type="button" class="close-btn" aria-label="Close dialog" autofocus @click="dialog.close()">[X]</button>
+      </div>
+      <div class="popup-content">
+        <slot />
       </div>
     </div>
-  </Teleport>
+  </dialog>
 </template>
 
 <style scoped>
-.popup-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
+dialog {
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--fg-dim);
+  background: var(--bg);
+  color: var(--fg);
+  max-width: min(600px, 90vw);
   width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  backdrop-filter: blur(4px);
+  max-height: 80vh;
+}
+
+dialog::backdrop {
+  background: rgb(0 0 0 / 0.85);
 }
 
 .popup-container {
-  background: var(--bg);
-  border: 1px solid var(--fg-dim);
-  max-width: 600px;
-  width: 90%;
-  max-height: 80vh;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 0 30px rgba(0, 255, 0, 0.1);
+  max-height: 80vh;
 }
 
 .popup-header {
@@ -136,7 +71,6 @@ onUnmounted(() => {
   gap: 1ch;
   padding: 0.5rem 1rem;
   border-bottom: 1px solid var(--border);
-  background: var(--bg-dim);
 }
 
 .prompt {
@@ -146,14 +80,15 @@ onUnmounted(() => {
 .title {
   color: var(--fg);
   flex: 1;
+  font-size: inherit;
+  font-weight: inherit;
 }
 
 .close-btn {
   background: none;
   border: none;
   color: var(--fg);
-  font-family: inherit;
-  font-size: inherit;
+  font: inherit;
   cursor: pointer;
   padding: 0.25rem;
 }
@@ -162,7 +97,7 @@ onUnmounted(() => {
   color: var(--warning);
 }
 
-.close-btn:focus {
+.close-btn:focus-visible {
   outline: 1px solid var(--fg);
   outline-offset: 2px;
 }

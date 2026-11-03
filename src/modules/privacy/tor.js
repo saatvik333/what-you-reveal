@@ -1,307 +1,46 @@
 /**
- * Tor Detection Module
- * Browser-compatible implementation with localStorage caching
+ * Tor exit detection through the Tor Project's Onionoo API.
+ *
+ * Onionoo answers with CORS headers and searches every address a relay used for onion
+ * routing or for exiting in the past 24 hours, IPv4 and IPv6, so one small request per public
+ * address replaces downloading the bulk exit list through a third-party CORS proxy.
+ * Searches match address prefixes, so results are confirmed by exact address.
  */
 
-const TOR_LIST_KEY = 'wyr_tor_exit_nodes';
-const TOR_TIMESTAMP_KEY = 'wyr_tor_timestamp';
-const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in ms
+import { fetchPublicIPs } from '../../utils/publicip.js';
 
-/**
- * LocalStorage-based persistence for Tor exit node list
- */
-class LocalStoragePersistence {
-  getIpList() {
-    try {
-      const data = localStorage.getItem(TOR_LIST_KEY);
-      if (!data) return new Set();
-      return new Set(JSON.parse(data));
-    } catch (e) {
-      console.warn('Error reading Tor list from localStorage:', e);
-      return new Set();
-    }
-  }
+const ONIONOO_URL = 'https://onionoo.torproject.org/details';
 
-  saveIpList(ipList) {
-    try {
-      localStorage.setItem(TOR_LIST_KEY, JSON.stringify([...ipList]));
-    } catch (e) {
-      console.warn('Error saving Tor list to localStorage:', e);
-    }
-  }
-
-  getTimestamp() {
-    try {
-      const ts = localStorage.getItem(TOR_TIMESTAMP_KEY);
-      return ts ? parseInt(ts, 10) : 0;
-    } catch (e) {
-      return 0;
-    }
-  }
-
-  saveTimestamp(timestamp) {
-    try {
-      localStorage.setItem(TOR_TIMESTAMP_KEY, timestamp.toString());
-    } catch (e) {
-      console.warn('Error saving Tor timestamp:', e);
-    }
-  }
+function stripPort(orAddress) {
+  // "1.2.3.4:9001" or "[2001:db8::1]:9001"
+  const host = orAddress.slice(0, orAddress.lastIndexOf(':'));
+  return host.startsWith('[') ? host.slice(1, -1) : host;
 }
 
-const persistence = new LocalStoragePersistence();
-
-// In-memory cache for fast repeated lookups
-let cachedIpList = null;
-let cacheTimestamp = 0;
-const MEMORY_CACHE_TTL = 60000; // 1 minute
-
-/**
- * Fetches the user's current IP address
- */
-async function getIpAddress() {
-  try {
-    // Use ipify (CORS-friendly)
-    const response = await fetch('https://api.ipify.org?format=json');
-    if (!response.ok) throw new Error(`IP lookup failed: ${response.status}`);
-    const data = await response.json();
-    if (typeof data.ip !== 'string' || !data.ip.trim()) {
-      throw new Error('IP lookup returned no address');
-    }
-    return data.ip;
-  } catch (e) {
-    console.warn('Error fetching IP address:', e);
-    return 'unknown';
-  }
+async function isExitAddress(ip) {
+  const query = new URLSearchParams({ search: ip, running: 'true', fields: 'exit_addresses,or_addresses,flags' });
+  const response = await fetch(`${ONIONOO_URL}?${query}`);
+  if (!response.ok) throw new Error(`Onionoo HTTP ${response.status}`);
+  const { relays } = await response.json();
+  if (!Array.isArray(relays)) throw new Error('Onionoo returned no relay list');
+  const target = ip.toLowerCase();
+  return relays.some((relay) =>
+    (relay.exit_addresses ?? []).some((a) => a.toLowerCase() === target) ||
+    ((relay.flags ?? []).includes('Exit') && (relay.or_addresses ?? []).some((a) => stripPort(a).toLowerCase() === target)),
+  );
 }
 
 /**
- * Fetches Tor exit node list from the official source
- * Uses CORS proxy if direct fetch fails
- */
-async function fetchTorExitNodes() {
-  const TOR_LIST_URL = 'https://check.torproject.org/torbulkexitlist';
-  const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-  try {
-    // Try direct fetch first
-    let response;
-    try {
-      response = await fetch(TOR_LIST_URL, { signal: controller.signal });
-    } catch (corsError) {
-      // CORS blocked, try proxy
-      console.info('Direct fetch blocked, trying CORS proxy...');
-      response = await fetch(CORS_PROXY + encodeURIComponent(TOR_LIST_URL), {
-        signal: controller.signal,
-      });
-    }
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch Tor list: ${response.status}`);
-    }
-
-    const data = await response.text();
-    const ipSet = new Set();
-
-    for (const line of data.split('\n')) {
-      const ip = line.trim();
-      if (!ip) continue;
-
-      // Basic IPv4 validation
-      const parts = ip.split('.');
-      if (parts.length !== 4) continue;
-
-      let valid = true;
-      for (const part of parts) {
-        const num = parseInt(part, 10);
-        if (isNaN(num) || num < 0 || num > 255) {
-          valid = false;
-          break;
-        }
-      }
-
-      if (valid) ipSet.add(ip);
-    }
-
-    if (ipSet.size === 0) {
-      throw new Error('No valid IPs found in Tor list');
-    }
-
-    // Save to localStorage
-    persistence.saveIpList(ipSet);
-    persistence.saveTimestamp(Date.now());
-
-    return ipSet;
-  } catch (e) {
-    clearTimeout(timeoutId);
-    console.error('Error fetching Tor exit nodes:', e);
-    return new Set();
-  }
-}
-
-/**
- * Gets the Tor exit node list (from cache or network)
- */
-async function getTorExitNodes(forceUpdate = false) {
-  // Check memory cache first
-  if (
-    cachedIpList &&
-    cachedIpList.size > 0 &&
-    !forceUpdate &&
-    Date.now() - cacheTimestamp < MEMORY_CACHE_TTL
-  ) {
-    return cachedIpList;
-  }
-
-  // Check localStorage cache
-  const storedTimestamp = persistence.getTimestamp();
-  const isExpired = Date.now() - storedTimestamp > CACHE_TTL;
-
-  let ipList = persistence.getIpList();
-
-  if (ipList.size === 0 || isExpired || forceUpdate) {
-    ipList = await fetchTorExitNodes();
-  }
-
-  // Update memory cache
-  cachedIpList = ipList;
-  cacheTimestamp = Date.now();
-
-  return ipList;
-}
-
-/**
- * Checks if the current user IP is in the Tor exit node list
+ * @returns {Promise<{ isTor: boolean, ips: string[], error?: 'ip' | 'lookup' }>}
+ * `error` means the result cannot rule Tor out: no public IP was found, or Onionoo failed.
  */
 export async function isUsingTor() {
-  const [userIp, torNodes] = await Promise.all([
-    getIpAddress(),
-    getTorExitNodes(),
-  ]);
+  const { v4, v6 } = await fetchPublicIPs();
+  const ips = [v4, v6].filter(Boolean);
+  if (ips.length === 0) return { isTor: false, ips, error: 'ip' };
 
-  if (userIp === 'unknown') {
-    return { isTor: false, ip: 'unknown', error: true };
-  }
-
-  // An unavailable list cannot establish that an address is not a Tor exit node.
-  if (torNodes.size === 0) {
-    return { isTor: false, ip: userIp, nodeCount: 0, error: true };
-  }
-
-  return {
-    isTor: torNodes.has(userIp),
-    ip: userIp,
-    nodeCount: torNodes.size,
-  };
+  const results = await Promise.allSettled(ips.map(isExitAddress));
+  if (results.some((r) => r.status === 'fulfilled' && r.value)) return { isTor: true, ips };
+  if (results.some((r) => r.status === 'rejected')) return { isTor: false, ips, error: 'lookup' };
+  return { isTor: false, ips };
 }
-
-/**
- * Collects Privacy Mode data (Tor + Incognito + Privacy Signals + VPN + Score)
- */
-export async function collectTorData() {
-  // Import detectIncognito and privacy signals dynamically
-  const { detectIncognito } = await import('detectincognitojs');
-  const { collectPrivacySignals, detectVPNProxy, calculatePrivacyScore } = await import('./signals.js');
-  
-  const [torResult, incognitoResult, signalsData, vpnResult] = await Promise.all([
-    isUsingTor(),
-    detectIncognito().catch(() => ({ isPrivate: false, browserName: 'Unknown' })),
-    collectPrivacySignals().catch(() => ({})),
-    detectVPNProxy().catch(() => ({ isVPN: false, error: true })),
-  ]);
-
-  // Extract factor states for scoring
-  const dnt = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
-  const scoreFactors = {
-    adBlocker: signalsData['Ad Blocker']?.value === 'Active',
-    webrtcProtected: signalsData['WebRTC IP Leak']?.value?.includes('Protected'),
-    webrtcLeaking: signalsData['WebRTC IP Leak']?.value?.includes('Leaking'),
-    gpcEnabled: navigator.globalPrivacyControl === true,
-    gpcDisabled: navigator.globalPrivacyControl === false,
-    storagePartitioned: signalsData['Storage Partitioning']?.value?.includes('Partitioned'),
-    vpnDetected: vpnResult.isVPN === true,
-    torDetected: torResult.isTor === true,
-    privateBrowsing: incognitoResult.isPrivate === true,
-    dntEnabled: dnt === '1' || dnt === 'yes',
-    dntDisabled: dnt === '0' || dnt === 'no',
-    braveShields: signalsData['Brave Shields']?.value === 'Active',
-    webdriverDetected: navigator.webdriver === true,
-  };
-
-  const scoreResult = calculatePrivacyScore(scoreFactors);
-
-  const data = {};
-
-  // Privacy Score (FIRST in display)
-  data['Privacy Score'] = { 
-    value: `${scoreResult.score}/100`, 
-    warning: scoreResult.score < 50,
-    action: 'enhance',
-    actionLabel: 'How to Enhance?'
-  };
-  data['Privacy Grade'] = { 
-    value: scoreResult.grade,
-    warning: scoreResult.score < 50
-  };
-
-  // Score Breakdown (show each factor's contribution)
-  if (scoreResult.breakdown.length > 0) {
-    const breakdownStr = scoreResult.breakdown
-      .map(b => `${b.factor}: ${b.points}`)
-      .join(' | ');
-    data['Score Breakdown'] = { 
-      value: breakdownStr,
-      action: 'scoring',
-      actionLabel: 'Info'
-    };
-  }
-
-  // Incognito Detection
-  if (incognitoResult.isPrivate) {
-    data['Private Browsing'] = { value: `DETECTED (${incognitoResult.browserName})`, warning: true };
-  } else {
-    data['Private Browsing'] = { value: 'Not Detected' };
-  }
-
-  // VPN/Proxy Detection
-  if (vpnResult.error) {
-    data['VPN/Proxy'] = { value: 'Check Failed' };
-  } else if (vpnResult.isVPN) {
-    const reasons = [];
-    if (vpnResult.isDatacenter) reasons.push('Datacenter');
-    if (vpnResult.isProxy) reasons.push('Proxy');
-    if (vpnResult.isSuspiciousISP) reasons.push('VPN ISP');
-    data['VPN/Proxy'] = { value: `DETECTED (${reasons.join(', ')})`, warning: true };
-  } else {
-    data['VPN/Proxy'] = { value: 'Not Detected (Residential IP)' };
-  }
-
-  // Tor Detection
-  data['Your IP Address'] = { value: torResult.ip };
-
-  if (torResult.error) {
-    data['Tor Network'] = {
-      value: torResult.ip === 'unknown' ? 'Failed (IP Unknown)' : 'Failed (Exit Node List Unavailable)',
-      warning: true,
-    };
-  } else if (torResult.isTor) {
-    data['Tor Network'] = { value: 'DETECTED - Using Tor Exit Node', warning: true };
-  } else {
-    data['Tor Network'] = { value: 'Not Detected' };
-  }
-
-  // Merge privacy signals (without score-related data which is already at top)
-  const filteredSignals = { ...signalsData };
-  delete filteredSignals['Detection Accuracy']; // Remove redundant disclaimer
-  Object.assign(data, filteredSignals);
-
-  data['Exit Nodes Cached'] = { value: torResult.nodeCount || 0 };
-
-  return data;
-}
-
-export default isUsingTor;

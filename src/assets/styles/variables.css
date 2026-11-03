@@ -2,19 +2,31 @@
    CSS VARIABLES
    ============================================ */
 :root {
+  color-scheme: dark;
   --bg: #000000;
+  --bg-dim: #0b0b0b;
   --fg: #ffffff;
-  --fg-dim: #888888;
-  --fg-muted: #767676;
-  --border: #333333;
-  --border-bright: #555555;
+  --fg-dim: #9a9a9a;   /* 7.4:1 on --bg: labels, secondary text */
+  --fg-muted: #7a7a7a; /* 4.9:1 on --bg: prompts and decoration only */
+  --border: #2e2e2e;
+  --border-bright: #5c5c5c;
   --warning: #ffcc00;
-  --font-mono: "JetBrains Mono", "Courier Prime", monospace;
-  --font-size-base: 13px;
-  --font-size-sm: 11px;
-  --font-size-lg: 14px;
+  --focus: #ffffff;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", "DejaVu Sans Mono", monospace;
+  /* Relative sizes honor the reader's browser font-size setting: 14px and 12px at the 16px default. */
+  --font-size-base: 87.5%;
+  --font-size-sm: 0.875rem;
   --spacing-xs: 0.5rem;
   --spacing-sm: 1rem;
   --spacing-md: 1.5rem;
-  --spacing-lg: 2rem;
+  --spacing-lg: 2.5rem;
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --fg-dim: #d0d0d0;
+    --fg-muted: #b0b0b0;
+    --border: #8a8a8a;
+    --border-bright: #c0c0c0;
+  }
 }

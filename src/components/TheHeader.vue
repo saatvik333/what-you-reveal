@@ -1,79 +1,68 @@
 <script setup>
-import { inject } from 'vue';
-import packageJson from '../../package.json';
+import { version } from '../../package.json';
 
-const collectedData = inject('collectedData', null);
-const version = packageJson.version;
+const props = defineProps({
+  // Card title → { label: value }, as shown on screen.
+  report: { type: Object, required: true },
+});
 
-function downloadLog() {
+function downloadReport() {
   const report = {
     meta: {
       generated: new Date().toISOString(),
+      version,
       userAgent: navigator.userAgent,
       url: window.location.href,
-      timestamp: Date.now(),
     },
-    data: collectedData?.value || {},
+    data: props.report,
   };
-
-  const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
+  const url = URL.createObjectURL(new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' }));
   const a = document.createElement('a');
   a.href = url;
-  a.download = `what-you-reveal-${new Date().toISOString().split('T')[0]}.json`;
-  document.body.appendChild(a);
+  a.download = `what-you-reveal-${report.meta.generated.slice(0, 10)}.json`;
   a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  // Revoking synchronously can cancel the download in some browsers (FileSaver.js waits too).
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
+
+const LINKS = [
+  ['Source on GitHub', 'https://github.com/saatvik333/what-you-reveal'],
+  ['Report a bug', 'https://github.com/saatvik333/what-you-reveal/issues'],
+  ['Buy me a coffee', 'https://www.buymeacoffee.com/saatvik333'],
+];
 </script>
 
 <template>
   <header>
-    <pre class="ascii-header" aria-label="What You Reveal - ASCII Art Logo">
+    <pre class="ascii-header" aria-hidden="true">
 ╦ ╦╦ ╦╔═╗╔╦╗  ╦ ╦╔═╗╦ ╦  ╦═╗╔═╗╦  ╦╔═╗╔═╗╦  
 ║║║╠═╣╠═╣ ║   ╚╦╝║ ║║ ║  ╠╦╝║╣ ╚╗╔╝║╣ ╠═╣║  
 ╚╩╝╩ ╩╩ ╩ ╩    ╩ ╚═╝╚═╝  ╩╚═╚═╝ ╚╝ ╚═╝╩ ╩╩═╝
     </pre>
-    <h1 class="sr-only">What You Reveal - Browser Fingerprint and Privacy Analysis Tool</h1>
-    <p class="subtitle">SYSTEM ANALYSIS TOOL // BROWSER FINGERPRINT DEMO // v{{ version }}</p>
-    <nav class="controls" aria-label="Main controls">
-      <button 
-        id="download-report" 
-        class="control-btn" 
-        @click="downloadLog"
-        aria-label="Download fingerprint report as JSON"
-      >[ DOWNLOAD LOG ]</button>
+    <h1 class="sr-only">What You Reveal: browser fingerprint and privacy check</h1>
+    <p class="subtitle">BROWSER FINGERPRINT &amp; PRIVACY SCANNER // v{{ version }}</p>
+    <p class="lead">
+      Everything below was read from your browser just now, without a single permission prompt.
+      Any website you visit can collect the same.
+    </p>
+    <div class="controls">
+      <button type="button" class="control-btn" @click="downloadReport">[ Download report (JSON) ]</button>
       <a
-        href="https://github.com/saatvik333/what-you-reveal"
+        v-for="[label, href] in LINKS"
+        :key="href"
+        :href="href"
         target="_blank"
         rel="noopener noreferrer"
-        class="control-btn"
-        aria-label="View source code on GitHub"
-      >[ GITHUB REPO ]</a>
-      <a
-        href="https://github.com/saatvik333/what-you-reveal/issues"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="control-btn"
-        aria-label="Report a bug on GitHub Issues"
-      >[ FOUND BUG? ]</a>
-      <a
-        href="https://www.buymeacoffee.com/saatvik333"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="control-btn"
-        aria-label="Support the project on Buy Me a Coffee"
-      >[ BUY ME A COFFEE ]</a>
-    </nav>
+        class="control-link"
+      >{{ label }}<span class="sr-only"> (opens in a new tab)</span></a>
+    </div>
   </header>
 </template>
 
 <style scoped>
 header {
   margin-bottom: var(--spacing-lg);
-  padding-bottom: var(--spacing-md);
-  border-bottom: 1px solid var(--border);
+  padding: var(--spacing-sm) 0 var(--spacing-md);
   text-align: center;
 }
 
@@ -103,49 +92,46 @@ header {
 .subtitle {
   color: var(--fg-dim);
   font-size: var(--font-size-sm);
-  letter-spacing: 0.1em;
-  margin: 0 0 var(--spacing-md) 0;
-  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.lead {
+  max-width: 60ch;
+  margin: var(--spacing-sm) auto var(--spacing-md);
+  text-wrap: balance;
 }
 
 .controls {
   display: flex;
   justify-content: center;
+  align-items: center;
   flex-wrap: wrap;
-  gap: var(--spacing-xs);
+  gap: 0.5rem 2ch;
 }
 
 .control-btn {
   background: transparent;
-  border: 1px solid var(--border);
-  color: var(--fg-dim);
-  font-family: var(--font-mono);
+  border: 1px solid var(--border-bright);
+  color: var(--fg);
+  font: inherit;
   font-size: var(--font-size-sm);
-  padding: var(--spacing-xs) var(--spacing-sm);
+  padding: 0.45rem 0.75rem;
+  min-height: 32px;
   cursor: pointer;
-  transition: all 0.15s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .control-btn:hover {
   border-color: var(--fg);
+}
+
+.control-link {
+  color: var(--fg-dim);
+  font-size: var(--font-size-sm);
+  text-underline-offset: 0.2em;
+  padding: 0.45rem 0;
+}
+
+.control-link:hover {
   color: var(--fg);
-}
-
-.control-btn:focus {
-  outline: 1px solid var(--fg);
-  outline-offset: 2px;
-}
-
-@media (max-width: 700px) {
-  .control-btn {
-    padding: 0.75rem 1rem;
-    min-height: 44px;
-  }
 }
 </style>

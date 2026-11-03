@@ -1,24 +1,17 @@
 {
   "name": "What You Reveal - Browser Fingerprint & Privacy Analysis",
   "short_name": "What You Reveal",
-  "description": "Analyze your browser fingerprint and privacy exposure. Detect tracking, system information leakage, and digital signatures. Free open-source tool.",
-  "version": "0.3.3",
+  "description": "See what your browser reveals to every website: fingerprinting signals, network exposure and privacy protections. Free, open-source, runs in your browser.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "orientation": "portrait-primary",
-  "theme_color": "#00ff00",
+  "theme_color": "#000000",
   "background_color": "#000000",
   "categories": ["security", "privacy", "utilities"],
   "lang": "en-US",
   "dir": "ltr",
   "icons": [
-    {
-      "src": "/logo.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ],
-  "prefer_related_applications": false
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
 }

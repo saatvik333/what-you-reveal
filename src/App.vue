@@ -1,323 +1,168 @@
 <script setup>
-import { ref, computed, provide, onMounted } from 'vue';
-import TheHeader from "./components/TheHeader.vue";
-import TerminalCard from "./components/TerminalCard.vue";
-import TerminalDataGrid from "./components/TerminalDataGrid.vue";
-import PrivacyTipsPopup from "./components/PrivacyTipsPopup.vue";
-import ScorePhilosophyPopup from "./components/ScorePhilosophyPopup.vue";
-import { collectClipboardData } from "./modules/system/clipboard";
-import { collectHardwareData } from "./modules/system/hardware";
-import { collectScreenData } from "./modules/system/screen";
-import { collectPermissionsData } from "./modules/system/permissions";
-import { collectMediaDevices } from "./modules/system/media_devices";
-import { collectMediaCodecs } from "./modules/system/media_codecs";
-import { collectClientHints } from "./modules/system/client_hints";
-import { collectIntlData } from "./modules/fingerprint/intl";
-import { detectBot } from "./modules/fingerprint/integrity";
-import { collectNetworkData } from "./modules/network/network";
-import { collectNavigatorData } from "./modules/system/navigator";
-import { collectFontData } from "./modules/fingerprint/fonts";
-import { collectWebGLData } from "./modules/fingerprint/webgl";
-import { collectFingerprintData } from "./modules/fingerprint/identity";
-import { collectTorData } from "./modules/privacy/tor";
+import { computed, onMounted, ref, shallowReactive } from 'vue';
+import TheHeader from './components/TheHeader.vue';
+import ScanSummary from './components/ScanSummary.vue';
+import TerminalCard from './components/TerminalCard.vue';
+import TerminalDataGrid from './components/TerminalDataGrid.vue';
+import PrivacyTipsPopup from './components/PrivacyTipsPopup.vue';
+import ScorePhilosophyPopup from './components/ScorePhilosophyPopup.vue';
+import { collectPrivacyData } from './modules/privacy/privacy.js';
+import { collectNetworkData } from './modules/network/network.js';
+import { collectHardwareData } from './modules/system/hardware.js';
+import { collectScreenData } from './modules/system/screen.js';
+import { collectClientHints } from './modules/system/client_hints.js';
+import { collectNavigatorData } from './modules/system/navigator.js';
+import { collectIntlData } from './modules/fingerprint/intl.js';
+import { collectFontData } from './modules/fingerprint/fonts.js';
+import { collectWebGLData } from './modules/fingerprint/webgl.js';
+import { collectFingerprintData } from './modules/fingerprint/identity.js';
+import { collectMediaDevices } from './modules/system/media_devices.js';
+import { collectMediaCodecs } from './modules/system/media_codecs.js';
+import { collectPermissionsData } from './modules/system/permissions.js';
+import { collectClipboardData } from './modules/system/clipboard.js';
+import { detectBot } from './modules/fingerprint/integrity.js';
 
-// Error sentinel value used to distinguish failed loads from pending (null)
+// One entry per card, in display order. `collect(onUpdate)` resolves with the card's rows;
+// collectors that fill in gradually also call onUpdate with partial rows.
+const CARDS = [
+  { title: '0. PRIVACY_MODE', group: 'privacy', collect: collectPrivacyData, loading: 'Checking Tor, VPN, WebRTC and browser protections...', error: 'Privacy checks failed' },
+  { title: '1. NETWORK_INFO', group: 'privacy', collect: collectNetworkData, loading: 'Scanning network environment...', error: 'Network scan failed' },
+  { title: '2. DEVICE_CORE', group: 'device', collect: collectHardwareData, loading: 'Scanning hardware...', error: 'Hardware scan failed' },
+  { title: '3. SCREEN_INFO', group: 'device', collect: collectScreenData, loading: 'Analyzing display...', error: 'Display analysis failed' },
+  { title: '4. CLIENT_HINTS', group: 'device', collect: collectClientHints, loading: 'Reading User-Agent Client Hints...', error: 'Client hints unavailable' },
+  { title: '5. NAVIGATOR_VARS', group: 'device', collect: collectNavigatorData, loading: 'Probing browser APIs...', error: 'Navigator read failed' },
+  { title: '6. INTL_FINGERPRINT', group: 'fingerprint', collect: collectIntlData, loading: 'Calculating locale fingerprint...', error: 'Intl fingerprint failed' },
+  { title: '7. FONTS_FINGERPRINT', group: 'fingerprint', collect: collectFontData, loading: 'Measuring installed fonts...', error: 'Font scan failed' },
+  { title: '8. WEBGL_RENDERER', group: 'fingerprint', collect: collectWebGLData, loading: 'Initializing WebGL context...', error: 'WebGL unavailable' },
+  { title: '9. DIGITAL_IDENTITY', group: 'fingerprint', collect: collectFingerprintData, loading: 'Generating digital fingerprint...', error: 'Fingerprint generation failed' },
+  { title: '10. MEDIA_DEVICES', group: 'access', collect: collectMediaDevices, loading: 'Enumerating devices...', error: 'Device enumeration failed' },
+  { title: '11. MEDIA_CODECS', group: 'access', collect: collectMediaCodecs, loading: 'Checking codecs and DRM...', error: 'Codec check failed' },
+  { title: '12. PERMISSIONS_CHECK', group: 'access', collect: collectPermissionsData, loading: 'Querying permissions...', error: 'Permission query failed' },
+  { title: '13. CLIPBOARD_ACCESS', group: 'access', collect: collectClipboardData, loading: 'Checking clipboard access...', error: 'Clipboard check failed' },
+  { title: '14. INTEGRITY_CHECK', group: 'access', collect: async () => detectBot(), loading: 'Scanning for automation...', error: 'Integrity scan failed' },
+].map((card, index) => ({ ...card, index, anchor: card.title.replace(/^\d+\.\s*/, '').toLowerCase().replaceAll('_', '-') }));
+
+const GROUPS = [
+  { id: 'privacy', title: 'PRIVACY & NETWORK', note: 'Who can see you, and from where' },
+  { id: 'device', title: 'DEVICE & BROWSER', note: 'Hardware, display and browser details any script can read' },
+  { id: 'fingerprint', title: 'FINGERPRINTS', note: 'Rendering and locale quirks that combine into a stable ID' },
+  { id: 'access', title: 'MEDIA, PERMISSIONS & AUTOMATION', note: 'Devices, codecs, granted access and bot checks' },
+].map((group) => ({ ...group, cards: CARDS.filter((card) => card.group === group.id) }));
+
+// results[i]: null = nothing yet, ERROR = collector rejected, object = rows (possibly partial).
 const ERROR = Symbol('error');
+const results = shallowReactive(CARDS.map(() => null));
+const done = shallowReactive(CARDS.map(() => false));
+const finished = computed(() => done.filter(Boolean).length);
 
-const clipboardData = ref(null);
-const hardwareData = ref(null);
-const screenData = ref(null);
-const permissionsData = ref(null);
-const mediaDeviceData = ref(null);
-const mediaCodecData = ref(null);
-const clientHintsData = ref(null);
-const intlData = ref(null);
-const integrityData = ref(null);
-const networkData = ref(null);
-const navigatorData = ref(null);
-const fontData = ref(null);
-const webglData = ref(null);
-const identityData = ref(null);
-const privacyData = ref(null);
-const showPrivacyTips = ref(false);
-const showScorePhilosophy = ref(false);
-
-function isError(val) {
-  return val === ERROR;
-}
-
-function collectWithErrorHandling(collectFn, target) {
-  collectFn()
-    .then(d => target.value = d)
-    .catch(() => target.value = ERROR);
-}
-
-// Provide all collected data to children (for download)
-const collectedData = computed(() => {
-  const cards = {
-    '0. PRIVACY_MODE': privacyData.value,
-    '1. NETWORK_INFO': networkData.value,
-    '2. DEVICE_CORE': hardwareData.value,
-    '3. SCREEN_INFO': screenData.value,
-    '4. CLIENT_HINTS': clientHintsData.value,
-    '5. NAVIGATOR_VARS': navigatorData.value,
-    '6. INTL_FINGERPRINT': intlData.value,
-    '7. FONTS_FINGERPRINT': fontData.value,
-    '8. WEBGL_RENDERER': webglData.value,
-    '9. DIGITAL_IDENTITY': identityData.value,
-    '10. MEDIA_DEVICES': mediaDeviceData.value,
-    '11. MEDIA_CODECS': mediaCodecData.value,
-    '12. PERMISSIONS_CHECK': permissionsData.value,
-    '13. CLIPBOARD_ACCESS': clipboardData.value,
-    '14. INTEGRITY_CHECK': integrityData.value,
-  };
-
-  const result = {};
-  for (const [title, data] of Object.entries(cards)) {
-    if (data && data !== ERROR) {
-      const cardData = {};
-      for (const [key, val] of Object.entries(data)) {
-        cardData[key] = (val && typeof val === 'object' && 'value' in val) ? val.value : val;
-      }
-      result[title] = cardData;
-    }
-  }
-  return result;
-});
-
-provide('collectedData', collectedData);
+const isRows = (value) => value !== null && value !== ERROR;
+const cardState = (i) => (results[i] === ERROR ? 'error' : done[i] ? 'done' : 'loading');
+const flaggedLabels = (i) => (isRows(results[i])
+  ? Object.entries(results[i]).filter(([, row]) => row?.warning).map(([label]) => label)
+  : []);
 
 onMounted(() => {
-  // Execute all checks in parallel to prevent blocking
-  collectWithErrorHandling(collectClipboardData, clipboardData);
-  collectWithErrorHandling(collectHardwareData, hardwareData);
-  collectWithErrorHandling(collectScreenData, screenData);
-  collectWithErrorHandling(collectPermissionsData, permissionsData);
-  collectWithErrorHandling(collectMediaDevices, mediaDeviceData);
-  collectWithErrorHandling(collectMediaCodecs, mediaCodecData);
-  collectWithErrorHandling(collectClientHints, clientHintsData);
-  collectWithErrorHandling(collectIntlData, intlData);
-  integrityData.value = detectBot(); // Sync
-  collectWithErrorHandling(collectNavigatorData, navigatorData);
-  collectWithErrorHandling(collectFontData, fontData);
-  collectWithErrorHandling(collectWebGLData, webglData);
-  collectWithErrorHandling(collectFingerprintData, identityData);
-  collectWithErrorHandling(collectTorData, privacyData);
-
-  // Start network collection (accepts callback for updates)
-  collectNetworkData((newData) => {
-      networkData.value = newData;
-  }).then(d => networkData.value = d).catch(() => networkData.value = ERROR);
+  CARDS.forEach((card, i) => {
+    card.collect((partial) => { results[i] = partial; })
+      .then((rows) => { results[i] = rows; })
+      .catch((error) => {
+        console.error(`${card.title} failed:`, error);
+        results[i] = ERROR;
+      })
+      .finally(() => { done[i] = true; });
+  });
 });
 
-function handlePrivacyAction(actionName) {
-  if (actionName === 'enhance') {
-    showPrivacyTips.value = true;
-  } else if (actionName === 'scoring') {
-    showScorePhilosophy.value = true;
-  }
-}
+const score = computed(() => (done[0] && isRows(results[0]) ? results[0]['Privacy Score']?.summary ?? null : null));
+const flagged = computed(() => CARDS
+  .map((card, i) => ({ anchor: card.anchor, title: card.title, labels: done[i] ? flaggedLabels(i) : [] }))
+  .filter((card) => card.labels.length > 0));
+
+// Downloaded report: the values exactly as shown, without links or UI hints.
+const report = computed(() => Object.fromEntries(
+  CARDS.flatMap((card, i) => {
+    const rows = results[i];
+    if (!isRows(rows)) return [];
+    return [[card.title, Object.fromEntries(Object.entries(rows).map(([label, row]) =>
+      [label, row !== null && typeof row === 'object' ? row.value : row]))]];
+  }),
+));
+
+const tipsOpen = ref(false);
+const scoringOpen = ref(false);
 </script>
 
 <template>
   <div class="container">
-    <TheHeader />
-    
-    <PrivacyTipsPopup :isOpen="showPrivacyTips" @close="showPrivacyTips = false" />
-    <ScorePhilosophyPopup :isOpen="showScorePhilosophy" @close="showScorePhilosophy = false" />
+    <TheHeader :report="report" />
 
-    <main class="grid">
-      <!-- Privacy & Network -->
-      <TerminalCard title="0. PRIVACY_MODE">
-        <TerminalDataGrid
-          v-if="privacyData && !isError(privacyData)"
-          :data="privacyData"
-          @action="handlePrivacyAction"
-        />
-        <pre v-else-if="isError(privacyData)" class="error-msg">[ERR] Unable to check privacy status</pre>
-        <pre v-else class="loading-msg">Checking Tor network status...</pre>
-      </TerminalCard>
+    <PrivacyTipsPopup :open="tipsOpen" :factors="score?.factors ?? null" @close="tipsOpen = false" />
+    <ScorePhilosophyPopup :open="scoringOpen" @close="scoringOpen = false" />
 
-      <TerminalCard title="1. NETWORK_INFO">
-        <TerminalDataGrid v-if="networkData && !isError(networkData)" :data="networkData" />
-        <pre v-else-if="isError(networkData)" class="error-msg">[ERR] Network scan failed</pre>
-        <pre v-else class="loading-msg">Scanning network environment...</pre>
-      </TerminalCard>
+    <main id="main" tabindex="-1">
+      <ScanSummary
+        :score="score"
+        :finished="finished"
+        :total="CARDS.length"
+        :flagged="flagged"
+        @tips="tipsOpen = true"
+        @scoring="scoringOpen = true"
+      />
 
-      <!-- Hardware & Display -->
-      <TerminalCard title="2. DEVICE_CORE">
-        <TerminalDataGrid v-if="hardwareData && !isError(hardwareData)" :data="hardwareData" />
-        <pre v-else-if="isError(hardwareData)" class="error-msg">[ERR] Hardware scan failed</pre>
-        <pre v-else class="loading-msg">Scanning hardware...</pre>
-      </TerminalCard>
-
-      <TerminalCard title="3. SCREEN_INFO">
-        <TerminalDataGrid v-if="screenData && !isError(screenData)" :data="screenData" />
-        <pre v-else-if="isError(screenData)" class="error-msg">[ERR] Display analysis failed</pre>
-        <pre v-else class="loading-msg">Analyzing display...</pre>
-      </TerminalCard>
-
-      <!-- Browser & User Agent -->
-      <TerminalCard title="4. CLIENT_HINTS">
-        <TerminalDataGrid v-if="clientHintsData && !isError(clientHintsData)" :data="clientHintsData" />
-        <pre v-else-if="isError(clientHintsData)" class="error-msg">[ERR] Client hints unavailable</pre>
-        <pre v-else class="loading-msg">Analyzing User Agent Data...</pre>
-      </TerminalCard>
-
-      <TerminalCard title="5. NAVIGATOR_VARS">
-        <TerminalDataGrid v-if="navigatorData && !isError(navigatorData)" :data="navigatorData" />
-        <pre v-else-if="isError(navigatorData)" class="error-msg">[ERR] Navigator read failed</pre>
-        <pre v-else class="loading-msg">Reading headers...</pre>
-      </TerminalCard>
-
-      <!-- Fingerprinting -->
-      <TerminalCard title="6. INTL_FINGERPRINT">
-        <TerminalDataGrid v-if="intlData && !isError(intlData)" :data="intlData" />
-        <pre v-else-if="isError(intlData)" class="error-msg">[ERR] Intl fingerprint failed</pre>
-        <pre v-else class="loading-msg">Calculating locale fingerprint...</pre>
-      </TerminalCard>
-
-      <TerminalCard title="7. FONTS_FINGERPRINT">
-        <TerminalDataGrid v-if="fontData && !isError(fontData)" :data="fontData" />
-        <pre v-else-if="isError(fontData)" class="error-msg">[ERR] Font scan failed</pre>
-        <pre v-else class="loading-msg">Scanning font library...</pre>
-      </TerminalCard>
-
-      <!-- Graphics & Identity -->
-      <TerminalCard title="8. WEBGL_RENDERER">
-        <TerminalDataGrid v-if="webglData && !isError(webglData)" :data="webglData" />
-        <pre v-else-if="isError(webglData)" class="error-msg">[ERR] WebGL unavailable</pre>
-        <pre v-else class="loading-msg">Initializing WebGL context...</pre>
-      </TerminalCard>
-
-      <TerminalCard title="9. DIGITAL_IDENTITY">
-        <TerminalDataGrid v-if="identityData && !isError(identityData)" :data="identityData" />
-        <pre v-else-if="isError(identityData)" class="error-msg">[ERR] Fingerprint generation failed</pre>
-        <pre v-else class="loading-msg">Generating digital fingerprint...</pre>
-      </TerminalCard>
-
-      <!-- Media -->
-      <TerminalCard title="10. MEDIA_DEVICES">
-        <TerminalDataGrid v-if="mediaDeviceData && !isError(mediaDeviceData)" :data="mediaDeviceData" />
-        <pre v-else-if="isError(mediaDeviceData)" class="error-msg">[ERR] Device enumeration failed</pre>
-        <pre v-else class="loading-msg">Enumerating devices...</pre>
-      </TerminalCard>
-
-      <TerminalCard title="11. MEDIA_CODECS">
-        <TerminalDataGrid v-if="mediaCodecData && !isError(mediaCodecData)" :data="mediaCodecData" />
-        <pre v-else-if="isError(mediaCodecData)" class="error-msg">[ERR] Codec check failed</pre>
-        <pre v-else class="loading-msg">Checking codecs...</pre>
-      </TerminalCard>
-
-      <!-- Access & Permissions -->
-      <TerminalCard title="12. PERMISSIONS_CHECK">
-        <TerminalDataGrid v-if="permissionsData && !isError(permissionsData)" :data="permissionsData" />
-        <pre v-else-if="isError(permissionsData)" class="error-msg">[ERR] Permission query failed</pre>
-        <pre v-else class="loading-msg">Querying permissions...</pre>
-      </TerminalCard>
-
-      <TerminalCard title="13. CLIPBOARD_ACCESS">
-        <TerminalDataGrid v-if="clipboardData && !isError(clipboardData)" :data="clipboardData" />
-        <pre v-else-if="isError(clipboardData)" class="error-msg">[ERR] Clipboard check failed</pre>
-        <pre v-else class="loading-msg">Checking clipboard permissions...</pre>
-      </TerminalCard>
-
-      <!-- Security -->
-      <TerminalCard title="14. INTEGRITY_CHECK">
-        <TerminalDataGrid v-if="integrityData && !isError(integrityData)" :data="integrityData" />
-        <pre v-else-if="isError(integrityData)" class="error-msg">[ERR] Integrity scan failed</pre>
-        <pre v-else class="loading-msg">Scanning environment...</pre>
-      </TerminalCard>
-
+      <section v-for="group in GROUPS" :key="group.id" class="group" :aria-labelledby="`group-${group.id}`">
+        <div class="group-heading">
+          <h2 :id="`group-${group.id}`" class="section-title">{{ group.title }}</h2>
+          <p>{{ group.note }}</p>
+        </div>
+        <div class="grid">
+          <TerminalCard
+            v-for="card in group.cards"
+            :key="card.title"
+            :title="card.title"
+            :anchor="card.anchor"
+            :state="cardState(card.index)"
+            :flagged="flaggedLabels(card.index).length"
+          >
+            <TerminalDataGrid v-if="isRows(results[card.index])" :data="results[card.index]" />
+            <p v-else-if="results[card.index] === ERROR" class="error-msg">[ERR] {{ card.error }}</p>
+            <p v-else class="loading-msg">{{ card.loading }}</p>
+          </TerminalCard>
+        </div>
+      </section>
     </main>
-
-    <footer>
-      <span class="prompt">user@what-you-reveal:~$</span>
-      <span id="log-line">System ready. Waiting for modules...</span
-      ><span class="cursor"></span>
-    </footer>
   </div>
 </template>
 
 <style scoped>
-footer {
-  padding: var(--spacing-md) 0;
-  border-top: 1px solid var(--border);
-  font-size: var(--font-size-sm);
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--spacing-xs);
+main:focus {
+  outline: none;
+}
+
+.group + .group {
   margin-top: var(--spacing-lg);
 }
 
-.prompt {
-  color: var(--fg-dim);
-}
-
-.prompt::before {
-  content: ">";
-  margin-right: 0.5ch;
-  color: var(--fg-muted);
-}
-
-#log-line {
-  color: var(--fg);
-}
-
-.cursor {
-  display: inline-block;
-  width: 0.6em;
-  height: 1em;
-  background: var(--fg);
-  margin-left: 0.25em;
-  animation: blink 1s step-end infinite;
-  vertical-align: text-bottom;
-}
-
-@keyframes blink {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0;
-  }
-}
-
-.privacy-actions {
+.group-heading {
   display: flex;
-  gap: 1ch;
-  margin-top: 0.5rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 2ch;
+  margin-bottom: 0.75rem;
 }
 
-.action-btn {
-  background: none;
-  border: none;
+.group-heading p {
   color: var(--fg-dim);
-  font-family: inherit;
-  font-size: inherit;
-  cursor: pointer;
-  padding: 0;
-}
-
-.action-btn:hover {
-  color: var(--fg);
+  font-size: var(--font-size-sm);
 }
 
 .loading-msg {
   color: var(--fg-dim);
-  animation: pulse 2s ease-in-out infinite;
+  padding: 0.35rem 0;
 }
 
 .error-msg {
   color: var(--warning);
+  padding: 0.35rem 0;
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-}
 </style>

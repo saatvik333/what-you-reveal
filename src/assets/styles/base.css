@@ -11,18 +11,17 @@
 
 html {
   font-size: var(--font-size-base);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  scrollbar-color: var(--border-bright) var(--bg);
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   background: var(--bg);
   color: var(--fg);
   font-family: var(--font-mono);
-  line-height: 1.6;
+  line-height: 1.55;
   padding: var(--spacing-sm);
-  overflow-x: hidden;
 }
 
 ::selection {
@@ -30,55 +29,33 @@ body {
   color: var(--bg);
 }
 
-/* ============================================
-   SCROLLBAR - MINIMAL
-   ============================================ */
-::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 
-::-webkit-scrollbar-track {
-  background: var(--bg);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--border);
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--fg-dim);
+a {
+  color: inherit;
 }
 
 /* ============================================
-   SKIP LINK
+   SKIP LINK / SCREEN READER ONLY
    ============================================ */
 .skip-link {
   position: absolute;
-  left: -9999px;
-  top: auto;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  color: var(--fg);
-  text-decoration: none;
-}
-
-.skip-link:focus {
   left: var(--spacing-sm);
-  top: var(--spacing-sm);
-  width: auto;
-  height: auto;
-  overflow: visible;
-  z-index: 10000;
+  top: -10rem;
+  z-index: 1;
   background: var(--bg);
+  color: var(--fg);
   padding: var(--spacing-xs) var(--spacing-sm);
   border: 1px solid var(--fg);
 }
 
-/* ============================================
-   SCREEN READER ONLY
-   ============================================ */
+.skip-link:focus {
+  top: var(--spacing-sm);
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -86,42 +63,108 @@ body {
   padding: 0;
   margin: -1px;
   overflow: hidden;
-  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
   white-space: nowrap;
-  border-width: 0;
+  border: 0;
 }
 
 /* ============================================
-   SEO CONTENT (visible to crawlers, hidden visually)
+   SECTION HEADINGS SHARED BY APP AND STATIC HTML
    ============================================ */
-.seo-content {
-  position: absolute;
-  left: -9999px;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
+.section-title {
+  font-size: var(--font-size-base);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.section-title::before {
+  content: "## ";
+  color: var(--fg-muted);
 }
 
 /* ============================================
-   TERMINAL AESTHETIC EXTRAS
+   ABOUT / FAQ (static HTML in index.html)
    ============================================ */
+.about {
+  margin-top: var(--spacing-lg);
+  color: var(--fg-dim);
+  font-size: var(--font-size-sm);
+}
 
-/* Subtle scanline overlay */
-body::after {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0, 0, 0, 0.1) 2px,
-    rgba(0, 0, 0, 0.1) 4px
-  );
-  z-index: 999;
-  opacity: 0.3;
+.about p,
+.about-list,
+.faq {
+  max-width: 80ch;
+}
+
+.about > p {
+  margin-top: 0.75rem;
+}
+
+.about h3 {
+  color: var(--fg);
+  font-size: var(--font-size-sm);
+  letter-spacing: 0.08em;
+  margin: var(--spacing-md) 0 var(--spacing-xs);
+}
+
+.about-list {
+  margin: var(--spacing-xs) 0 0 2ch;
+}
+
+.about-list li::marker {
+  content: "- ";
+  color: var(--fg-muted);
+}
+
+.faq dt {
+  color: var(--fg);
+  margin-top: var(--spacing-sm);
+}
+
+.faq dt::before {
+  content: "$ ";
+  color: var(--fg-muted);
+}
+
+.faq dd {
+  margin: 0.25rem 0 0 2ch;
+}
+
+.site-footer {
+  margin-top: var(--spacing-lg);
+  padding: var(--spacing-md) 0;
+  border-top: 1px solid var(--border);
+  font-size: var(--font-size-sm);
+  color: var(--fg-dim);
+}
+
+.site-footer .prompt {
+  color: var(--fg-muted);
+  margin-right: 1ch;
+}
+
+.site-footer .cursor {
+  display: inline-block;
+  width: 0.6em;
+  height: 1em;
+  margin-left: 1ch;
+  vertical-align: text-bottom;
+  background: var(--fg);
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }

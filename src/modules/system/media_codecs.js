@@ -1,117 +1,79 @@
 /**
- * Media Codec detection module
- * Checks support for various audio and video codecs
+ * Media codecs card: playback, recording and DRM support. Support depends on browser build,
+ * OS media stack and hardware decoders, so the pattern narrows down the platform.
  */
 
-/**
- * Checks support for media types
- * @returns {Object} Media codec support data
- */
+const MDN = 'https://developer.mozilla.org/en-US/docs/Web/API/';
+
+const AUDIO_TYPES = {
+  'MP3': 'audio/mpeg',
+  'AAC': 'audio/mp4; codecs="mp4a.40.2"',
+  'Opus (Ogg)': 'audio/ogg; codecs="opus"',
+  'Vorbis (Ogg)': 'audio/ogg; codecs="vorbis"',
+  'FLAC': 'audio/flac',
+  'WAV': 'audio/wav; codecs="1"',
+};
+
+const VIDEO_TYPES = {
+  'H.264': 'video/mp4; codecs="avc1.42E01E"',
+  'H.265/HEVC': 'video/mp4; codecs="hvc1.1.6.L93.B0"',
+  'VP8': 'video/webm; codecs="vp8"',
+  'VP9': 'video/webm; codecs="vp9"',
+  'AV1': 'video/mp4; codecs="av01.0.05M.08"',
+  'Theora (Ogg)': 'video/ogg; codecs="theora"',
+};
+
+const RECORDER_TYPES = ['video/webm', 'video/mp4', 'video/x-matroska', 'audio/webm', 'audio/ogg', 'audio/mp4'];
+
+const DRM_SYSTEMS = [
+  ['Widevine', 'com.widevine.alpha'],
+  ['PlayReady', 'com.microsoft.playready'],
+  ['FairPlay', 'com.apple.fps'],
+  ['ClearKey', 'org.w3.clearkey'],
+];
+
+async function drmSupported(keySystem) {
+  try {
+    await navigator.requestMediaKeySystemAccess(keySystem, [{
+      initDataTypes: ['cenc'],
+      videoCapabilities: [{ contentType: 'video/mp4; codecs="avc1.42E01E"' }],
+    }]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function collectMediaCodecs() {
-  const audio = document.createElement('audio');
-  const video = document.createElement('video');
-  const canPlayTypeUrl = 'https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/canPlayType';
-
-  const audioTypes = {
-    MP3: 'audio/mpeg',
-    AAC: 'audio/mp4; codecs="mp4a.40.2"',
-    'Ogg Vorbis': 'audio/ogg; codecs="vorbis"',
-    'Ogg Opus': 'audio/ogg; codecs="opus"',
-    WAV: 'audio/wav; codecs="1"',
-    FLAC: 'audio/flac',
-    'WebM Audio': 'audio/webm; codecs="vorbis"',
-  };
-
-  const videoTypes = {
-    'H.264 (MP4)': 'video/mp4; codecs="avc1.42E01E, mp4a.40.2"',
-    'H.265 (HEVC)': 'video/mp4; codecs="hevc"',
-    'VP8 (WebM)': 'video/webm; codecs="vp8, vorbis"',
-    'VP9 (WebM)': 'video/webm; codecs="vp9"',
-    AV1: 'video/webm; codecs="av01.0.05M.08"',
-    'Ogg Theora': 'video/ogg; codecs="theora"',
-  };
-
-  const supported = {};
-
-  // Check Audio
-  for (const [name, type] of Object.entries(audioTypes)) {
-    const canPlay = audio.canPlayType(type);
-    if (canPlay !== '') {
-      supported[name] = { 
-          value: canPlay === 'probably' ? 'Supported (Probable)' : 'Supported (Maybe)',
-          url: canPlayTypeUrl
+  const data = {};
+  const canPlay = (element, types) => {
+    for (const [name, type] of Object.entries(types)) {
+      const answer = element.canPlayType(type);
+      data[name] = {
+        value: answer === 'probably' ? 'Supported' : answer === 'maybe' ? 'Maybe' : 'Not Supported',
+        url: `${MDN}HTMLMediaElement/canPlayType`,
       };
     }
-  }
+  };
+  canPlay(document.createElement('audio'), AUDIO_TYPES);
+  canPlay(document.createElement('video'), VIDEO_TYPES);
 
-  // Check Video
-  for (const [name, type] of Object.entries(videoTypes)) {
-    const canPlay = video.canPlayType(type);
-    if (canPlay !== '') {
-      supported[name] = { 
-          value: canPlay === 'probably' ? 'Supported (Probable)' : 'Supported (Maybe)',
-          url: canPlayTypeUrl
-      };
-    }
-  }
-
-  // Check MediaRecorder types if available
   if (typeof MediaRecorder !== 'undefined') {
-    const recorderTypes = [
-      'video/webm',
-      'video/mp4',
-      'video/x-matroska',
-      'audio/webm',
-      'audio/ogg',
-    ];
-
-    const recorderSupport = recorderTypes
-      .filter((t) => MediaRecorder.isTypeSupported(t))
-      .join(', ');
-
-    supported['MediaRecorder Types'] = { 
-        value: recorderSupport || 'None', 
-        url: 'https://developer.mozilla.org/en-US/docs/Web/API/MediaRecorder/isTypeSupported' 
+    data['MediaRecorder Formats'] = {
+      value: RECORDER_TYPES.filter((t) => MediaRecorder.isTypeSupported(t)).join(', ') || 'None',
+      url: `${MDN}MediaRecorder/isTypeSupported_static`,
     };
   }
 
-  // Encrypted Media Extensions (EME) - DRM Detection
-  const emeUrl = 'https://developer.mozilla.org/en-US/docs/Web/API/Encrypted_Media_Extensions_API';
+  const emeUrl = `${MDN}Encrypted_Media_Extensions_API`;
   if (navigator.requestMediaKeySystemAccess) {
-    supported['EME (DRM) API'] = { value: 'Supported', url: emeUrl };
-    
-    // Check for common DRM systems
-    const drmSystems = [
-      { name: 'Widevine', keySystem: 'com.widevine.alpha' },
-      { name: 'PlayReady', keySystem: 'com.microsoft.playready' },
-      { name: 'FairPlay', keySystem: 'com.apple.fps.1_0' },
-      { name: 'ClearKey', keySystem: 'org.w3.clearkey' },
-    ];
-
-    for (const drm of drmSystems) {
-      try {
-        await navigator.requestMediaKeySystemAccess(drm.keySystem, [
-          { initDataTypes: ['cenc'], videoCapabilities: [{ contentType: 'video/mp4; codecs="avc1.42E01E"' }] },
-        ]);
-        supported[`DRM: ${drm.name}`] = { value: 'Supported', url: emeUrl };
-      } catch (e) {
-        supported[`DRM: ${drm.name}`] = { value: 'Not Supported', url: emeUrl };
-      }
-    }
+    const results = await Promise.all(DRM_SYSTEMS.map(([, keySystem]) => drmSupported(keySystem)));
+    DRM_SYSTEMS.forEach(([name], i) => {
+      data[`DRM: ${name}`] = { value: results[i] ? 'Supported' : 'Not Supported', url: emeUrl };
+    });
   } else {
-    supported['EME (DRM) API'] = { value: 'Not Supported', url: emeUrl };
+    data['DRM (EME)'] = { value: 'Not Supported', url: emeUrl };
   }
 
-  // WebCodecs API (Hardware video decoding)
-  const webCodecsUrl = 'https://developer.mozilla.org/en-US/docs/Web/API/WebCodecs_API';
-  supported['WebCodecs (VideoDecoder)'] = { 
-      value: 'VideoDecoder' in window ? 'Supported' : 'Not Supported',
-      url: 'https://developer.mozilla.org/en-US/docs/Web/API/VideoDecoder'
-  };
-  supported['WebCodecs (AudioDecoder)'] = { 
-      value: 'AudioDecoder' in window ? 'Supported' : 'Not Supported',
-      url: 'https://developer.mozilla.org/en-US/docs/Web/API/AudioDecoder'
-  };
-  
-  return supported;
+  return data;
 }
