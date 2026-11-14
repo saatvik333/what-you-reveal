@@ -1,9 +1,10 @@
 @import "./assets/styles/variables.css";
 @import "./assets/styles/base.css";
 
+/* margin-inline only: sections that are also containers (.about, .site-footer) set their own margin-top. */
 .container {
   max-width: 1240px;
-  margin: 0 auto;
+  margin-inline: auto;
 }
 
 .grid {
@@ -16,5 +17,10 @@
 @media (min-width: 760px) {
   .grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* An odd card out spans the row instead of leaving half of it empty. */
+  .grid > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
   }
 }

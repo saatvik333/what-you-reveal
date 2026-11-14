@@ -72,7 +72,8 @@ a {
    SECTION HEADINGS SHARED BY APP AND STATIC HTML
    ============================================ */
 .section-title {
-  font-size: var(--font-size-base);
+  color: var(--fg);
+  font-size: var(--font-size-sm);
   font-weight: 700;
   letter-spacing: 0.12em;
 }
@@ -91,25 +92,49 @@ a {
   font-size: var(--font-size-sm);
 }
 
-.about p,
-.about-list,
-.faq {
-  max-width: 80ch;
-}
-
 .about > p {
   margin-top: 0.75rem;
+  max-width: 80ch;
 }
 
 .about h3 {
   color: var(--fg);
-  font-size: var(--font-size-sm);
+  font-size: inherit;
   letter-spacing: 0.08em;
-  margin: var(--spacing-md) 0 var(--spacing-xs);
+  margin: var(--spacing-lg) 0 var(--spacing-sm);
+}
+
+.about h3::before {
+  content: "### ";
+  color: var(--fg-muted);
+}
+
+/* .about-list and .faq share one column grid so their second columns line up.
+   One column keeps the intro's 80ch measure; two columns use the full width. */
+.about-list,
+.faq {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: 6ch;
+  max-width: 80ch;
+}
+
+/* Two columns only where each stays a comfortable reading width (≥ ~55 characters). */
+@media (min-width: 960px) {
+  .about-list,
+  .faq {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: none;
+  }
 }
 
 .about-list {
-  margin: var(--spacing-xs) 0 0 2ch;
+  margin-top: var(--spacing-xs);
+}
+
+/* Margin, not padding: the outside marker sits in it, aligned with the FAQ's "$ ". */
+.about-list li {
+  margin-left: 2ch;
 }
 
 .about-list li::marker {
@@ -117,9 +142,14 @@ a {
   color: var(--fg-muted);
 }
 
+.faq {
+  row-gap: var(--spacing-md);
+}
+
 .faq dt {
   color: var(--fg);
-  margin-top: var(--spacing-sm);
+  padding-left: 2ch;
+  text-indent: -2ch;
 }
 
 .faq dt::before {

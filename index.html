@@ -116,18 +116,30 @@
 
       <h3>Frequently asked questions</h3>
       <dl class="faq">
-        <dt>What is browser fingerprinting?</dt>
-        <dd>Browser fingerprinting identifies a browser by combining details it reveals to every website: screen size, installed fonts, graphics card, language, time zone, how it draws canvas images and more. A fingerprint is not stored on your device, so clearing cookies does not reset it, and a private window usually leaves it unchanged.</dd>
-        <dt>How does canvas fingerprinting work?</dt>
-        <dd>A script draws text and shapes on an invisible canvas and hashes the resulting pixels. Fonts, anti-aliasing, graphics drivers and the operating system all change the pixels slightly, so the hash differs between devices but stays the same on one device.</dd>
-        <dt>Can a VPN protect against browser fingerprinting?</dt>
-        <dd>A VPN hides your IP address and location, but your fonts, graphics card, screen and browser settings stay visible. Against fingerprinting you need a browser that standardizes or randomizes those values, such as Tor Browser, Mullvad Browser, Brave, or Firefox with strict Enhanced Tracking Protection.</dd>
-        <dt>How is the privacy score calculated?</dt>
-        <dd>The score starts at 30 and adds points for protections this page can observe: an ad or tracker blocker (+15), canvas fingerprinting protection (+15), WebRTC exposing no extra IP address (+15), Global Privacy Control (+10), a VPN or hosting network (+10), Tor (+10), private browsing (+5) and the Brave browser (+5). A WebRTC IP leak (-15) and browser automation (-10) subtract points. Defaults are never penalized, and the result is capped to 0-100.</dd>
-        <dt>Is my data stored or transmitted?</dt>
-        <dd>Fingerprint values are computed in your browser and never sent anywhere, and the downloadable report is created locally. To show your public IP address, location, VPN and Tor status, the page asks ipify, ipapi.co (with geojs.io as a fallback), the Tor Project's Onionoo service and a Cloudflare STUN server. Like any server you connect to, they see your IP address.</dd>
-        <dt>How can I protect against browser fingerprinting?</dt>
-        <dd>Use a browser with fingerprinting protection (Tor Browser, Mullvad Browser, Brave, or Firefox with Enhanced Tracking Protection set to Strict), block tracking scripts with a content blocker such as uBlock Origin, and avoid rare fonts and extensions that make your browser stand out. Global Privacy Control does not stop fingerprinting, but it legally opts you out of data sales in places that recognize it.</dd>
+        <div>
+          <dt>What is browser fingerprinting?</dt>
+          <dd>Browser fingerprinting identifies a browser by combining details it reveals to every website: screen size, installed fonts, graphics card, language, time zone, how it draws canvas images and more. A fingerprint is not stored on your device, so clearing cookies does not reset it, and a private window usually leaves it unchanged.</dd>
+        </div>
+        <div>
+          <dt>How does canvas fingerprinting work?</dt>
+          <dd>A script draws text and shapes on an invisible canvas and hashes the resulting pixels. Fonts, anti-aliasing, graphics drivers and the operating system all change the pixels slightly, so the hash differs between devices but stays the same on one device.</dd>
+        </div>
+        <div>
+          <dt>Can a VPN protect against browser fingerprinting?</dt>
+          <dd>A VPN hides your IP address and location, but your fonts, graphics card, screen and browser settings stay visible. Against fingerprinting you need a browser that standardizes or randomizes those values, such as Tor Browser, Mullvad Browser, Brave, or Firefox with strict Enhanced Tracking Protection.</dd>
+        </div>
+        <div>
+          <dt>How is the privacy score calculated?</dt>
+          <dd>The score starts at 30 and adds points for protections this page can observe: an ad or tracker blocker (+15), canvas fingerprinting protection (+15), WebRTC exposing no extra IP address (+15), Global Privacy Control (+10), a VPN or hosting network (+10), Tor (+10), private browsing (+5) and the Brave browser (+5). A WebRTC IP leak (-15) and browser automation (-10) subtract points. Defaults are never penalized, and the result is capped to 0-100.</dd>
+        </div>
+        <div>
+          <dt>Is my data stored or transmitted?</dt>
+          <dd>Fingerprint values are computed in your browser and never sent anywhere, and the downloadable report is created locally. To show your public IP address, location, VPN and Tor status, the page asks ipify, ipapi.co (with geojs.io as a fallback), the Tor Project's Onionoo service and a Cloudflare STUN server. Like any server you connect to, they see your IP address.</dd>
+        </div>
+        <div>
+          <dt>How can I protect against browser fingerprinting?</dt>
+          <dd>Use a browser with fingerprinting protection (Tor Browser, Mullvad Browser, Brave, or Firefox with Enhanced Tracking Protection set to Strict), block tracking scripts with a content blocker such as uBlock Origin, and avoid rare fonts and extensions that make your browser stand out. Global Privacy Control does not stop fingerprinting, but it legally opts you out of data sales in places that recognize it.</dd>
+        </div>
       </dl>
     </section>
 
